@@ -216,6 +216,54 @@ Backend is chosen by `RUNTIME` in `config.env` / environment: `sim` prints the f
 ASCII and keeps the last frame for the web page; `board` sends it over the App Lab Bridge.
 Callers never know which one runs.
 
+### `copilot/difficulty.py` (A, innovation "empirical difficulty")
+
+```python
+estimate(db_path: str | None = None) -> dict[str, dict]
+    # {problem_id: {"n": int, "p_correct": float, "p_without_hints": float, "shrunk": float,
+    #               "level": int, "prior": float}}  read-only over the trainer's `answers` table
+adjusted_level(problem: dict, estimates: dict) -> float   # M3Kang level +- up to 2, 0..7
+report(db_path: str | None = None) -> dict                 # JSON-serialisable, labels in ca/en
+```
+
+M3Kang's `level` is the Kangaroo band a problem was set for; `estimate` measures how hard
+it is for THIS class from the answers stored on the board (nothing leaves the device):
+`shrunk = (correct + a * prior_L) / (n + a)` with `a = 3` and `prior_L` the class's own
+rate on level L (0.5 without data). `adjusted_level` shifts the level by
+`(prior_L - shrunk) / 0.25` levels, clipped to +-2, and only after 3 answers on the
+problem; with fewer, or no data, it returns the M3Kang level. `report` lists the 10
+hardest and 10 easiest problems with enough answers (ids, n, p) and the rate per level,
+with a `labels` dict of Catalan and English strings for every column. Ids only, never text.
+Formula, constants and the mapping are documented at the top of the module. The report
+carries a `note` (ca/en): the method was validated on a SIMULATED class only
+(docs/difficulty.md), nothing is measured with real students yet. Recommended use: the
+teacher's `report()`; the trainer hook below is measured as neutral and stays off.
+
+## Empirical difficulty
+
+How the trainer uses `adjusted_level`, behind `DIFFICULTY_ADJUST=0|1` in config.env
+(default 0: the trainer behaves exactly as above):
+
+- `trainer._level_of(problem_id, level)` returns the M3Kang level when the flag is off and
+  `difficulty.adjusted_level(...)` over `difficulty.estimate(trainer.db_path())` when on.
+- The adaptive rule (`_choose_adaptive`) uses it in two places: the wanted level after the
+  last answer is `round(adjusted level of the last problem) +- 1` instead of `level +- 1`,
+  and a neighbour is accepted or skipped by ITS adjusted level, so a problem the class
+  finds much harder than its band is treated as a problem of that harder band. With the
+  flag on, retrieval is asked for `level_delta = wanted - M3Kang level` so the neighbours
+  come from the wanted band.
+- The diagnostic, the review problems and the bank fallback keep M3Kang levels: they
+  pick problems by band from the bank, where the empirical level is unknown for most ids.
+
+- `estimate` is read once per `next_problem` (`trainer._estimates()`), never when the
+  flag is off; `tests/test_difficulty.py` checks the count.
+
+Proposed, not implemented: a `level_fn` argument to `trainer.configure(...)` (default
+`None` = the rule above) would let the simulator and the tests inject any level function
+without touching the flag. Measured on a simulated class only (docs/difficulty.md): the
+hook did not reduce a simulated student's wrong answers, so the recommended use of the
+module is the teacher's report, not the choice of problems.
+
 ## Phase 0 stubs
 
 Every module above exists as a stub that returns fixed test data and raises nothing.
