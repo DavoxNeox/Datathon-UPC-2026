@@ -615,7 +615,8 @@ let resetArmed = null;
 $("reset").onclick = async () => {
   if (!resetArmed) { resetArmed = setTimeout(() => { resetArmed = null; $("reset").classList.remove("confirm"); $("reset").textContent = t().reset; }, 4000); $("reset").classList.add("confirm"); $("reset").textContent = t().confirm_reset; return; }
   clearTimeout(resetArmed); resetArmed = null; $("reset").classList.remove("confirm"); $("reset").textContent = t().reset;
-  lastProblem = null; $("manip-box").hidden = true; render(await api("/api/reset"));
+  lastProblem = null; $("manip-box").hidden = true; setPanel(false);   // back to the start screen, popup closed
+  render(await api("/api/reset"));
 };
 $("hints").addEventListener("click", e => { const b = e.target.closest("button[data-more]"); if (!b || !state) return; const key = (state.problem ? state.problem.id : "") + ":" + b.dataset.more; if (expanded.has(key)) expanded.delete(key); else expanded.add(key); renderHints(state); });
 $("manip").onclick = () => { const m = $("manip").dataset.m; $("manip-title").textContent = t().manip[m]; $("manip-frame").src = `manip/${m}.html?lang=${lang}${window.Theme ? Theme.query() : ""}`; $("manip-box").hidden = false; $("manip-box").scrollIntoView({behavior: "smooth", block: "nearest"}); };
