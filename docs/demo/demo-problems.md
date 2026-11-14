@@ -50,8 +50,9 @@ promises what the next problem will be.
   because the numbers differ.
 - **Rungs shown:** 1 (neighbour with image), 2 (strategy card of boards). No LLM: in Catalan
   rung 3 is also a strategy card.
-- **Answer on stage:** the correct one (in the speaker notes). Tick on the LED, mastery of
-  boards 0 → 2.
+- **Answer on stage:** the correct one (in the speaker notes). On the matrix: the letter for
+  0.8 s, the tick, then the mastery map with the boards row growing (mastery 0 → 2). Before
+  that, the four hint blocks on the bottom rows, two of them dimmed after the two hints.
 - **Clicks:** `Comença` → `Pista` (action sheet at the bottom) → `Pista` → the correct value → wait for the tick (3 s) →
   `Continua` (or Enter).
 

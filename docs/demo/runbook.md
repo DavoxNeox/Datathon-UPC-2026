@@ -64,8 +64,8 @@ on the first start after a change, about a minute).
 adb forward tcp:7002 tcp:7000
 ```
 
-Open <http://127.0.0.1:7002> in the browser. Expected: the start screen "Hola! Com et dius?"
-with the LED matrix drawing (dark) at the top right. Port 7002, not 7000: on macOS port 7000
+Open <http://127.0.0.1:7002> in the browser. Expected: the start screen "Hola! Com et dius?";
+the physical matrix breathes (new student). Port 7002, not 7000: on macOS port 7000
 is taken by AirPlay.
 
 ```bash
@@ -117,8 +117,10 @@ Check three things in its output:
    (`dev/demo_pick.py --chain Mariona1 1` on the laptop will not help; read the ids from the
    output and tell V2), or use chain A (`Guillem 2`) and check it the same way.
 2. Every step well under 10 s real ("board est" is 0.0 for these steps).
-3. The LED matrix physically shows the tick, then the mastery bars, then the cross. Watch the
-   board, not the page.
+3. The LED matrix physically shows, in order: the breathing diamond on the start screen, four
+   blocks on the two bottom rows when the problem loads (one goes dim per hint), the chosen
+   letter for 0.8 s, the tick, and 3 s later the mastery map with the boards row growing; then
+   the same with the cross. Watch the board, not the page.
 
 The script ends with a reset (`/api/reset`, the page's **Canvia d'alumne**), so the board is clean again. Then do the same clicks **by
 hand in the browser once**, with the projector connected, so V3 knows where every button is
@@ -137,8 +139,10 @@ bottom, **Continua** after the verdict (Enter also works), the manipulative open
    but **not** started: the first click of the demo is `Comença`. (The pseudonym gives the
    chain in `demo-problems.md`; `Comença` resets it, so earlier rehearsals do not matter.)
 3. Language buttons: **CA** selected; the side menu closed (move the cursor away or press Escape), nothing expanded on the page.
-4. The LED matrix is dark except the resting frame; V1 holds the board with the matrix
-   towards the jury and the USB cable with slack.
+4. The LED matrix **breathes** (a central diamond fading in and out every 2.4 s): that is the
+   start screen with a new student, and it is what the jury sees first. A dark matrix means the
+   app is not running or the sketch did not flash (`contingency.md` row 5). V1 holds the board
+   with the matrix towards the jury and the USB cable with slack.
 
 ## 8. Tabs, in this order, nothing else open
 

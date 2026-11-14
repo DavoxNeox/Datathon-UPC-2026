@@ -9,10 +9,10 @@ stamps are cumulative inside each block and assume **2.4 words per second** (12 
 | block | Catalan words | at 2.4 w/s | budget |
 | --- | ---: | ---: | ---: |
 | problem | 49 | 20 s | 20 s |
-| demo (narration; the clicks and the LED fill the rest) | 195 | 81 s | 90 s |
+| demo (narration; the clicks and the LED fill the rest) | 194 | 81 s | 90 s |
 | numbers (the placeholder counted as 12 words) | 96 | 40 s | 40 s |
 | lessons | 72 | 30 s | 30 s |
-| **total** | **412** | **172 s** | **180 s** |
+| **total** | **411** | **171 s** | **180 s** |
 
 **Grading (rules changed on 14 Nov 2026):** 50% Reasoning, an objective test exam corrected
 from `predict.py`'s CSV (`runbook.md` §11), and 50% Teaching, judged by the jury in these
@@ -64,15 +64,15 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 | s | V2 diu | V3 fa |
 | --- | --- | --- |
-| 0 | La placa: un Arduino UNO Q, sense Wi-Fi. El portàtil només mostra la pàgina que serveix pel cable USB. | res; la pantalla d'inici és al projector amb "Mariona1" i "6è de primària" ja escrits |
-| 9 | L'alumna es diu Mariona i fa sisè. Comencem. | clic **Comença** |
-| 13 | Primer problema, de taulers i patrons. La Mariona dubta i demana una pista: en té tres, i una lliçó; ella decideix quan pujar. | clic **Pista** |
-| 21 | Pista u: el copilot busca dins la placa, amb embeddings, un problema semblant del mateix tema, un nivell més fàcil, amb la seva figura. Cap resposta, cap model que raoni. | assenyala la targeta "Un problema semblant" |
+| 0 | La placa: un Arduino UNO Q, sense Wi-Fi. El portàtil només mostra la seva pàgina pel cable USB. | res; la pantalla d'inici és al projector amb "Mariona1" i "6è de primària" ja escrits |
+| 9 | L'alumna es diu Mariona i fa sisè. Mireu la placa: respira, perquè és nova. Comencem. | clic **Comença**; V1 ensenya el rombe que puja i baixa de brillantor |
+| 13 | Primer problema, de taulers i patrons. La Mariona dubta i demana una pista: els quatre blocs de la placa són tres pistes i una lliçó. | clic **Pista**; V1 ensenya els quatre blocs de les dues files de baix; en arribar la pista, un s'apaga |
+| 21 | Pista u: la placa busca, amb embeddings, un problema semblant del mateix tema, un nivell més fàcil, amb figura. Cap resposta, cap model que raoni. | assenyala la targeta "Un problema semblant" |
 | 34 | Pista dos: una estratègia del tema. Ara sí: respon. | clic **Pista**; després clic al valor correcte (notes locals; els botons mostren el valor, no la lletra; la tecla de la lletra també val) |
-| 40 | Tick a la LED, la fulla es tenyeix de verd, i la barra de taulers s'omple dos segments de cinc: encerta amb pistes. | V1 gira la placa cap al jurat; V3 assenyala la barra de progrés de dalt |
-| 47 | Continuem: el diagnòstic puja dos cursos. Raonament espacial. Pista u, el problema germà amb la seva imatge; pista dos, l'estratègia "gira i volteja". | clic **Continua** (o Enter); clic **Pista** a la fulla d'accions de baix; clic **Pista** |
-| 60 | Avui la Mariona s'equivoca. Les pistes no li han dit la resposta; la correcció arriba només ara. Creu a la LED, un sol segment a espacial. Quan acabi el diagnòstic, aquest tema li arribarà més fàcil. | clic a un valor equivocat (notes locals); V1 mostra la creu; la fulla es tenyeix de vermell; V3 assenyala la barra de dalt |
-| 75 | I el professor ho veu tot: progrés per tema i alumne, encerts per nivell, i els segons reals de cada pas a la placa. | clic **Vista del professor** (pestanya 2); abans, assenyala la taula "Temps (per al professor)" |
+| 40 | La placa mostra la lletra i el tick; la fulla es torna verda, i la barra de taulers s'omple dos segments de cinc: encerta amb pistes. | V1 gira la placa cap al jurat: lletra gran 0,8 s, tick, i al cap de 3 s el mapa de domini amb la fila de taulers creixent; V3 assenyala la barra de progrés de dalt |
+| 47 | Continuem: el diagnòstic puja dos cursos, a raonament espacial. Pista u, el problema germà amb la seva imatge; pista dos, l'estratègia "gira i volteja". | clic **Continua** (o Enter); clic **Pista** a la fulla d'accions de baix; clic **Pista** |
+| 60 | Avui s'equivoca. Les pistes no li han dit la resposta; la correcció arriba ara. Creu a la placa, un segment a espacial. Després del diagnòstic, aquest tema li arribarà més fàcil. | clic a un valor equivocat (notes locals); V1 mostra la creu; la fulla es tenyeix de vermell; V3 assenyala la barra de dalt |
+| 75 | I el professor ho veu tot: progrés per tema i alumne, i els segons reals de cada pas a la placa. | clic **Vista del professor** (pestanya 2); abans, assenyala la taula "Temps (per al professor)" |
 | 84 | *(V3 torna a la pestanya 1 i parla)* | |
 
 ### 3. Els números (40 s), V3
@@ -105,10 +105,10 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | block | English words | at 2.4 w/s | budget |
 | --- | ---: | ---: | ---: |
 | problem | 49 | 20 s | 20 s |
-| demo (narration; the clicks and the LED fill the rest) | 191 | 80 s | 90 s |
+| demo (narration; the clicks and the LED fill the rest) | 195 | 81 s | 90 s |
 | numbers (the placeholder counted as 12 words) | 99 | 41 s | 40 s |
 | lessons | 75 | 31 s | 30 s |
-| **total** | **414** | **172 s** | **180 s** |
+| **total** | **418** | **174 s** | **180 s** |
 
 ### 1. The problem (20 s), V1
 
@@ -123,15 +123,15 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 | s | V2 says | V3 does |
 | --- | --- | --- |
-| 0 | The board: an Arduino UNO Q, no Wi-Fi. The laptop only shows the page it serves over USB. | nothing; the start screen is on the projector with "Mariona1" and "6è de primària" already typed |
-| 9 | The student is Mariona, sixth grade. Let's begin. | click **Comença** |
-| 13 | First problem, boards and patterns. Mariona hesitates and asks for a hint: she has three, and a lesson; she decides when to climb. | click **Pista** |
-| 21 | Hint one: the copilot searches on the board, with embeddings, for a similar problem of the same topic, one level easier, with its figure. No answer, no model reasoning. | point at the "Un problema semblant" card |
+| 0 | The board: an Arduino UNO Q, no Wi-Fi. The laptop only shows its page over USB. | nothing; the start screen is on the projector with "Mariona1" and "6è de primària" already typed |
+| 9 | The student is Mariona, sixth grade. Look at the board: it breathes, because she is new. Let's begin. | click **Comença**; V1 shows the diamond fading in and out |
+| 13 | First problem, boards and patterns. Mariona hesitates and asks for a hint: the four blocks on the board are three hints and a lesson. | click **Pista**; V1 shows the four blocks on the two bottom rows; when the hint arrives, one goes dim |
+| 21 | Hint one: the board searches, with embeddings, a similar problem of the same topic, one level easier, with its figure. No answer, no model reasoning. | point at the "Un problema semblant" card |
 | 34 | Hint two: a strategy for the topic. Now she answers. | click **Pista**; then click the correct value (local notes; the buttons show the value, not the letter; the letter key also works) |
-| 40 | A tick on the LED, the sheet turns green, and the boards bar fills two segments of five: correct with hints. | V1 turns the board to the jury; V3 points at the progress bar at the top |
-| 47 | We continue: the diagnostic climbs two grades. Spatial reasoning. Hint one, the sister problem with its picture; hint two, the strategy "rotate and flip". | click **Continua** (or Enter); click **Pista** on the bottom action sheet; click **Pista** |
-| 60 | Today Mariona gets it wrong. The hints never told her the answer; the correction comes only now. A cross on the LED, one segment on spatial. Once the diagnostic ends, this topic will come easier. | click a wrong value (local notes); V1 shows the cross; the sheet turns red; V3 points at the bar at the top |
-| 75 | And the teacher sees everything: progress by topic and student, hits by level, and the real seconds of every step on the board. | click **Vista del professor** (tab 2); before that, point at the "Temps (per al professor)" table |
+| 40 | The board shows the letter and the tick; the sheet turns green, and the boards bar fills two segments of five: correct with hints. | V1 turns the board to the jury: big letter 0.8 s, tick, and 3 s later the mastery map with the boards row growing; V3 points at the progress bar at the top |
+| 47 | We continue: the diagnostic climbs two grades, to spatial reasoning. Hint one, the sister problem with its picture; hint two, the strategy "rotate and flip". | click **Continua** (or Enter); click **Pista** on the bottom action sheet; click **Pista** |
+| 60 | Today she gets it wrong. The hints never told her the answer; the correction comes now. A cross on the board, one segment on spatial. After the diagnostic, this topic will come easier. | click a wrong value (local notes); V1 shows the cross; the sheet turns red; V3 points at the bar at the top |
+| 75 | And the teacher sees everything: progress by topic and student, and the real seconds of every step on the board. | click **Vista del professor** (tab 2); before that, point at the "Temps (per al professor)" table |
 | 84 | *(V3 returns to tab 1 and speaks)* | |
 
 ### 3. The numbers (40 s), V3
@@ -160,6 +160,15 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 ## Rehearsal notes
 
+- **What the LED matrix shows** (main c40257f, measured on the board), so V1 knows when to turn
+  it to the jury: start screen with a new student, a central diamond breathing every 2.4 s;
+  problem loaded, four blocks on the two bottom rows (the four hint uses) and the mastery bars
+  dimmed above; a hint arrives, one block goes dim (3, 2, 1, 0 left); while the model writes a
+  hint, a dot runs along the bottom row (never in the Catalan demo: no model hint); an answer,
+  the chosen letter large for 0.8 s, then the tick or the cross; 3 s later the mastery map, one
+  row per topic, 0 to 13 LEDs, the current topic's row growing. V1 holds the board still during
+  the letter and the tick, and tilts it to the jury for the map.
+
 - The page (Duolingo-style redesign, no modal windows): **Pista** and **Solució** sit in a fixed
   action sheet at the bottom that turns green or red with the verdict; the next problem is
   **Continua** (Enter works too); the manipulative opens under the hints, the picture enlarges in
@@ -177,7 +186,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
   `HINT_MAX_USES` in `config.env` that morning (the fourth use is a lesson).
 
 - The clicks are instant (under 0.5 s measured on the board, no model time), so the
-  narration sets the pace. The demo block has about 12 s of slack for the clicks and the LED; the whole script is about 172 s spoken.
+  narration sets the pace. The demo block has about 9 s of slack for the clicks and the LED; the whole script is about 174 s spoken.
 - The tick or cross stays 3 s on the LED, then the progress map returns. V1 turns the board
   towards the jury the moment V3 clicks an answer.
 - After two answers the diagnostic is still running (it needs three): Mariona1's third problem
