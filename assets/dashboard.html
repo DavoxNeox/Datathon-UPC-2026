@@ -43,7 +43,7 @@
   .dash .src { color: var(--muted); font-size: 12px; margin-top: 6px; }
   .dash .foot { color: var(--muted); font-size: 12px; margin-top: 26px; }
   .dash .langbar { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 10px; }
-  .dash .langbar a { text-decoration: none; }
+  .dash .langbar a { text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; }
   .dash button.lang { font: inherit; min-height: 44px; min-width: 44px; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
   .dash button.lang[aria-pressed="true"] { background: var(--ink); color: var(--card); }
 </style>
@@ -91,10 +91,10 @@ const DATA = {
     rows: [
       {step_ca: "Esglaó 1: veí més fàcil", step_en: "Rung 1: easier neighbour", s: 0.12},
       {step_ca: "Esglaó 2: fitxa d'estratègia", step_en: "Rung 2: strategy card", s: 0.01},
-      {step_ca: "Esglaó 3: pista del model amb prefetch (mediana, estimació)", step_en: "Rung 3: model hint with prefetch (median, estimate)", s: 12.6},
-      {step_ca: "Lletra del model, un problema (mitjana real, n=50)", step_en: "Letter model, one problem (mean, real, n=50)", s: 10.3},
-      {step_ca: "Extracció JSON d'un solver (màxim, estimació)", step_en: "Solver JSON extraction (max, estimate)", s: 15.9},
-      {step_ca: "Pitjor problema de l'execució oficial (real, 562)", step_en: "Worst official-run problem (real, 562)", s: 38.7, worst: true}]},
+      {step_ca: "Esglaó 3: pista amb prefetch (med.)", step_en: "Rung 3: hint with prefetch (median)", full_ca: "Esglaó 3: pista del model amb prefetch, mediana, estimació", full_en: "Rung 3: model hint with prefetch, median, estimate", s: 12.6},
+      {step_ca: "Lletra del model, 1 problema (mitjana)", step_en: "Letter model, 1 problem (mean)", full_ca: "Lletra del model, un problema, mitjana real a la placa, n=50", full_en: "Letter model, one problem, real mean on the board, n=50", s: 10.3},
+      {step_ca: "Extracció JSON d'un solver (màx.)", step_en: "Solver JSON extraction (max)", full_ca: "Extracció JSON d'un solver, màxim, estimació 12,6 a 15,9 s", full_en: "Solver JSON extraction, max, estimate 12.6 to 15.9 s", s: 15.9},
+      {step_ca: "Pitjor problema oficial (real)", step_en: "Worst official problem (real)", full_ca: "Pitjor problema de l'execució oficial a la placa, real, 562 problemes", full_en: "Worst problem of the official run on the board, real, 562 problems", s: 38.7, worst: true}]},
   hints: { src: "Hint ladder measurements (docs/results-A.md, data_curated/hint_quality.json): leaks on the 10 sample problems and the 66-problem validation batch, judged by code; the quality rows are a draft by the tool on 3 hints per language, marked in hint_quality.json for the team to redo",
     rows: [
       {m_ca: "Filtracions, prompt pla (10 problemes de mostra)", m_en: "Leaks, plain prompt (10 sample problems)", v: 5, of: 10, bad: true},
@@ -112,7 +112,7 @@ const DATA = {
       {s_ca: "sempre encerta", s_en: "always right", conv_ca: "sí", conv_en: "yes", band: "7-7", steps: 4, same: null, mastered: 8},
       {s_ca: "millora (+1 nivell cada 8)", s_en: "improving (+1 level / 8)", conv_ca: "segueix", conv_en: "follows", band: "6-7", steps: 32, same: 89, mastered: 5},
       {s_ca: "només amb pistes", s_en: "hints only", conv_ca: "topall", conv_en: "capped", band: "7-7", steps: 4, same: null, mastered: 0},
-      {s_ca: "a l'atzar 20% (3 rèpliques)", s_en: "random 20% (3 runs)", conv_ca: "no", conv_en: "no", band: "0-1", steps: null, same: 94, mastered: 0}]},
+      {s_ca: "a l'atzar 20% (3 rèpliques)", s_en: "random 20% (3 runs)", conv_ca: "no", conv_en: "no", band: "0-1", steps: null, same: "94-95", mastered: 0}]},
   retrieval: { src: "Retrieval and Catalan-bridge measurements (data branch): 20 neighbours judged by hand, 60 val ids queried in both languages, OCR coverage from prepare_m3kang.py",
     rows: [
       {m_ca: "El veí és més fàcil (judici manual)", m_en: "Neighbour is easier (hand judged)", v: 20, of: 20},
@@ -205,10 +205,13 @@ function hbars(box, rows, label, value, o) {
   const left = Math.min(o.left, w * 0.55), max = o.max || Math.max(...rows.map(value)) * 1.15;
   const x = v => left + (w - left - 56) * (v / max);
   const svg = el("svg", {viewBox: `0 0 ${w} ${hgt}`, role: "img"});
-  rows.forEach((r, i) => { const y = top + i * rowH;
-    svg.appendChild(el("text", {x: left - 8, y: y + 17, "text-anchor": "end"}, label(r)));
+  const maxChars = Math.max(10, Math.floor((left - 10) / 6.2));
+  rows.forEach((r, i) => { const y = top + i * rowH; const lab = label(r);
+    if (lab.length <= maxChars) svg.appendChild(el("text", {x: left - 8, y: y + 17, "text-anchor": "end"}, lab));
+    else { const cut = lab.lastIndexOf(" ", maxChars); const a = lab.slice(0, cut > 0 ? cut : maxChars), b = lab.slice(cut > 0 ? cut + 1 : maxChars, cut > 0 ? cut + 1 + maxChars : 2 * maxChars);
+      svg.appendChild(el("text", {x: left - 8, y: y + 11, "text-anchor": "end", style: "font-size:10px"}, a)); svg.appendChild(el("text", {x: left - 8, y: y + 22, "text-anchor": "end", style: "font-size:10px"}, b + (lab.length > a.length + 1 + b.length ? "…" : ""))); }
     const rect = el("rect", {x: x(0), y: y + 4, width: Math.max(0, x(value(r)) - x(0)), height: 18, rx: 2, style: "fill:" + o.color(r)});
-    svg.appendChild(rect); attachTip(box, rect, `${label(r)}: ${f1(value(r))}${o.unit}`);
+    svg.appendChild(rect); attachTip(box, rect, `${(o.full ? o.full(r) : null) || lab}: ${f1(value(r))}${o.unit}`);
     svg.appendChild(el("text", {x: x(value(r)) + 5, y: y + 17, class: "val"}, f1(value(r)) + o.unit)); });
   o.refs.forEach((rf, i) => { svg.appendChild(el("line", {x1: x(rf.v), x2: x(rf.v), y1: top, y2: hgt - 34, style: "stroke:var(--muted);stroke-dasharray:4 3"})); svg.appendChild(el("text", {x: x(rf.v) + (i % 2 ? 4 : -4), y: hgt - 20 + (i % 2) * 14, "text-anchor": i % 2 ? "start" : "end"}, rf.t)); });
   svg.setAttribute("aria-label", rows.map(r => `${label(r)} ${f1(value(r))}${o.unit}`).join("; "));
@@ -254,7 +257,7 @@ function render() {
   const tiles = document.getElementById("tiles"); tiles.replaceChildren();
   [[t("t1"), f1(val[2].acc) + "%", t("t1s")], [t("t2"), f1(val[0].acc) + "%", t("t2s")], [t("t3"), f1(g("board", 1).acc) + "%", t("t3s", {w: f1(worst)})], [t("t4"), free + " MB", t("t4s")]].forEach(([k, v, s]) => { const d = h("div", "tile"); d.appendChild(h("div", "k", k)); d.appendChild(h("div", "v", v)); d.appendChild(h("div", "s", s)); tiles.appendChild(d); });
   document.getElementById("panels").replaceChildren();
-  const polFn = box => { hbars(box, val, r => L(r, "policy"), r => r.acc, {max: 35, left: 230, unit: "%", refs: [{v: 20, t: t("floorRand")}, {v: 23.1, t: t("floorD")}], color: r => r.kind === "llm" ? "#8a8a8a" : r.kind === "floor" ? "#b0b0b0" : "var(--accent)"});
+  const polFn = box => { hbars(box, val, r => L(r, "policy"), r => r.acc, {max: 35, left: 230, unit: "%", refs: [{v: 20, t: t("floorRand")}, {v: 23.1, t: t("floorD")}], color: r => r.kind === "llm" ? "#8a8a8a" : r.kind === "floor" ? "#8a8a8a" : "var(--accent)"});
     const b2 = h("div", "chart"); b2.style.marginTop = "14px"; box.parentNode.insertBefore(b2, box.nextSibling); b2.insertAdjacentElement("beforebegin", h("p", "ql", t("q1b")));
     hbars(b2, DATA.confidence.rows, r => L(r, "q"), r => r.acc, {max: 35, left: 170, unit: "%", refs: [{v: 20, t: t("floorRand")}], color: r => r.acc < 20 ? "#c0392b" : "var(--accent)"}); };
   polFn.src = DATA.policies.src + "; " + DATA.confidence.src;
@@ -265,9 +268,9 @@ function render() {
   panel("q-solvers", 3, t("q3"), solFn, t("c3", {f: DATA.solvers.rows.reduce((a, r) => a + r.f, 0)}), t("d3"), "closed", left => left.appendChild(h("p", "src", t("s3"))));
   const hintFn = box => hbars(box, DATA.hints.rows, r => `${L(r, "m")} (${r.v}/${r.of})`, r => 100 * r.v / r.of, {max: 100, left: 330, unit: "%", color: r => r.bad ? "#c0392b" : "var(--accent)"}); hintFn.src = DATA.hints.src;
   const H = DATA.hints.rows; panel("q-hints", 4, t("q4"), hintFn, t("c4", {a: H[0].v, b: H[1].v, c: H[2].v, d: H[4].v}), t("d4"), "shipped");
-  const latFn = box => hbars(box, DATA.latency.rows, r => L(r, "step"), r => r.s, {max: 65, left: 320, unit: " s", refs: [{v: 60, t: t("limit")}], color: r => r.s > 30 ? "#8a5a00" : "var(--accent)"}); latFn.src = DATA.latency.src;
+  const latFn = box => hbars(box, DATA.latency.rows, r => L(r, "step"), r => r.s, {max: 65, left: 320, unit: " s", full: r => L(r, "full"), refs: [{v: 60, t: t("limit")}], color: r => r.s > 30 ? "#8a5a00" : "var(--accent)"}); latFn.src = DATA.latency.src;
   panel("q-latency", 5, t("q5"), latFn, t("c5", {a: f1(DATA.latency.rows[2].s)}), t("d5", {b: f1(worst)}), "shipped");
-  const trFn = box => box.replaceChildren(table([{h: t("thStu"), v: r => L(r, "s")}, {h: t("thConv"), v: r => L(r, "conv")}, {h: t("thBand"), v: r => r.band}, {h: t("thSteps"), v: r => r.steps, r: 1}, {h: t("thSame"), v: r => r.same == null ? null : r.same + "%", r: 1}, {h: t("thMast"), v: r => r.mastered, r: 1}], DATA.trainer.rows)); trFn.src = DATA.trainer.src;
+  const trFn = box => box.replaceChildren(table([{h: t("thStu"), v: r => L(r, "s")}, {h: t("thConv"), v: r => L(r, "conv")}, {h: t("thBand"), v: r => r.band}, {h: t("thSteps"), v: r => r.steps, r: 1}, {h: t("thSame"), v: r => r.same == null ? null : String(r.same) + "%", r: 1}, {h: t("thMast"), v: r => r.mastered, r: 1}], DATA.trainer.rows)); trFn.src = DATA.trainer.src;
   panel("q-trainer", 6, t("q6"), trFn, t("c6"), t("d6"), "open", left => left.appendChild(h("p", "src", t("s6"))));
   const R = DATA.retrieval.rows; const retFn = box => hbars(box, R, r => `${L(r, "m")} (${r.v}/${r.of})`, r => 100 * r.v / r.of, {max: 100, left: 330, unit: "%", color: r => r.cat ? "#7c5cff" : "var(--accent)"}); retFn.src = DATA.retrieval.src;
   panel("q-retrieval", 7, t("q7"), retFn, t("c7", {a: Math.round(100 * R[2].v / R[2].of), b: Math.round(100 * R[3].v / R[3].of)}), t("d7"), "shipped");
