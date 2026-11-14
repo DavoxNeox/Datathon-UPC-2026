@@ -363,15 +363,17 @@ function applyScan() {
   const key = cssVar("--bg");
   if (scan.tintKey !== key) {
     const fig = scan.figure || scan.whole;
-    scan.tinted = {figure: fig ? tinted(fig) : "", options: scan.options ? tinted(scan.options) : "", pieces: (scan.pieces || []).map(tinted), full: ""};
+    // the original scan (the link, or the fallback) is shown as it is, white paper included
+    scan.tinted = {figure: fig ? (scan.figure ? tinted(fig) : fig.toDataURL("image/png")) : "", options: scan.options ? tinted(scan.options) : "", pieces: (scan.pieces || []).map(tinted), full: ""};
     scan.tintKey = key;
   }
   const tt = scan.tinted || {figure: "", options: "", pieces: [], full: ""};
   $("fig-cap").hidden = !scan.whole;   // the whole scan stands in for a figure: say so
+  $("figure").classList.toggle("original", !!scan.whole);
   // the whole scan, one click away (not offered when the page already fell back to it)
   const canToggle = !!scan.full && !scan.whole;
   $("whole-toggle").hidden = !canToggle; $("whole-toggle").textContent = scan.showFull ? t().hide_scan : t().show_scan;
-  if (scan.showFull && canToggle && !tt.full) tt.full = tinted(scan.full);
+  if (scan.showFull && canToggle && !tt.full) tt.full = scan.full.toDataURL("image/png");
   $("whole").hidden = !(scan.showFull && canToggle); setSrc($("whole-img"), scan.showFull && canToggle ? tt.full : "");
   $("whole-img").alt = t().image;
   $("figure").hidden = !tt.figure; setSrc($("img"), tt.figure);

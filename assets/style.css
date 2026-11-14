@@ -85,6 +85,8 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
 .figure.zoomed img { height: auto !important; max-height: none; width: 100%; max-width: 760px; }
 .figure.strip { float: none; max-width: none; cursor: default; margin: 12px 0 0; display: flex; justify-content: center; }
 .figure figcaption { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; margin-top: 4px; }
+/* the original scan keeps its paper: a white card with soft corners */
+.figure.original img, .figure.whole img { background: #fff; padding: 8px; border-radius: 12px; box-sizing: border-box; }
 .figure { flex-direction: column; align-items: center; }
 .figure.strip img { max-height: 160px; }
 .letters.pics button { flex-direction: column; gap: 4px; min-height: 84px; padding: 8px 6px; position: relative; }

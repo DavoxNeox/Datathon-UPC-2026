@@ -421,3 +421,13 @@ options if they are clean and have no words (numbers, fractions, units: "110", "
 "3√2 cm"). Over the whole bank, 1688 problem versions lack clean options and 110 of them are
 rescued this way; the rest keep their options cut from the scan, because there is no text to
 show. `lvl-7_2008_3` in Catalan now shows 110 / 121 / 115,5 / 119 / 242 as text.
+
+### Eleventh round: the original scan keeps its paper
+
+The original scan (the "veure l'escaneig original" link, and the fallback when nothing could
+be cut) is shown as it is, white paper included, on a white card with soft corners; only the
+cuts (figure, option strip, pieces) are tinted and transparent.
+
+Problems the page can serve today (the trainer's bank, `data/train.jsonl` and `data/val.jsonl`):
+1747 problems, each in Catalan and English (3494 versions): 1466 from train and 281 from val;
+by level 0 to 7: 142, 106, 146, 123, 339, 296, 305, 290.
