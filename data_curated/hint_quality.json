@@ -1,0 +1,43 @@
+{
+ "topics": {
+  "arithmetic": {
+   "judgements": [
+    {
+     "id": "sample-1",
+     "verdict": "bad",
+     "verdict_en": "good",
+     "reason": "ca: paraula inventada \"manys\"; en: pregunta pel total, bona"
+    },
+    {
+     "id": "sample-2",
+     "verdict": "bad",
+     "verdict_en": "bad",
+     "reason": "ca: \"adició\" i vaga; en: pregunta genèrica"
+    }
+   ],
+   "n": 2,
+   "good": 0,
+   "good_en": 1,
+   "percent": 0.0,
+   "percent_en": 50.0
+  },
+  "areas": {
+   "judgements": [
+    {
+     "id": "sample-3",
+     "verdict": "bad",
+     "verdict_en": "good",
+     "reason": "ca: \"quadra\", \"ument\" (fuig de la gramàtica); en: pregunta pel costat, bona"
+    }
+   ],
+   "n": 1,
+   "good": 0,
+   "good_en": 1,
+   "percent": 0.0,
+   "percent_en": 100.0
+  }
+ },
+ "judge": "D draft (Claude, 2026-11-14) - the team must redo it",
+ "min_percent": 70.0,
+ "updated": "2026-11-14"
+}

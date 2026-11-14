@@ -122,8 +122,12 @@ def strategies(topic):
     return _strategies.get(topic) or _strategies.get("arithmetic") or []
 
 
-def quality(topic):
-    """Judged quality (0..100) of LLM hints for a topic, or None when not judged yet."""
+def quality(topic, lang="cat"):
+    """Judged quality (0..100) of the LLM hints of a topic in `lang`, or None when not judged yet.
+
+    data_curated/hint_quality.json keeps `percent` for the Catalan hint (what the student sees
+    by default) and `percent_en` for the English one, from laptop/judge_hints.py.
+    """
     global _quality
     if _quality is None:
         _quality = {}
@@ -131,11 +135,14 @@ def quality(topic):
             with open(QUALITY_FILE, encoding="utf-8") as f:
                 _quality = json.load(f).get("topics", {})
     row = _quality.get(topic)
-    return None if not row or not row.get("n") else float(row.get("percent", 0))
+    if not row or not row.get("n"):
+        return None
+    key = "percent_en" if lang == "eng" else "percent"
+    return float(row.get(key, row.get("percent", 0)))
 
 
-def llm_allowed(topic):
-    q = quality(topic)
+def llm_allowed(topic, lang="cat"):
+    q = quality(topic, lang)
     return q is not None and q >= QUALITY_MIN
 
 
@@ -209,7 +216,7 @@ def _rung3(problem, state, lang):
                 state["trace_step"] = i + 1
                 return {"kind": "trace", "text_ca": text_ca, "text_en": text_en}
             state["trace_step"] = shown  # skip the rest of the trace
-    if llm_allowed(_topic_of(problem)):
+    if llm_allowed(_topic_of(problem), lang):
         result = _prefetched(state) or llm_hint(problem, lang)
         if result.get("ok"):
             return {"kind": "llm", "text_ca": result["text_ca"], "text_en": result["text_en"],
@@ -341,7 +348,7 @@ def prefetch(problem_id, lang="cat"):
     HINT_PREFETCH=warm reads the prompt into the cache; full (default) also writes the hint."""
     reset(problem_id)
     problem = problem_for(problem_id, lang)
-    if PREFETCH == "off" or problem is None or not llm_allowed(_topic_of(problem)):
+    if PREFETCH == "off" or problem is None or not llm_allowed(_topic_of(problem), lang):
         return None
     target = _prefetch_full if PREFETCH == "full" else warm
     thread = threading.Thread(target=target, args=(problem_id, lang), daemon=True)
