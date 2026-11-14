@@ -43,7 +43,7 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
     start = time.perf_counter()
     clock = Clock()
     result = {"answer": FALLBACK, "status": "ok", "prompt_tokens": 0, "retrieved": "", "examples": [],
-              "board_seconds": 0.0, "raw_letter": "", "margin": None, "family": ""}
+              "board_seconds": 0.0, "raw_letter": "", "margin": None, "family": "", "letter_logprobs": None}
     try:
         if USE_SOLVERS and image_b64 is None:
             solved = solvers.solve(problem)
@@ -62,11 +62,16 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
             result["retrieved"] = ";".join(f"{p['id']}:{s:.2f}" for s, p in hits)
             clock.add_embeddings(1)  # the query is embedded once
         remaining = time_limit - (time.perf_counter() - start) - MARGIN
-        if BIAS is not None and image_b64 is None:
+        if image_b64 is None:
+            # Always ask for the five letters' log probabilities: same request, same single
+            # token, no extra cost, and eval.py keeps them for offline analysis.
             raw, scores, timings = letter_scores(problem, examples, timeout=max(remaining, 1.0), url=llm_url)
-            letter, margin = bias.choose(scores, BIAS["prior"], BIAS["alpha"], BIAS["min_margin"], BIAS["fallback"])
             result["raw_letter"] = raw
-            result["margin"] = round(margin, 3)
+            result["letter_logprobs"] = {l: round(v, 4) for l, v in scores.items()}
+            letter = raw
+            if BIAS is not None:
+                letter, margin = bias.choose(scores, BIAS["prior"], BIAS["alpha"], BIAS["min_margin"], BIAS["fallback"])
+                result["margin"] = round(margin, 3)
         else:
             letter, timings = answer_letter(problem, examples, timeout=max(remaining, 1.0),
                                             image_b64=image_b64, url=llm_url)
