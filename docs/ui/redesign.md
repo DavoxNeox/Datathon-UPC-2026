@@ -526,3 +526,7 @@ fetched) and a table of advanced statistics with a "how" column. References 18 t
   "little data".
 - Layout: cards of at least 440 px so the 520 px charts draw close to 1:1; one column on a phone,
   the tables scroll sideways; the bar keeps the student page and the decision dashboard links.
+- **Tooltips.** Every chart has a tooltip drawn by the page (one `.tip` per card, dark on the
+  page's background): bars, pips, segments and days carry a `data-tip`, and the trend chart
+  answers to the cursor anywhere over it with the nearest answer (a dotted guide marks it) and
+  the rolling accuracy at that point. No `title` attributes, so the text appears at once.
