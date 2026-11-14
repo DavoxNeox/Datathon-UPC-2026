@@ -195,6 +195,143 @@ class Rung0Test(unittest.TestCase):
         self.assertEqual(hints.other_language("eng"), "cat")
 
 
+class DemoSetTest(unittest.TestCase):
+    """Hand-written steps from data_curated/demo_set.json come first on rung 3, never the last one."""
+
+    STEPS = [{"text_ca": "Pensa en el pitjor cas.", "text_en": "Think of the worst case."},
+             {"text_ca": "Compta les que no valen.", "text_en": "Count the ones that do not count."},
+             {"text_ca": "Suma'n una més.", "text_en": "Add one more."},
+             {"text_ca": "Són 9 cromos: opció C.", "text_en": "That is 9 cards: option C."}]
+
+    def use_file(self, content):
+        import json, os, tempfile
+        self.tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+        if content is not None:
+            self.tmp.write(content if isinstance(content, str) else json.dumps(content))
+        self.tmp.close()
+        self.addCleanup(lambda: os.path.exists(self.tmp.name) and os.unlink(self.tmp.name))
+        patch = mock.patch.object(hints, "DEMO_SET_FILE", self.tmp.name)
+        patch.start()
+        self.addCleanup(patch.stop)
+        hints._demo_set = None
+        self.addCleanup(setattr, hints, "_demo_set", None)
+        hints.reset("sample-4")
+
+    def test_steps_in_order_never_the_last_then_strategy(self):
+        self.use_file({"problems": [{"id": "sample-4", "steps": self.STEPS}]})
+        got = [hints.get_hint("sample-4", 3, "cat") for _ in range(5)]
+        self.assertEqual([h["kind"] for h in got[:3]], ["demo_steps"] * 3)
+        self.assertEqual(got[0]["text_ca"], "Pas 1 de 3: Pensa en el pitjor cas.")
+        self.assertEqual(got[1]["text_en"], "Step 2 of 3: Count the ones that do not count.")
+        self.assertEqual(got[2]["text_ca"], "Pas 3 de 3: Suma'n una més.")
+        self.assertEqual((got[0]["step"], got[0]["steps_total"]), (1, 3))
+        for h in got:
+            self.assertNotIn("9 cromos", h["text_ca"] + h["text_en"])
+        # steps exhausted: sample-4 has no solver trace and its topic is not validated -> a strategy card
+        self.assertEqual(got[3]["kind"], "strategy")
+        self.assertEqual(got[4]["kind"], "strategy")
+
+    def test_rung4_shows_the_last_step_with_letter_and_value(self):
+        self.use_file({"problems": [{"id": "sample-4", "steps": self.STEPS}]})
+        h = hints.get_hint("sample-4", 4, "cat")
+        self.assertEqual(h["kind"], "solution")
+        self.assertEqual(h["source"], "demo_set")
+        self.assertEqual((h["label"], h["value"]), ("C", "9"))
+        self.assertEqual(len(h["trace"]), 4)
+        self.assertTrue(h["text_ca"].startswith("Solució: opció C (9)."))
+        self.assertIn("Són 9 cromos: opció C.", h["text_ca"])
+
+    def test_prefetch_restarts_the_steps(self):
+        self.use_file({"problems": [{"id": "sample-4", "steps": self.STEPS}]})
+        hints.get_hint("sample-4", 3, "cat")
+        hints.prefetch("sample-4", "cat")
+        self.assertEqual(hints.get_hint("sample-4", 3, "cat")["step"], 1)
+
+    def test_missing_empty_or_broken_file_means_no_demo_steps(self):
+        import os
+        for content in (None, "", "{not json", {"problems": []}, {"problems": [{"id": "sample-4", "steps": []}]}):
+            self.use_file(content)
+            if content is None:
+                os.unlink(self.tmp.name)
+            self.assertIsNone(hints.demo_steps("sample-4"))
+            self.assertEqual(hints.get_hint("sample-4", 3, "cat")["kind"], "strategy")
+
+    def test_one_step_only_is_the_solution_and_never_a_hint(self):
+        self.use_file({"problems": [{"id": "sample-4", "steps": self.STEPS[-1:]}]})
+        self.assertEqual(hints.get_hint("sample-4", 3, "cat")["kind"], "strategy")
+        self.assertIn("Són 9 cromos", hints.get_hint("sample-4", 4, "cat")["text_ca"])
+
+    def test_other_problems_are_not_affected(self):
+        self.use_file({"problems": [{"id": "sample-4", "steps": self.STEPS}]})
+        hints.reset("sample-1")
+        self.assertEqual(hints.get_hint("sample-1", 3, "cat")["kind"], "trace")
+
+
+class LessonTest(unittest.TestCase):
+    """get_lesson: the fourth hint, by solver family, else by topic, always through the leak filter."""
+
+    LESSONS = {"lessons": [
+        {"key": "arithmetic", "family": "sharing", "title_ca": "Repartir", "title_en": "Sharing",
+         "text_ca": "Quan es reparteix, pensa primer en el total i després en les parts.",
+         "text_en": "When sharing, think of the total first and then of the parts.", "strategy_ref": 1},
+        {"key": "arithmetic", "title_ca": "Problemes de paraules", "title_en": "Word problems",
+         "text_ca": "Tradueix cada frase a una operació abans de calcular res.",
+         "text_en": "Turn each sentence into an operation before computing anything."},
+        {"key": "areas", "title_ca": "Àrees", "title_en": "Areas", "text_ca": "Talla la figura.", "text_en": "Cut the figure."},
+    ]}
+
+    def use_lessons(self, content, families=None):
+        import json, os, tempfile
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+        if content is not None:
+            tmp.write(content if isinstance(content, str) else json.dumps(content))
+        tmp.close()
+        if content is None:
+            os.unlink(tmp.name)
+        self.addCleanup(lambda: os.path.exists(tmp.name) and os.unlink(tmp.name))
+        for name, value in (("LESSONS_FILE", tmp.name), ("_lessons", None), ("_families", families or {})):
+            patch = mock.patch.object(hints, name, value)
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def test_lesson_of_the_family_comes_first(self):
+        self.use_lessons(self.LESSONS, {"sample-4": "sharing"})
+        lesson = hints.get_lesson("sample-4", "cat")
+        self.assertEqual(lesson["kind"], "lesson")
+        self.assertEqual(lesson["rung"], "lesson")
+        self.assertEqual(lesson["family"], "sharing")
+        self.assertEqual(lesson["title_ca"], "Repartir")
+        self.assertEqual(lesson["strategy_ref"], 1)
+        self.assertEqual(lesson["estimated_board_seconds"], 0.0)
+
+    def test_lesson_of_the_topic_when_the_problem_has_no_family(self):
+        self.use_lessons(self.LESSONS, {})
+        lesson = hints.get_lesson("sample-4", "cat")   # arithmetic
+        self.assertIsNone(lesson["family"])
+        self.assertEqual(lesson["title_en"], "Word problems")
+        self.assertEqual(hints.get_lesson("sample-3", "eng")["key"], "areas")
+
+    def test_no_lesson_for_an_unknown_topic_or_missing_file(self):
+        self.use_lessons({"lessons": [{"key": "boards", "text_ca": "x", "text_en": "x"}]})
+        self.assertIsNone(hints.get_lesson("sample-4", "cat"))
+        self.use_lessons(None)
+        self.assertIsNone(hints.get_lesson("sample-4", "cat"))
+        self.use_lessons("{broken")
+        self.assertIsNone(hints.get_lesson("sample-4", "cat"))
+
+    def test_a_leaking_lesson_is_skipped_for_the_next_candidate_or_none(self):
+        leaking = dict(self.LESSONS["lessons"][0], text_ca="En Pau es queda amb 9 cromos.", text_en="Pau keeps 9 cards.")
+        self.use_lessons({"lessons": [leaking, self.LESSONS["lessons"][1]]}, {"sample-4": "sharing"})
+        lesson = hints.get_lesson("sample-4", "cat")   # sample-4: C = 9
+        self.assertEqual(lesson["title_en"], "Word problems")
+        self.use_lessons({"lessons": [leaking]}, {"sample-4": "sharing"})
+        self.assertIsNone(hints.get_lesson("sample-4", "cat"))
+
+    def test_families_file_is_read_once_and_tolerated(self):
+        with mock.patch.object(hints, "FAMILIES_FILE", "/nonexistent/families.json"), mock.patch.object(hints, "_families", None):
+            self.assertIsNone(hints.family_of("sample-4"))
+
+
 class LlmHintTest(unittest.TestCase):
     """llm_hint with a fake server: the leak filter and the retry, no network."""
 

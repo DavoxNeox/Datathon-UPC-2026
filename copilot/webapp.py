@@ -31,6 +31,9 @@ def _empty_counts():
 
 
 HINT_MAX_USES = int(CONFIG.get("HINT_MAX_USES", 3))  # hint-button uses per problem; rung 0 and the solution do not count
+# The last allowed press gives a short lesson (hints.get_lesson) instead of another hint
+HINT_LESSON_ON_LAST = str(CONFIG.get("HINT_LESSON_ON_LAST", "1")).strip().lower() in ("1", "true", "yes", "on")
+LESSON_RUNG = 3  # what the lesson counts as for mastery (record_answer)
 
 
 class Rung0Stats:
@@ -354,8 +357,13 @@ class Session:
                                 "en": f"You have used the {HINT_MAX_USES} hints for this problem. Give it a try, or ask for the solution."}
                 return {"error": "no hints left", "hints_left": 0}
             self.hint_uses += 1
-            rung = min(3, self.rung + 1)
             self.busy = True
+            if HINT_LESSON_ON_LAST and self.hint_uses == HINT_MAX_USES:
+                # the fourth hint: a short lesson on this kind of problem, not another step
+                self.message = {"ca": "Preparant una petita lliçó…", "en": "Preparing a short lesson…"}
+                threading.Thread(target=self._compute_hint, args=("lesson",), daemon=True).start()
+                return {"ok": True, "busy": True, "rung": "lesson"}
+            rung = min(3, self.rung + 1)
             self.message = {"ca": "Preparant una pista…", "en": "Thinking of a hint…"}
         threading.Thread(target=self._compute_hint, args=(rung,), daemon=True).start()
         return {"ok": True, "busy": True, "rung": rung}
@@ -369,7 +377,27 @@ class Session:
         threading.Thread(target=self._compute_hint, args=(4,), daemon=True).start()
         return {"ok": True, "busy": True, "rung": 4}
 
+    def _compute_lesson(self):
+        """The last allowed press: hints.get_lesson, or a strategy card when there is no lesson.
+        Either way it counts as rung 3 for mastery."""
+        started = time.perf_counter()
+        problem_id = self.problem["id"]
+        try:
+            result = hints.get_lesson(problem_id, self.lang)
+            if result is None:
+                result = hints.get_hint(problem_id, 2, self.lang)  # a strategy card
+                result["rung"] = "lesson"
+                result["fallback"] = "no lesson"
+        except Exception as error:
+            result = {"rung": "lesson", "kind": "strategy", "estimated_board_seconds": 0.0,
+                      "text_ca": "Ara no puc preparar la lliçó. Torna-ho a provar.", "text_en": "I could not prepare the lesson.",
+                      "error": f"{type(error).__name__}: {error}"}
+        self._finish_hint(result, LESSON_RUNG, started, "lesson", problem_id)
+
     def _compute_hint(self, rung):
+        """Runs in a thread: one rung of the ladder, or the lesson when rung == "lesson"."""
+        if rung == "lesson":
+            return self._compute_lesson()
         started = time.perf_counter()
         problem_id = self.problem["id"]
         try:
@@ -378,6 +406,10 @@ class Session:
             result = {"rung": rung, "kind": "strategy", "estimated_board_seconds": 0.0,
                       "text_ca": "Ara no puc preparar cap pista. Torna-ho a provar.", "text_en": "I could not prepare the hint.",
                       "error": f"{type(error).__name__}: {error}"}
+        self._finish_hint(result, rung, started, f"hint{rung}", problem_id)
+
+    def _finish_hint(self, result, rung, started, label, problem_id):
+        """Store a hint computed in a thread, unless the problem changed meanwhile."""
         laptop_s = time.perf_counter() - started
         if result.get("kind") == "neighbour" and result.get("problem"):
             image = result["problem"].get("image")
@@ -390,7 +422,7 @@ class Session:
                 self.rung = max(self.rung, rung)
                 self.message = {"ca": "", "en": ""}
             self.busy = False
-            self._record(f"hint{rung}:{result.get('kind')}", started, result.get("estimated_board_seconds", 0.0))
+            self._record(f"{label}:{result.get('kind')}", started, result.get("estimated_board_seconds", 0.0))
 
     def image(self):
         """The current problem's picture as base64 PNG, or {} when there is none."""

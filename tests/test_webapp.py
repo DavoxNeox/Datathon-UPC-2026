@@ -240,6 +240,72 @@ class Rung0StatsTest(unittest.TestCase):
         self.assertEqual(stats.report()["students_using"], 1)
 
 
+class LessonOnLastPressTest(unittest.TestCase):
+    """The last allowed press of the hint button gives a lesson that counts as rung 3."""
+
+    LESSON = {"kind": "lesson", "rung": "lesson", "key": "arithmetic", "family": None, "title_ca": "T", "title_en": "T",
+              "text_ca": "Pensa abans de calcular.", "text_en": "Think before computing.", "strategy_ref": None,
+              "estimated_board_seconds": 0.0}
+
+    def setUp(self):
+        self.s = webapp.Session()
+        quiet(self.s.start, "lesson-test", "auto")
+        for name, value in (("HINT_MAX_USES", 4), ("HINT_LESSON_ON_LAST", True)):
+            patch = mock.patch.object(webapp, name, value)
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def press(self):
+        import time
+        r = quiet(self.s.hint)
+        for _ in range(200):
+            if not self.s.state()["busy"]:
+                break
+            time.sleep(0.01)
+        return r
+
+    def test_fourth_press_is_the_lesson_and_the_fifth_is_refused(self):
+        with mock.patch.object(webapp.hints, "get_lesson", return_value=dict(self.LESSON)) as lesson:
+            results = [self.press() for _ in range(4)]
+            fifth = quiet(self.s.hint)
+        self.assertEqual(results[3]["rung"], "lesson")
+        lesson.assert_called_once_with(self.s.problem["id"], "cat")
+        kinds = [h["kind"] for h in self.s.state()["hints"]]
+        self.assertEqual(len(kinds), 4)
+        self.assertEqual(kinds[-1], "lesson")
+        self.assertEqual(self.s.state()["hints"][-1]["rung"], "lesson")
+        self.assertEqual(self.s.state()["hints_left"], 0)
+        self.assertEqual(fifth["error"], "no hints left")
+        self.assertEqual(self.s.rung, 3)
+
+    def test_record_answer_receives_rung_3_after_the_lesson(self):
+        with mock.patch.object(webapp, "HINT_MAX_USES", 1), mock.patch.object(webapp.hints, "get_lesson", return_value=dict(self.LESSON)):
+            self.press()  # the only press: straight to the lesson
+        self.assertEqual([h["kind"] for h in self.s.state()["hints"]], ["lesson"])
+        fake_trainer = mock.MagicMock(wraps=webapp.trainer)
+        with mock.patch.object(webapp, "trainer", fake_trainer):
+            quiet(self.s.answer_letter, "A")
+        self.assertEqual(fake_trainer.record_answer.call_args[0][3], 3)
+        self.s._timer.cancel()
+
+    def test_without_a_lesson_the_last_press_gives_a_strategy_card(self):
+        with mock.patch.object(webapp.hints, "get_lesson", return_value=None):
+            for _ in range(4):
+                self.press()
+        last = self.s.state()["hints"][-1]
+        self.assertEqual(last["kind"], "strategy")
+        self.assertEqual(last["rung"], "lesson")
+        self.assertEqual(last["fallback"], "no lesson")
+        self.assertEqual(self.s.state()["hints_left"], 0)
+
+    def test_lesson_off_keeps_climbing(self):
+        with mock.patch.object(webapp, "HINT_LESSON_ON_LAST", False), mock.patch.object(webapp.hints, "get_lesson") as lesson:
+            for _ in range(4):
+                self.press()
+        lesson.assert_not_called()
+        self.assertNotIn("lesson", [h["kind"] for h in self.s.state()["hints"]])
+
+
 class TeacherReportTest(unittest.TestCase):
     def test_trainer_list_shape_is_normalised_for_the_page(self):
         data = {"topics": [], "students": [

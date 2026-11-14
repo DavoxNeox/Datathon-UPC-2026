@@ -33,6 +33,11 @@ from .config import CONFIG, ROOT
 from .leak_filter import leak_reason
 
 STRATEGIES_FILE = os.path.join(ROOT, "data_curated", "strategies.json")
+# Problems the team explains by hand for the demo: steps[] per id, the last step is the solution
+DEMO_SET_FILE = os.path.join(ROOT, "data_curated", "demo_set.json")
+# The fourth hint: a short lesson per solver family or topic, and the id -> family table
+LESSONS_FILE = os.path.join(ROOT, "data_curated", "lessons.json")
+FAMILIES_FILE = os.path.join(ROOT, "data_curated", "families.json")
 QUALITY_FILE = os.path.join(ROOT, "data_curated", "hint_quality.json")
 IMAGES_DIR = os.path.join(ROOT, "data", "images")
 # Where problems are looked up by id: the shared splits when linked, else the samples
@@ -74,6 +79,9 @@ _loaded = False
 _state = {}             # problem_id -> {"strategy": int, "trace_step": int, "solved": ..., "llm": {...}}
 _strategies = None
 _quality = None
+_demo_set = None        # {id: [steps]} from DEMO_SET_FILE, loaded once
+_lessons = None         # [lesson dicts] from LESSONS_FILE, loaded once
+_families = None        # {id: family key} from FAMILIES_FILE, loaded once
 
 
 # ---------------------------------------------------------------- problems by id
@@ -154,7 +162,7 @@ def reset(problem_id):
 
 def _st(problem_id):
     with _lock:
-        return _state.setdefault(problem_id, {"strategy": 0, "trace_step": 0, "solved": "?", "llm": {}})
+        return _state.setdefault(problem_id, {"strategy": 0, "trace_step": 0, "demo_step": 0, "solved": "?", "llm": {}})
 
 
 def _topic_of(problem):
@@ -169,6 +177,84 @@ def strategies(topic):
         with open(STRATEGIES_FILE, encoding="utf-8") as f:
             _strategies = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
     return _strategies.get(topic) or _strategies.get("arithmetic") or []
+
+
+def demo_steps(problem_id):
+    """The hand-written steps of a demo problem (data_curated/demo_set.json), or None.
+
+    Each step has text_ca and text_en; the LAST one states the solution and only rung 4 shows it.
+    A missing, empty or broken file means no demo problems, never an error.
+    """
+    global _demo_set
+    if _demo_set is None:
+        table = {}
+        try:
+            with open(DEMO_SET_FILE, encoding="utf-8") as f:
+                data = json.load(f)
+            for entry in data.get("problems", []) if isinstance(data, dict) else []:
+                steps = [st for st in entry.get("steps", []) if isinstance(st, dict) and (st.get("text_ca") or st.get("text_en"))]
+                if entry.get("id") and steps:
+                    table[entry["id"]] = steps
+        except (OSError, ValueError):
+            pass
+        _demo_set = table
+    return _demo_set.get(problem_id)
+
+
+def _load_json(path, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def family_of(problem_id):
+    """The solver family of a problem from data_curated/families.json, or None."""
+    global _families
+    if _families is None:
+        data = _load_json(FAMILIES_FILE, {})
+        table = data.get("families", data) if isinstance(data, dict) else {}
+        _families = {k: v for k, v in table.items() if isinstance(v, str)} if isinstance(table, dict) else {}
+    return _families.get(problem_id)
+
+
+def _lesson_list():
+    global _lessons
+    if _lessons is None:
+        data = _load_json(LESSONS_FILE, {})
+        rows = data.get("lessons", []) if isinstance(data, dict) else data
+        _lessons = [r for r in (rows or []) if isinstance(r, dict) and (r.get("text_ca") or r.get("text_en"))]
+    return _lessons
+
+
+def get_lesson(problem_id, lang="cat"):
+    """The fourth hint: a short lesson on how to think about this kind of problem, no formula and
+    no solving. From data_curated/lessons.json: the lesson of the problem's solver family when
+    there is one, else the lesson of its topic. Every text goes through the leak filter against
+    this problem. None when the file is missing or nothing fits (the page then shows a strategy).
+    """
+    lessons = _lesson_list()
+    if not lessons:
+        return None
+    problem = problem_for(problem_id, lang) or {"id": problem_id}
+    topic = _topic_of(problem)
+    family = family_of(problem_id)
+    by_family = [r for r in lessons if family and r.get("family") == family]
+    by_topic = [r for r in lessons if r.get("key") == topic and not r.get("family")]
+    any_topic = [r for r in lessons if r.get("key") == topic and r not in by_topic]
+    label, options = problem.get("label"), problem.get("options") or {}
+    for row in by_family + by_topic + any_topic:
+        texts = [row.get("title_ca", ""), row.get("title_en", ""), row.get("text_ca", ""), row.get("text_en", "")]
+        if label and any(leak_reason(t, label, options) for t in texts if t):
+            continue
+        return {"kind": "lesson", "rung": "lesson", "key": row.get("key", topic), "family": row.get("family"),
+                "title_ca": row.get("title_ca") or row.get("title_en") or "",
+                "title_en": row.get("title_en") or row.get("title_ca") or "",
+                "text_ca": row.get("text_ca") or row.get("text_en") or "",
+                "text_en": row.get("text_en") or row.get("text_ca") or "",
+                "strategy_ref": row.get("strategy_ref"), "estimated_board_seconds": 0.0}
+    return None
 
 
 def quality(topic, lang="cat"):
@@ -259,6 +345,15 @@ def _step_text(step, i, n, lang_key):
 
 
 def _rung3(problem, state, lang):
+    # (0) the team's hand-written steps for the demo problems, one per request, never the last
+    steps = demo_steps(problem["id"])
+    if steps and len(steps) >= 2 and state["demo_step"] < len(steps) - 1:
+        i = state["demo_step"]
+        state["demo_step"] = i + 1
+        shown = len(steps) - 1
+        return {"kind": "demo_steps", "step": i + 1, "steps_total": shown,
+                "text_ca": _step_text(steps[i], i + 1, shown, "text_ca"),
+                "text_en": _step_text(steps[i], i + 1, shown, "text_en")}
     solved = _solved(problem, state)
     label, options = problem.get("label"), problem.get("options") or {}
     if solved and len(solved.get("trace") or []) >= 2:
@@ -292,11 +387,14 @@ def _rung4(problem, state):
     value = (problem.get("options") or {}).get(label) or (solved or {}).get("value") or ""
     head_ca = f"Solució: opció {label}" + (f" ({value})" if value else "") + "."
     head_en = f"Solution: option {label}" + (f" ({value})" if value else "") + "."
-    trace = (solved or {}).get("trace") or []
-    text_ca = head_ca + "".join(" " + s["text_ca"] for s in trace)
-    text_en = head_en + "".join(" " + s["text_en"] for s in trace)
-    return {"kind": "solution", "label": label, "value": value,
-            "trace": [{"text_ca": s["text_ca"], "text_en": s["text_en"]} for s in trace],
+    steps = demo_steps(problem["id"])
+    source = "demo_set" if steps else ("solver" if solved else None)
+    trace = steps or (solved or {}).get("trace") or []
+    text_ca = head_ca + "".join(" " + (s.get("text_ca") or s.get("text_en") or "") for s in trace)
+    text_en = head_en + "".join(" " + (s.get("text_en") or s.get("text_ca") or "") for s in trace)
+    return {"kind": "solution", "label": label, "value": value, "source": source,
+            "trace": [{"text_ca": s.get("text_ca") or s.get("text_en") or "",
+                       "text_en": s.get("text_en") or s.get("text_ca") or ""} for s in trace],
             "text_ca": text_ca, "text_en": text_en}
 
 
