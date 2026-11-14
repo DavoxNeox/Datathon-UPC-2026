@@ -24,7 +24,7 @@ const I18N = {
         theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"}, no_hints: "Ja no queden pistes en aquest problema",
         read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
         other_kind: {eng: "En anglès · no compta com a pista", cat: "En català · no compta com a pista"},
-        show_scan: "Mostra l'escaneig sencer", hide_scan: "Amaga l'escaneig",
+        show_scan: "veure l'escaneig original", hide_scan: "amagar l'escaneig", original_scan: "Escaneig original",
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", hint: "Hint",
         solution: "Solution", next: "Continue", mastery: "Your progress", close: "Close",
@@ -41,7 +41,7 @@ const I18N = {
         theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"}, no_hints: "No hints left on this problem",
         read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
         other_kind: {eng: "In English · not counted as a hint", cat: "In Catalan · not counted as a hint"},
-        show_scan: "Show the whole scan", hide_scan: "Hide the scan",
+        show_scan: "see the original scan", hide_scan: "hide the scan", original_scan: "Original scan",
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
 const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
@@ -127,7 +127,8 @@ function drawLed(frame) {
 const CELL = 2, HGAP = 10;   // cells per step, cells of blank bridged inside a line of text
 // letters, digits, punctuation and the maths the OCR writes (×, √, π, powers, ≤, ∞, braces); shapes such as △ ○ □ are not text
 const CLEAN = /^[\p{L}\p{N}\s.,:;%°€$'"\/+\-=<>!?…×√·—–{}∞≤≥÷*′″＇（）#^_|\[\]~±≠≈π∈→]+$/u;
-const optionsClean = o => Object.keys(o || {}).length >= 2 && Object.values(o).every(v => v.trim() && CLEAN.test(v));
+const NOISY = /\d\s+\d|\p{L}\d\s*$|[²³]\d/u;   // "2 11 cm2", "3cm2", "4cm²2": the OCR stumbled on a fraction or a power
+const optionsClean = o => Object.keys(o || {}).length >= 2 && Object.values(o).every(v => v.trim() && CLEAN.test(v) && !NOISY.test(v));
 // two habits of the OCR on these scans: a V for a root sign, and a stray letter of the next option at the end
 const tidyOption = v => String(v).replace(/V(?=\s?\d)/g, "√").replace(/^(.*\d.*?)\s+[A-E]$/, "$1").trim();
 
@@ -204,8 +205,15 @@ function classifyParts(comps, W, H, clean, ink, cw, ch) {
     return merged.length >= 3 && merged[merged.length - 1].x1 - merged[0].x0 >= 0.4 * W;
   };
   const opt = new Set(), pieces = [];   // the options one by one, in reading order, for the buttons
-  for (const b of bands.filter(isOptions).sort((a, b) => a.y0 - b.y0)) {
+  const optBands = bands.filter(isOptions).sort((a, b) => a.y0 - b.y0);
+  for (const b of optBands) {
     b.items.forEach(c => opt.add(c));
+    // a numerator, a superscript or a unit that the band missed: anything small whose middle lies on the row
+    for (const c of comps) {
+      if (opt.has(c) || c.w >= 0.3 * W || c.h >= 3 * lineH) continue;
+      const mid = (c.y0 + c.y1) / 2;
+      if (mid >= b.y0 - 0.6 * lineH && mid <= b.y1 + 0.6 * lineH && c.x0 >= b.items[0].x0 - 2 * lineH) { b.items.push(c); opt.add(c); b.y0 = Math.min(b.y0, c.y0); b.y1 = Math.max(b.y1, c.y1); }
+    }
     const merged = [];
     for (const c of [...b.items].sort((a, b) => a.x0 - b.x0)) {
       if (merged.length && c.x0 - merged[merged.length - 1].x1 < 1.2 * lineH) merged[merged.length - 1].x1 = Math.max(merged[merged.length - 1].x1, c.x1);
@@ -289,6 +297,22 @@ function cropPart(img, box, masks) {
 // a saturated colour keeps its hue (lightened in the dark theme).
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const COLOUR_WORDS = /\b(negr[ea]s?|blan[cq]u?[ae]?s?|gris(os|a|es)?|fosc[sa]?|fosques|clar[sa]?|ombrejad[ae]s?|ombrejat|pintad[ae]s?|black|white|gr[ae]y|dark|light|shaded|painted)\b/i;
+// A figure with filled areas cannot be turned into light ink on a dark page: "the black square" would read
+// white. Interior pixels (dark with dark neighbours 3 px away in every direction) tell fills from lines.
+function hasFills(raw) {
+  const w = raw.width, h = raw.height, d = raw.getContext("2d").getImageData(0, 0, w, h).data;
+  const dark = (x, y) => { const i = 4 * (y * w + x); return Math.min(d[i], d[i + 1], d[i + 2]) < 110; };
+  let interior = 0, total = 0;
+  for (let y = 4; y < h - 4; y += 2) for (let x = 4; x < w - 4; x += 2) {
+    total++;
+    if (dark(x, y) && dark(x - 3, y) && dark(x + 3, y) && dark(x, y - 3) && dark(x, y + 3)) interior++;
+  }
+  return total > 0 && interior / total > 0.004;
+}
+function isDarkTheme() { const [br, bg, bb] = hexRgb(cssVar("--bg") || "#ffffff"); return br * 299 + bg * 587 + bb * 114 < 128000; }
+// the figure as it is, on a white card (the dark theme's safe route for fills and colour questions)
+function onCard(raw) { return raw.toDataURL("image/png"); }
 function tinted(raw) {
   const [ir, ig, ib] = hexRgb(cssVar("--ink") || "#1f2430"), [br, bg, bb] = hexRgb(cssVar("--bg") || "#ffffff");
   const dark = br * 299 + bg * 587 + bb * 114 < 128000;
@@ -317,9 +341,10 @@ function extractParts(img, clean) {
 }
 
 // one scan per problem: fetched once, cut once, then reused on every poll
-let scan = {id: null, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false};
+let scan = {id: null, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false, colours: false};
 function loadScan(p, clean) {
-  scan = {id: p.id, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false};
+  scan = {id: p.id, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false,
+          colours: COLOUR_WORDS.test([p.text, p.text_cat, p.text_eng].filter(Boolean).join(" "))};
   api("/api/image").then(r => {
     if (!r.image_b64 || scan.id !== p.id) return;
     const img = new Image();
@@ -340,14 +365,19 @@ function applyScan() {
   const key = cssVar("--bg");
   if (scan.tintKey !== key) {
     const fig = scan.figure || scan.whole;
-    scan.tinted = {figure: fig ? tinted(fig) : "", options: scan.options ? tinted(scan.options) : "", pieces: (scan.pieces || []).map(tinted), full: ""};
+    // dark theme: a card for figures with fills or for colour questions; light theme: always the tint
+    const card = isDarkTheme() && (scan.colours || [fig, scan.options, ...(scan.pieces || [])].some(r => r && hasFills(r)));
+    const draw = card ? onCard : tinted;
+    scan.tinted = {figure: fig ? draw(fig) : "", options: scan.options ? draw(scan.options) : "", pieces: (scan.pieces || []).map(draw), full: "", card};
     scan.tintKey = key;
   }
-  const tt = scan.tinted || {figure: "", options: "", pieces: [], full: ""};
+  const tt = scan.tinted || {figure: "", options: "", pieces: [], full: "", card: false};
+  document.querySelectorAll("#figure, #strip, #letters").forEach(e => e.classList.toggle("card", !!tt.card));
+  $("fig-cap").hidden = !scan.whole;   // the whole scan stands in for a figure: say so
   // the whole scan, one click away (not offered when the page already fell back to it)
   const canToggle = !!scan.full && !scan.whole;
   $("whole-toggle").hidden = !canToggle; $("whole-toggle").textContent = scan.showFull ? t().hide_scan : t().show_scan;
-  if (scan.showFull && canToggle && !tt.full) tt.full = tinted(scan.full);
+  if (scan.showFull && canToggle && !tt.full) tt.full = (tt.card ? onCard : tinted)(scan.full);
   $("whole").hidden = !(scan.showFull && canToggle); setSrc($("whole-img"), scan.showFull && canToggle ? tt.full : "");
   $("whole-img").alt = t().image;
   $("figure").hidden = !tt.figure; setSrc($("img"), tt.figure);
@@ -367,7 +397,8 @@ const tintCache = new Map();
 function tintedHintImage(key, b64) {
   if (tintCache.has(key)) return tintCache.get(key);
   tintCache.set(key, "");
-  const img = new Image(); img.onload = () => tintCache.set(key, tinted(img)); img.src = "data:image/png;base64," + b64;
+  const img = new Image(); img.onload = () => { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext("2d").drawImage(img, 0, 0);
+    tintCache.set(key, isDarkTheme() && (scan.colours || hasFills(c)) ? "card:" + onCard(c) : tinted(c)); }; img.src = "data:image/png;base64," + b64;
   return "";
 }
 function retint() { tintCache.clear(); scan.tintKey = null; if (state && state.started) { applyScan(); renderHints(state); } }
@@ -434,22 +465,29 @@ function renderAnswer(s) {
   });
   $("verdict").textContent = txt(s.message, "text") || (lang === "cat" ? s.message.ca : s.message.en) || "";
   $("feedback").className = "sheet " + (a ? (a.correct ? "ok" : "bad") : "");
-  $("next").hidden = !a;
+  const solved = s.hints.some(h => h.kind === "solution");
+  $("next").hidden = !(a || solved);
+  $("hint").hidden = solved; $("solution").hidden = solved;
   // the hint button says what the next press gives: a hint (and how many are left) or, as the last use, the lesson
   const left = s.hints_left ?? Infinity, max = s.hints_max ?? 3, lessonLast = max >= 4;
   $("hint").disabled = !!a || s.busy || left <= 0;
   $("hint").title = left <= 0 ? t().no_hints : "";
   $("hint-label").textContent = left <= 0 || !isFinite(left) ? t().hint : (lessonLast && left === 1 ? t().kinds.lesson : `${t().hint} · ${lessonLast ? left - 1 : left}`);
   $("solution").disabled = s.busy || s.hints.some(h => h.kind === "solution");
-  $("status").textContent = s.busy ? t().thinking : (a && !s.hints.some(h => h.kind === "solution") ? t().answered : "");
+  $("status").textContent = s.busy ? t().thinking : (a && !solved ? t().answered : "");
 }
 
 const expanded = new Set();   // "mostra-ho tot" pressed, by problem and hint index
+let scrolledSolution = null;   // the problem whose solution the page already scrolled to
 let hintsSig = "";
 function renderHints(s) {
   const pid = s.problem ? s.problem.id : "";
   const sig = JSON.stringify([pid, lang, cssVar("--bg"), s.hints.map((h, i) => [h.kind, h.rung, txt(h, "text"), h.problem && h.problem.id, h.problem && tintCache.get(h.problem.id || h.rung) ? 1 : 0, expanded.has(pid + ":" + i)])]);
-  if (sig !== hintsSig) { hintsSig = sig; $("hints").innerHTML = hintsHtml(s, pid); }
+  if (sig !== hintsSig) {
+    hintsSig = sig; $("hints").innerHTML = hintsHtml(s, pid);
+    const sol = $("hints").querySelector(".hint.solution");
+    if (sol && scrolledSolution !== pid) { scrolledSolution = pid; sol.scrollIntoView({behavior: "smooth", block: "start"}); }
+  }
   // the manipulative of the last strategy card, if any
   const manip = [...s.hints].reverse().find(h => h.manipulative);
   $("manip").hidden = !manip || !!s.answer;
@@ -467,7 +505,7 @@ function hintsHtml(s, pid) {
       const np = h.problem, opts = np.options || {}, long = (np.text || "").length > 160 && !expanded.has(pid + ":" + i);
       body += `<div class="neighbour ${long ? "clamped" : ""}">${esc((np.text || "").replace(/\s*\n\s*/g, " "))}${Object.keys(opts).length ? "\n" + "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${esc(opts[l])}`).join("   ") : ""}</div>` +
         ((np.text || "").length > 160 ? `<button class="more" data-more="${i}">${esc(long ? t().more : t().less)}</button>` : "") +
-        (np.image_b64 && tintedHintImage(np.id || h.rung, np.image_b64) ? `<div class="neighbour pic"><img src="${tintedHintImage(np.id || h.rung, np.image_b64)}" alt=""></div>` : "");
+        (np.image_b64 && tintedHintImage(np.id || h.rung, np.image_b64) ? `<div class="neighbour pic ${tintedHintImage(np.id || h.rung, np.image_b64).startsWith("card:") ? "card" : ""}"><img src="${tintedHintImage(np.id || h.rung, np.image_b64).replace(/^card:/, "")}" alt=""></div>` : "");
     }
     if (h.kind === "solution" && h.trace && h.trace.length) {
       body += `<ol>${h.trace.map(step => `<li>${esc(txt(step, "text"))}</li>`).join("")}</ol>`;
@@ -514,7 +552,7 @@ function render(s) {
   drawLed(s.led); renderTimeline(s); renderMastery(s);   // also on the start screen, so a reset empties the map
   if (!s.started) { if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; } return; }
   renderProblem(s.problem); renderTranslation(s); renderAnswer(s); renderHints(s); renderMastery(s); renderTopicProgress(s);
-  if (s.answer && !hadAnswer && innerWidth < 1000) setPanel(false);
+  if (s.answer && !hadAnswer) setPanel(false);
   hadAnswer = !!s.answer;
   if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; }
 }
@@ -523,8 +561,19 @@ async function poll() {
   try { render(await api("/api/state")); } catch (e) { $("status").textContent = "…"; }
 }
 
-function setPanel(open) { $("panel").hidden = !open; $("more").setAttribute("aria-expanded", String(open)); document.body.classList.toggle("panel-open", open); }
+// The sidebar floats and hides by itself: with a mouse, it closes a moment after the cursor is neither on
+// it nor on the menu button (also right after opening, if the cursor never comes); on touch screens it
+// stays until a tap outside or Escape.
+const HOVERS = matchMedia("(hover: hover)").matches;
+let panelLeave = null;
+const armClose = (ms) => { clearTimeout(panelLeave); if (HOVERS) panelLeave = setTimeout(() => setPanel(false), ms); };
+function setPanel(open) { $("panel").hidden = !open; $("more").setAttribute("aria-expanded", String(open)); if (open) armClose(1500); else clearTimeout(panelLeave); }
 $("more").onclick = () => setPanel($("panel").hidden);
+for (const el of [$("panel"), $("more")]) {
+  el.addEventListener("mouseenter", () => clearTimeout(panelLeave));
+  el.addEventListener("mouseleave", () => { if (!$("panel").hidden) armClose(400); });
+}
+document.addEventListener("pointerdown", e => { if (!$("panel").hidden && !e.target.closest("#panel, #more")) setPanel(false); });
 $("letters").addEventListener("click", async e => { const b = e.target.closest("button[data-l]"); if (b && !b.disabled) render(await api("/api/answer/" + b.dataset.l)); });
 const pressed = b => { b.disabled = true; $("status").textContent = t().thinking; };
 $("translate").onclick = async () => render(await api("/api/translate/" + (state && state.translation ? "hide" : "show")));

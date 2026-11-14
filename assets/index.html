@@ -9,8 +9,9 @@
   <script src="theme.js"></script>
 </head>
 <body>
+<!-- the menu: an icon at the page's left edge; the sidebar floats over everything and hides when the cursor leaves it -->
+<button class="menu-btn" id="more" aria-expanded="false" aria-controls="panel" aria-label="Menú"><span></span><span></span><span></span></button>
 <header class="bar">
-  <button class="icon" id="more" aria-expanded="false" aria-controls="panel"><span data-i18n="more_panel">Menú</span></button>
   <div class="progress" id="progress" hidden>
     <div class="label" id="progress-label"></div>
     <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" id="progress-track"><div class="fill" id="progress-fill"></div></div>
@@ -69,7 +70,7 @@
   <div class="meta" id="meta">…</div>
   <!-- the problem, in three parts: the statement as text, the figure cut out of the scan, the options -->
   <div class="problem">
-    <figure class="figure" id="figure" hidden><img id="img" alt=""></figure>
+    <figure class="figure" id="figure" hidden><img id="img" alt=""><figcaption id="fig-cap" data-i18n="original_scan" hidden>Escaneig original</figcaption></figure>
     <div class="text" id="text"></div>
     <div class="other" id="other" hidden>
       <div class="kind" id="other-kind"></div>
@@ -81,7 +82,7 @@
   <div class="letters" id="letters"></div>
   <!-- the whole scan, one click away, in case a cut goes wrong on the projector -->
   <div class="scan-tools"><button class="link" id="whole-toggle" hidden></button></div>
-  <figure class="figure whole" id="whole" hidden><img id="whole-img" alt=""></figure>
+  <figure class="figure whole" id="whole" hidden><img id="whole-img" alt=""><figcaption data-i18n="original_scan">Escaneig original</figcaption></figure>
   <section class="help">
     <div class="hints" id="hints"></div>
     <div class="manip-box" id="manip-box" hidden>

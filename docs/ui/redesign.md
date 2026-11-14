@@ -283,7 +283,7 @@ and a hint button without icons.
   neighbour problem's picture gets the same treatment; everything is re-tinted when the theme
   changes and the tinted crops are cached per theme.
 - **Figure on the right, text around it.** The figure floats right at up to 46 % of the
-  column and the statement wraps on its left and below it; on a phone it goes under the text.
+  column and the statement wraps on its left and below it; on a phone it goes above the text.
 - **Bugs.** The hints were rebuilt on every poll (twice a second), which closed "mostra-ho
   tot" at once: they are now rebuilt only when their content changes and the expanded state is
   kept per problem and hint. Pista and Solució now disable themselves and show "Un moment…"
@@ -334,3 +334,34 @@ and a hint button without icons.
 - The action sheet has two columns: the message with all the width and "Solució" under it on
   the left; "Continua" on top of "Pista" on the right. 160 px of room under it on a laptop,
   200 px on a phone (the sheet with a verdict measures 134 and 186 px).
+
+### Fifth round (branch `ui-fixes-5`, before the demo)
+
+Reviewer's three important points and the user's next requests, in one branch:
+
+- **The five options fit at 1280x800.** Short options share one row (branch `ui-polish`,
+  merged here); long ones are 56 px rows. Checked on the six demo problems (`lvl-1_2024_2`,
+  `lvl-3_2019_18`, `lvl-2_2020_4`, `lvl-4_2010_12`, `lvl-3_2021_20`, `lvl-5_2022_30`): the
+  last option ends between 323 and 348 px from the top, the sheet starts at 701.
+- **Dark theme never turns black into white.** A crop whose interior has filled areas (dark
+  pixels with dark neighbours 3 px away in every direction, over 0.4 % of the crop), or a
+  statement that names a colour (negre, blanc, gris, fosc, clar, ombrejat, pintat and the
+  English words), is drawn as it is on a white card with 6 px of padding; line drawings keep
+  the tint. The light theme always tints (black stays black). The neighbour's picture follows
+  the same rule.
+- **`lvl-3_2021_20`.** Option rows absorb the pieces the band missed (numerators,
+  superscripts, units), so the figure crop no longer swallows half the option row; and the OCR
+  filter rejects values with two numbers split by a space or a unit glued to a trailing digit
+  ("2 11 cm2", "3cm2", "4cm²2"), so the five options come from the scan, fractions intact.
+- **Menu and sidebar.** The menu is an icon (three bars) fixed at the page's left edge; the
+  progress bar takes the whole width of the 920 px container, which keeps its size whatever
+  the sidebar does. The sidebar floats over everything on the left, vertically centred, and
+  hides when the cursor leaves it, on Escape, or on a tap outside; on a phone it drops from
+  the top. The "Llegeix-lo en anglès" button is 44 px tall.
+- **Solution flow.** When the solution arrives the page scrolls to its card and the sheet
+  keeps only "Continua": the hint button, the solution link and the status line go.
+- **Buttons show the answers only**, centred; the letters A to E stay for the keyboard and
+  the screen reader but are not drawn.
+- **Fallback and captions.** When the whole scan stands in for a figure it carries the
+  caption "Escaneig original" and zooms like any figure; the "veure l'escaneig original" link
+  is a small underlined caption under the options, not a sixth row. "mostra-ho tot" is 44 px.
