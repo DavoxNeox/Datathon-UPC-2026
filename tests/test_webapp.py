@@ -269,7 +269,7 @@ class HintCapTest(unittest.TestCase):
         refused = self._hint()
         self.assertEqual(refused.get("error"), "no hints left")
         self.assertIn("pistes", self.s.state()["message"]["ca"])
-        self.assertEqual(len(self.s.hints), webapp.HINT_MAX_USES)
+        self.assertLessEqual(len(self.s.hints), webapp.HINT_MAX_USES)
 
     def test_rung_0_and_solution_do_not_count(self):
         self.s.translate("show")

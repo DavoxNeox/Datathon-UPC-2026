@@ -114,6 +114,32 @@ An answer given after rung 3 or 4 never raises mastery.
 }
 ```
 
+### The fourth hint: a short lesson (14 Nov 2026, user request)
+
+The hint button works `HINT_MAX_USES` times per problem (now 4). Uses 1 to 3 climb the ladder
+as before. The **fourth** use returns a short theory lesson that helps the student think about
+this kind of problem, never a formula that produces the answer and never the solution:
+
+```python
+# data_curated/lessons.json  (owner: content)
+{"lessons": [
+  {"key": "counting", "family": null,          # topic key; family optional (families.json keys)
+   "title_ca": "...", "title_en": "...",
+   "text_ca": "60-110 words: the idea, why it works, one tiny example with numbers that are NOT
+               the problem's, one question to ask yourself", "text_en": "...",
+   "strategy_ref": 2}                           # optional: the strategy card it builds on
+]}
+# copilot/hints.py (owner: D)
+get_lesson(problem_id, lang="cat") -> dict | None
+    # the lesson of the problem's family when one exists, else of its topic, else None;
+    # {"rung": "lesson", "kind": "lesson", "title_ca", "title_en", "text_ca", "text_en",
+    #  "estimated_board_seconds": 0.0}; passed through the leak filter against this problem.
+```
+
+Web (D + UI): the fourth press calls the lesson; it is shown as a card of its own, counts as
+`hint_rung_used = 3` for mastery (an answer after it does not raise mastery), and the fourth
+dot is drawn differently (a small book) so the student knows it is a lesson, not a hint.
+
 ## Functions by module and owner
 
 ### `copilot/topics.py` (B)
