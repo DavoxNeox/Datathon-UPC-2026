@@ -6,7 +6,6 @@
   <title>Vista del professor</title>
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="style.css">
-  <script src="theme.js"></script>
   <style>
     main.teacher { max-width: 920px; }
     main.teacher section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin-bottom: 14px; }
@@ -27,7 +26,6 @@
   <div class="tools">
     <a class="icon" href="index.html" id="back" style="display: inline-flex; align-items: center; text-decoration: none">Pàgina de l'alumne</a>
     <span class="lang" role="group" aria-label="CA / EN"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
-    <button class="icon" id="theme"><span id="theme-label">◐</span></button>
   </div>
 </header>
 <main class="teacher">
@@ -62,7 +60,6 @@ const I18N = {
         rung0_caveat: (nw, nwo) => `Comparació observacional, no un experiment controlat: cada alumne tria quan fa servir l'esglaó 0, sovint als problemes que ja li costen. n = ${nw} respostes després de l'esglaó 0 i ${nwo} sense. Per mesurar-ne l'efecte, el protocol de docs/teach-measurement.md.`,
         uses: "Vegades", problems: "Problemes", acc_with: "Encerts després de l'esglaó 0", acc_without: "Encerts sense l'esglaó 0", all: "Tots",
         source: {mastery_map: "Dades: trainer.mastery_map (el trainer encara no publica teacher_report)", teacher_report: "Dades: trainer.teacher_report"},
-        theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"},
         legend: ["0 sense dades", "1 sempre falla", "2 encerta amb pistes", "3 a vegades sense pistes", "4 sempre sense pistes", "5 encerta un nivell per sobre"]},
   eng: {title: "Teacher view", back: "Student page", mastery: "Mastery by topic and student", levels: "Correct answers by level",
         student: "Student", level: "Level", correct: "Correct", total: "Attempts",
@@ -73,7 +70,6 @@ const I18N = {
         rung0_caveat: (nw, nwo) => `Observational comparison, not a controlled experiment: each student chooses when to use rung 0, often on the problems they already find hard. n = ${nw} answers after rung 0 and ${nwo} without. To measure its effect, see the protocol in docs/teach-measurement.md.`,
         uses: "Uses", problems: "Problems", acc_with: "Correct after rung 0", acc_without: "Correct without rung 0", all: "All",
         source: {mastery_map: "Data: trainer.mastery_map (the trainer does not publish teacher_report yet)", teacher_report: "Data: trainer.teacher_report"},
-        theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"},
         legend: ["0 no data", "1 always fails", "2 correct with hints", "3 sometimes correct without hints", "4 consistently correct without hints", "5 correct one level above"]},
 };
 let lang = new URLSearchParams(location.search).get("lang") === "eng" ? "eng" : "cat", data = null;
@@ -83,7 +79,6 @@ function render() {
   document.documentElement.lang = lang === "cat" ? "ca" : "en"; document.title = t().title;
   $("title").textContent = t().title; $("back").textContent = t().back; $("h-mastery").textContent = t().mastery; $("h-levels").textContent = t().levels;
   $("lang-cat").classList.toggle("on", lang === "cat"); $("lang-eng").classList.toggle("on", lang === "eng");
-  renderTheme();
   $("source").textContent = (t().source[data.source] || data.source) + (data.error ? " · " + data.error : "");
   const students = Object.keys(data.students || {}).sort();
   $("mastery").innerHTML = `<tr><th>${t().student}</th>${data.topics.map(tp => `<th>${esc(lang === "cat" ? tp.name_ca : tp.name_en)}</th>`).join("")}</tr>` +
@@ -101,9 +96,6 @@ function render() {
       rows.map(([s, byLevel]) => `<tr><td>${esc(s)}</td>${levels.map(l => { const c = byLevel[l]; return `<td>${c ? `${c.correct}/${c.total}` : "–"}</td>`; }).join("")}</tr>`).join("");
   }
 }
-const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
-function renderTheme() { const m = Theme.get(); $("theme-label").textContent = THEME_GLYPH[m]; $("theme").title = t().theme[m]; $("theme").setAttribute("aria-label", t().theme[m]); }
-$("theme").onclick = () => { Theme.next(); renderTheme(); };
 function pct(c) { return c.answers ? `${c.correct}/${c.answers} (${Math.round(100 * c.correct / c.answers)}%)` : "–"; }
 function renderRung0(r) {
   $("h-rung0").textContent = t().rung0; $("rung0-help").textContent = t().rung0_help;

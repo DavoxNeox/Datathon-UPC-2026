@@ -466,3 +466,14 @@ by level 0 to 7: 142, 106, 146, 123, 339, 296, 305, 290.
   statement's long lines (a justified line of text is never an option row) and never include
   the figure's labels. `lvl-1_2021_24` (three rectangles) now gives the figure alone and five
   option pieces without their letters.
+
+### Fourteenth round (branch `ui-light-only`): one theme
+
+- **Dark mode removed.** The team chose one palette. `theme.css` keeps the light tokens only;
+  the `prefers-color-scheme` and `[data-theme]` blocks, `theme.js` (the stored choice and the
+  `?theme=` parameter), the ◐ ☀ ☾ button in the settings popup and in the teacher view, and
+  the `theme` i18n keys are gone. The manipulatives keep reading the tokens from `theme.css`.
+- **Tinting, one way.** `tintedCanvas` no longer asks which theme is on: strokes, edges and
+  black fills take the page's ink, grey patches keep their smoothed mean with no lift, colours
+  keep their hue with no lightening. The cuts are tinted once per scan (no retint on a theme
+  change). The measurements of the thirteenth round's light column stand.

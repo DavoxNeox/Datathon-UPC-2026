@@ -110,7 +110,7 @@ What makes the look without colours or drawings: the pressable bottom edge on ev
   tints with dark text, shown as a band that never covers the options.
 - Progress is small and grows (dots, a thin bar); no scores, no timers in front of the learner.
 - Help is quiet until needed (a link, a small button), then expands inline.
-- Dark mode: graphite surfaces, soft text, the same accent lightened one step.
+- No dark mode: the team dropped it (round 14) to keep one palette and one tinting of the scans.
 
 ## Decisions taken from this research
 

@@ -1,5 +1,5 @@
 /* Math copilot, student page. Local styles only: system fonts, nothing fetched from the network.
-   Colours come from theme.css (light and dark). The look follows Duolingo's lesson screen with
+   Colours come from theme.css. The look follows Duolingo's lesson screen with
    three colours and no pictures: a thick progress bar at the top, big option cards with a
    pressable bottom edge, and a fixed action sheet at the bottom that turns green or red with
    the verdict. One column, the problem first, the rest in a drawer behind "Més". */
@@ -11,7 +11,7 @@ button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 a { color: var(--accent); }
 
-/* The bar: "Més" on the left, the current topic's progress as a thick bar, the language and the theme on the right */
+/* The bar: the menu icon on the left, the current topic's progress as a thick bar */
 .bar { display: flex; align-items: center; padding: 16px 16px 6px; max-width: 920px; margin: 0 auto; }
 .menu-btn { position: fixed; left: 16px; top: 14px; z-index: 31; width: 48px; height: 48px; border: 2px solid var(--control); border-radius: 12px; background: var(--bg); color: var(--muted); cursor: pointer; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0; }
 .menu-btn span { display: block; width: 20px; height: 2px; border-radius: 2px; background: currentColor; margin: 0 auto; }
