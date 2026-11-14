@@ -288,3 +288,15 @@ and a hint button without icons.
   tot" at once: they are now rebuilt only when their content changes and the expanded state is
   kept per problem and hint. Pista and Solució now disable themselves and show "Un moment…"
   the instant they are pressed, until the next poll brings the result.
+
+### Third round (same evening)
+
+- Options are text whenever the OCR read them as text, maths included (roots, ×, π, powers,
+  braces, ≤, ∞); only drawn shapes (△ ○ □) keep the scan's crop. Two OCR habits are tidied: a
+  "V" before a digit is a root sign, a stray capital at the end of a value is dropped.
+- Figures a step smaller (40 % of the column at most, 34 vh tall, small crops at 1.25 times up
+  to 400 px) and crisper: the mask drops the scan's grey noise under a darkness of 60 and ramps
+  lines to full ink by 170, so there is no halo around the lines on either background.
+- The review's three fixes (sheet edge in `--control`, phone padding under the sheet, mastery
+  map drawn on the start screen so a reset empties it) are on this branch as well as on
+  `ui-fixes-3`.

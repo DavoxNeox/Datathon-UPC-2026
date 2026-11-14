@@ -122,6 +122,8 @@ const CELL = 2, HGAP = 10;   // cells per step, cells of blank bridged inside a 
 // letters, digits, punctuation and the maths the OCR writes (×, √, π, powers, ≤, ∞, braces); shapes such as △ ○ □ are not text
 const CLEAN = /^[\p{L}\p{N}\s.,:;%°€$'"\/+\-=<>!?…×√·—–{}∞≤≥÷*′″＇（）#^_|\[\]~±≠≈π∈→]+$/u;
 const optionsClean = o => Object.keys(o || {}).length >= 2 && Object.values(o).every(v => v.trim() && CLEAN.test(v));
+// two habits of the OCR on these scans: a V for a root sign, and a stray letter of the next option at the end
+const tidyOption = v => String(v).replace(/\bV(?=\s?\d)/g, "√").replace(/^(.*\d.*?)\s+[A-E]$/, "$1").trim();
 
 function scanComponents(img) {
   const W = img.naturalWidth, H = img.naturalHeight;
@@ -366,7 +368,8 @@ function renderProblem(p) {
   lastProblem = p;
   // the scan's line breaks go; a blank line stays a paragraph; the problem's number goes (the page is not a paper)
   const text = ((lang === "eng" && p.text_eng) || (lang === "cat" && p.text_cat) || p.text || "").replace(/^\s*\d+[.)]\s*/, "").replace(/\n{2,}/g, "\u2029").replace(/\s*\n\s*/g, " ").replace(/\u2029/g, "\n\n");
-  const options = (lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options || {};
+  const raw = (lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options || {};
+  const options = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, tidyOption(v)]));
   const clean = optionsClean(options);
   $("meta").textContent = `${t().level} ${p.level} · ${t().courses[p.level] || ""} · ${lang === "cat" ? p.topic_name_ca : p.topic_name_en}`;
   $("problem-id").textContent = `${t().problem}: ${p.id}`;
