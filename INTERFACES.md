@@ -190,6 +190,35 @@ Backend is chosen by `RUNTIME` in `config.env` / environment: `sim` prints the f
 ASCII and keeps the last frame for the web page; `board` sends it over the App Lab Bridge.
 Callers never know which one runs.
 
+### `copilot/lineage.py` (innovation: the lineage of a problem)
+
+```python
+lineage(problem_id: str, lang: str = "cat", min_similarity: float = 0.6,
+        max_links: int = 5) -> list[dict]
+    # The same idea across the Kangaroo levels: at every level other than the problem's own,
+    # the most similar training problem of the SAME topic (embedding index, English vectors),
+    # kept when similarity >= min_similarity, at most max_links (the most similar stay),
+    # ordered easiest level first. Each link:
+    # {"id", "level", "year", "topic", "similarity", "text" (in lang), "language",
+    #  "options", "text_only"}  -- never the label, never problem_id itself.
+    # Empty list without an index or for an unknown id.
+led_frame(chain: list[dict], current_level: int) -> list[list[int]]
+    # 8x13 frame for hal.led (brightness 0..7): row = level 0..7; a link is a bar from the
+    # left at brightness 3 whose length is its similarity (0.5 -> 0 LEDs, 1.0 -> 13);
+    # the current level is a full row at 7. Returns the frame; the caller draws it.
+embeddings_needed(problem_id: str) -> int   # 0 for a training id (stored vector), 1 otherwise
+RECOMMENDED_MIN_SIMILARITY = 0.75           # hand-calibrated on validation, see docs/lineage.md
+```
+
+Cost on the board: one embedding at most (0.12 s) for a validation id, none for a training
+id, plus about 12 ms of Python on the laptop (one dot product per same-topic row).
+
+Web proposal (not implemented, `webapp.py` untouched): a "Llinatge" button on the problem
+page draws a staircase of up to five thumbnails, one step per level from easiest (bottom
+left) to hardest (top right), each with its level, year and the `data/images/<id>_<lang>.png`
+miniature when the topic is visual, the current problem's step highlighted; clicking a step
+opens that problem read-only (no label), and the LED shows `led_frame(chain, level)`.
+
 ## Phase 0 stubs
 
 Every module above exists as a stub that returns fixed test data and raises nothing.
