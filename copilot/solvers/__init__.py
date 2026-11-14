@@ -69,4 +69,4 @@ _SAMPLE_1 = {
     ],
 }
 
-from . import consecutive  # noqa: E402,F401  (registers itself)
+from . import ages, average, consecutive, digit_count  # noqa: E402,F401  (each registers itself)

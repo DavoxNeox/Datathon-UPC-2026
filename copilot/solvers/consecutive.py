@@ -11,7 +11,7 @@ from .. import llm
 from . import common, register
 
 KEY = "consecutive"
-_KEYWORDS = re.compile(r"\bconsecutive\b")
+_KEYWORDS = re.compile(r"\bconsecutive (whole |positive |natural |even |odd )?(numbers|integers)\b")
 GRAMMAR = llm.json_grammar({"count": "int", "sum": "int", "step": "int", "asked": "int"})
 HINT = ("count = how many consecutive numbers; sum = their total; "
         "step = 1 for consecutive integers, 2 for consecutive even or odd numbers; "
@@ -19,7 +19,8 @@ HINT = ("count = how many consecutive numbers; sum = their total; "
 
 
 def matches(text):
-    return bool(_KEYWORDS.search(text)) and "sum" in text
+    # "the sum of N consecutive numbers": the sum must be about the sequence, not about digits
+    return bool(_KEYWORDS.search(text)) and bool(re.search(r"\bsum of (the )?(\w+ )?consecutive", text))
 
 
 def extract(problem):
