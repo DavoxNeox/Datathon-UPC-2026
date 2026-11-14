@@ -18,15 +18,19 @@ from copilot.topics import TOPIC_KEYS
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STRATEGIES = os.path.join(ROOT, "data_curated", "strategies.json")
 DEMO_SET = os.path.join(ROOT, "data_curated", "demo_set.json")
+LESSONS = os.path.join(ROOT, "data_curated", "lessons.json")
+DEMO_SCRIPT = os.path.join(ROOT, "docs", "demo", "demo-problems.md")
+FAMILIES = os.path.join(ROOT, "data_curated", "families.json")
 DATA_FILES = [os.path.join(ROOT, "data", name) for name in ("val.jsonl", "train.jsonl")]
 
 MAX_STRATEGY_WORDS_CA = 15   # the card must be read in a glance on the student page
 MAX_STRATEGY_WORDS_EN = 18   # English needs a few more function words
 COPY_WINDOW = 12             # this many consecutive words equal to a statement = a copy
+LESSON_WORDS = (60, 110)     # the fourth hint: a short lesson, INTERFACES.md
 LETTERS = "ABCDE"
 MANIPULATIVES = {"rotate", "paths", "dice"}
-# "48cm", "27 cm²", "80 cm2" -> "48", "27", "80": the OCR glues a unit (with its own digit) to the value
-_UNIT = re.compile(r"\s*(?:cm|dm|mm|km|m|kg|g|l|ml)[23²³]?\s*$", re.I)
+# "48cm", "27 cm²", "80 cm2", "4cm²2" -> "48", "27", "80", "4": the OCR glues a unit (and stray digits) to the value
+_UNIT = re.compile(r"\s*(?:cm|dm|mm|km|m|kg|g|l|ml)[23²³]?\d?\s*$", re.I)
 
 
 def _load_json(path):
@@ -160,6 +164,25 @@ class DemoSetTest(unittest.TestCase):
             self.assertRegex(last["text_ca"] + " " + last["text_en"], rf"(?i)\b(opció|option)\s*{label}\b",
                              f"{item['id']}: the last step should name option {label}")
 
+    def test_option_values_stay_out_of_the_texts(self):
+        """Licence rule: no distractor value anywhere; the correct value only in the last step."""
+        if not self.known:
+            self.skipTest("data/val.jsonl and data/train.jsonl not linked")
+        for item in self.problems:
+            rows = self.known.get(item["id"], {})
+            row = rows.get("eng") or next(iter(rows.values()))
+            options = _clean_options(row.get("options") or rows.get("cat", {}).get("options"))
+            label = row["label"]
+            values = {letter: re.sub(r"\s+", "", v) for letter, v in options.items() if re.fullmatch(r"[\d\s./,]+", v or "")}
+            texts = _demo_texts(item, include_last_step=True)
+            last_fields = {f"step {len(item['steps'])} ca", f"step {len(item['steps'])} en"}
+            for field, text in texts:
+                for letter, value in values.items():
+                    if letter == label and field in last_fields:
+                        continue
+                    pattern = r"(?<![\d.,/])" + re.escape(value) + r"(?![\d.,/]|\s*[×x·])"
+                    self.assertIsNone(re.search(pattern, text), (item["id"], field, f"option {letter} = {value}", text))
+
     def test_no_field_copies_the_statement(self):
         if not self.known:
             self.skipTest("data/val.jsonl and data/train.jsonl not linked")
@@ -178,6 +201,71 @@ class DemoSetTest(unittest.TestCase):
             for row in rows.values():
                 for text in texts:
                     self.assertFalse(_copies(text, row["text"]), (row["id"], text))
+
+
+def _script_ids():
+    """The ids of the demo script (docs/demo/demo-problems.md), read from the file: never copied here."""
+    if not os.path.exists(DEMO_SCRIPT):
+        return []
+    with open(DEMO_SCRIPT, encoding="utf-8") as f:
+        text = f.read()
+    # the headings "### 1. `id`" and "### Reserve 5. `id`": the problems played, not their neighbours
+    return sorted(set(re.findall(r"^### (?:Reserve )?\d+\. `(lvl-\d_\d{4}_\d+)`", text, re.M)))
+
+
+class LessonsTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.exists(LESSONS):
+            raise unittest.SkipTest("data_curated/lessons.json not written yet")
+        cls.data = _load_json(LESSONS)
+        cls.lessons = cls.data.get("lessons", [])
+
+    def test_every_topic_has_a_bilingual_lesson(self):
+        by_topic = {x["key"] for x in self.lessons if not x.get("family")}
+        self.assertEqual(by_topic, set(TOPIC_KEYS))
+        families = set(_load_json(FAMILIES).get("names_en", {})) if os.path.exists(FAMILIES) else None
+        seen = set()
+        for lesson in self.lessons:
+            tag = (lesson["key"], lesson.get("family"))
+            self.assertNotIn(tag, seen, f"duplicate lesson {tag}")
+            seen.add(tag)
+            self.assertIn(lesson["key"], TOPIC_KEYS, tag)
+            if lesson.get("family") and families is not None:
+                self.assertIn(lesson["family"], families, tag)
+            for key in ("title_ca", "title_en", "text_ca", "text_en"):
+                self.assertTrue(lesson.get(key, "").strip(), (tag, key))
+            self.assertNotEqual(lesson["text_ca"], lesson["text_en"], tag)
+            if "strategy_ref" in lesson:
+                cards = _load_json(STRATEGIES).get(lesson["key"], [])
+                self.assertTrue(0 <= lesson["strategy_ref"] < len(cards), tag)
+
+    def test_lessons_are_short(self):
+        low, high = LESSON_WORDS
+        for lesson in self.lessons:
+            for key in ("text_ca", "text_en"):
+                n = len(lesson[key].split())
+                self.assertTrue(low <= n <= high, (lesson["key"], lesson.get("family"), key, n))
+
+    def test_lessons_never_hold_a_demo_answer(self):
+        """No lesson contains the correct value of any script problem (digits or number words)."""
+        known = _problems()
+        ids = _script_ids()
+        if not known or not ids:
+            self.skipTest("demo script or data not available")
+        for pid in ids:
+            rows = known.get(pid)
+            self.assertIsNotNone(rows, f"{pid} from the script is not in the data")
+            row = rows.get("eng") or next(iter(rows.values()))
+            options = _clean_options(row.get("options") or rows.get("cat", {}).get("options"))
+            if row["label"] not in options:
+                continue  # options not read by the OCR: nothing to compare
+            only_correct = {row["label"]: options[row["label"]]}
+            for lesson in self.lessons:
+                for key in ("title_ca", "title_en", "text_ca", "text_en"):
+                    reason = leak_reason(lesson[key], row["label"], only_correct)
+                    self.assertFalse(reason and reason.startswith("value"),
+                                     (pid, lesson["key"], lesson.get("family"), key, reason))
 
 
 if __name__ == "__main__":
