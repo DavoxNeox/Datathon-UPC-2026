@@ -74,7 +74,7 @@ def main():
         writer = csv.writer(out)
         writer.writerow(["id", "language", "level", "has_options", "label", "answer",
                          "correct", "seconds", "board_seconds", "status", "prompt_tokens", "retrieved",
-                         "raw_letter", "margin", "family"])
+                         "raw_letter", "margin", "family", "letter_logprobs"])
         for n, problem in enumerate(problems, 1):
             result = solve(problem, index=index, k=args.rag, exclude_id=problem["id"])
             if args.simulate_latency and result["board_seconds"] > result["seconds"]:
@@ -85,7 +85,8 @@ def main():
             writer.writerow([problem["id"], problem["language"], problem["level"], row["has_options"],
                              problem["label"], result["answer"], int(correct), result["seconds"],
                              result["board_seconds"], result["status"], result["prompt_tokens"], result["retrieved"],
-                             result.get("raw_letter", ""), result.get("margin", ""), result.get("family", "")])
+                             result.get("raw_letter", ""), result.get("margin", ""), result.get("family", ""),
+                             json.dumps(result["letter_logprobs"]) if result.get("letter_logprobs") else ""])
             out.flush()
             running = 100 * sum(r["correct"] for r in rows) / len(rows)
             print(f"[{n}/{len(problems)}] {problem['id']} {problem['language']}: "
