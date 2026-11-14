@@ -8,24 +8,96 @@ handler: the hint ladder runs in a thread and the page polls /api/state.
     start()    -> draw the resting LED frame
 """
 import base64
+import json
 import os
 import threading
 import time
 
 from . import hints, topics, trainer
 from .board_clock import estimate_tokens
-from .config import ROOT
+from .config import CONFIG, ROOT
 from .hal import led
 
 RESULT_SECONDS = 3.0        # the tick or cross stays this long, then the mastery map comes back
 LANGS = ("cat", "eng")
 TOPIC_NAMES = {t["key"]: t for t in topics.TOPICS}
+# Rung 0 counters survive a restart of the app here (data/ is git-ignored, no problem text inside)
+RUNG0_FILE = os.path.join(ROOT, "data", "rung0.json")
+
+
+def _empty_counts():
+    return {"uses": 0, "problems": 0, "with": {"answers": 0, "correct": 0}, "without": {"answers": 0, "correct": 0}}
+
+
+HINT_MAX_USES = int(CONFIG.get("HINT_MAX_USES", 3))  # hint-button uses per problem; rung 0 and the solution do not count
+
+
+class Rung0Stats:
+    """How often the problem was read in the other language (rung 0), per student and in this
+    session, and whether the answer that followed was right. Pseudonyms and counts only."""
+
+    def __init__(self, path=None):
+        self.path = path
+        self.session = _empty_counts()
+        self.students = {}
+        if path and os.path.exists(path):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    self.students = {k: v for k, v in json.load(f).get("students", {}).items()}
+            except (OSError, ValueError):
+                self.students = {}
+
+    def _row(self, student):
+        return self.students.setdefault(student, _empty_counts())
+
+    def use(self, student, first_on_this_problem):
+        for row in (self._row(student), self.session):
+            row["uses"] += 1
+            if first_on_this_problem:
+                row["problems"] += 1
+        self._save()
+
+    def answer(self, student, used_rung0, correct):
+        key = "with" if used_rung0 else "without"
+        for row in (self._row(student), self.session):
+            row[key]["answers"] += 1
+            row[key]["correct"] += int(bool(correct))
+        self._save()
+
+    def forget(self, student):
+        self.students.pop(student, None)
+        self._save()
+
+    def report(self):
+        """For the teacher page: who uses rung 0 and the accuracy after it against without it."""
+        out = {"students_using": sum(1 for r in self.students.values() if r["uses"]),
+               "students_total": len(self.students), "uses": 0,
+               "with": {"answers": 0, "correct": 0}, "without": {"answers": 0, "correct": 0},
+               "by_student": self.students}
+        for row in self.students.values():
+            out["uses"] += row["uses"]
+            for key in ("with", "without"):
+                out[key]["answers"] += row[key]["answers"]
+                out[key]["correct"] += row[key]["correct"]
+        return out
+
+    def _save(self):
+        if not self.path:
+            return
+        try:
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            tmp = self.path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump({"students": self.students}, f, ensure_ascii=False, indent=1)
+            os.replace(tmp, self.path)
+        except OSError:
+            pass  # counters are a convenience, never a reason to fail the page
 
 
 class Session:
     """One student at the page. The app serves one student at a time (one board, one page)."""
 
-    def __init__(self):
+    def __init__(self, stats_path=None):
         self.lock = threading.Lock()
         self.student = "demo"
         self.started = False         # the start screen is shown until the student presses "Comença"
@@ -34,6 +106,7 @@ class Session:
         self.problem = None          # the Problem dict as served (with its label, never sent)
         self.rung = 0                # highest rung used on this problem
         self.hints = []              # hint results shown, in order
+        self.hint_uses = 0           # times the hint button was accepted on this problem (max HINT_MAX_USES)
         self.answer = None           # {"letter", "correct", ...} after answering
         self.busy = False
         self.message = {"ca": "", "en": ""}
@@ -41,6 +114,9 @@ class Session:
         self.mastery = {}
         self.students = set()
         self._timer = None
+        self.translation_shown = False   # rung 0: the other language is on the page
+        self.rung0_uses = 0              # how many times rung 0 was opened on this problem
+        self.rung0 = Rung0Stats(stats_path)
 
     # ------------------------------------------------------------ helpers
 
@@ -66,6 +142,21 @@ class Session:
             shown["options_" + other["language"]] = {k: v for k, v in (other.get("options") or {}).items()}
         return shown
 
+    def _shown_language(self):
+        """The language the statement is shown in: the page language when the data has that
+        version, else the language the problem came in."""
+        p = self.problem
+        if not p:
+            return self.lang
+        return self.lang if hints.problem_in(p["id"], self.lang) else p.get("language", "cat")
+
+    def _translation(self):
+        """Rung 0 result for the current problem, or None when no other version exists."""
+        if not self.problem:
+            return None
+        result = hints.translation(self.problem["id"], self._shown_language())
+        return result if result.get("available") else None
+
     def _show_mastery(self):
         self.mastery = trainer.mastery_map(self.student)
         led.show_mastery(self.mastery)
@@ -75,6 +166,8 @@ class Session:
         self.problem = trainer.next_problem(self.student)
         hints.register_problem(self.problem)
         self.rung, self.hints, self.answer = 0, [], None
+        self.hint_uses = 0
+        self.translation_shown, self.rung0_uses = False, 0
         self.message = {"ca": "Tria una resposta, o demana una pista.", "en": "Choose an answer, or ask for a hint."}
         hints.prefetch(self.problem["id"], self.lang)
         self._show_mastery()
@@ -84,10 +177,17 @@ class Session:
 
     def state(self):
         with self.lock:
+            translation = self._translation()
             return {
                 "student": self.student, "started": self.started, "level": self.level,
                 "lang": self.lang, "problem": self._public_problem(),
+                "shown_language": self._shown_language(),
+                "translation_available": translation is not None,
+                "other_language": translation["language"] if translation else None,
+                "translation": translation if self.translation_shown else None,
+                "rung0": {"uses": self.rung0_uses, "session": self.rung0.session},
                 "rung": self.rung, "hints": self.hints, "answer": self.answer, "busy": self.busy,
+                "hints_left": max(0, HINT_MAX_USES - self.hint_uses), "hints_max": HINT_MAX_USES,
                 "message": self.message, "timeline": self.timeline, "mastery": self.mastery,
                 "led": led.last_frame(), "llm_allowed": bool(self.problem) and
                 hints.llm_allowed(self.problem.get("topic") or topics.get_topic(self.problem["id"]), self.lang),
@@ -136,7 +236,11 @@ class Session:
                     self.timeline.append({"action": f"reset_student failed: {type(error).__name__}", "laptop_s": 0, "board_s": 0})
             if self._timer:
                 self._timer.cancel()
+            if done:
+                self.rung0.forget(self.student)
             self.problem, self.rung, self.hints, self.answer = None, 0, [], None
+            self.hint_uses = 0
+            self.translation_shown, self.rung0_uses = False, 0
             self.started, self.level = False, None
             self.message = {"ca": "", "en": ""}
             self.mastery = trainer.mastery_map(self.student) if done else {}
@@ -165,8 +269,10 @@ class Session:
             if self.answer or self.busy:
                 return {"error": "already answered" if self.answer else "busy"}
             started = time.perf_counter()
+            # rung 0 never touches self.rung: reading the other language is not a hint for mastery
             result = trainer.record_answer(self.student, self.problem["id"], letter, self.rung)
             self.answer = {"letter": letter, **result}
+            self.rung0.answer(self.student, self.rung0_uses > 0, result["correct"])
             self.mastery = trainer.mastery_map(self.student)
             led.show_result(result["correct"])
             if result["correct"]:
@@ -186,6 +292,28 @@ class Session:
         with self.lock:
             self._show_mastery()
 
+    def translate(self, action="show"):
+        """Rung 0: show (or hide) the same problem in the other language next to the statement.
+
+        Each show is counted (per session and per student) and gets a timeline row, costs no
+        model time and leaves `rung` alone, so `record_answer` still receives 0 when the student
+        used nothing else.
+        """
+        started = time.perf_counter()
+        with self.lock:
+            if not self.problem:
+                return {"error": "no problem"}
+            if action == "hide":
+                self.translation_shown = False
+            else:
+                if self._translation() is None:
+                    return {"error": "no other language for this problem"}
+                self.rung0.use(self.student, first_on_this_problem=self.rung0_uses == 0)
+                self.rung0_uses += 1
+                self.translation_shown = True
+                self._record("rung0:translation", started)
+        return self.state()
+
     def hint(self):
         """Climb one rung (1, 2, then 3 again and again) in a thread; the page polls /api/state."""
         with self.lock:
@@ -193,6 +321,13 @@ class Session:
                 return {"error": "busy" if self.busy else "no problem"}
             if self.answer:
                 return {"error": "already answered"}
+            if self.hint_uses >= HINT_MAX_USES:
+                # The ladder is capped: three hints per problem, then the student answers or asks
+                # for the solution on purpose. Rung 0 (the other language) does not count.
+                self.message = {"ca": f"Ja has fet servir les {HINT_MAX_USES} pistes d'aquest problema. Prova-ho, o demana la solució.",
+                                "en": f"You have used the {HINT_MAX_USES} hints for this problem. Give it a try, or ask for the solution."}
+                return {"error": "no hints left", "hints_left": 0}
+            self.hint_uses += 1
             rung = min(3, self.rung + 1)
             self.busy = True
             self.message = {"ca": "Pensant una pista…", "en": "Thinking of a hint…"}
@@ -255,7 +390,8 @@ class Session:
         """Mastery by topic and student, and hits by level when the trainer reports them."""
         report = getattr(trainer, "teacher_report", None)
         students = sorted(self.students | {self.student})
-        out = {"topics": topics.TOPICS, "students": {}, "by_level": None, "source": "mastery_map"}
+        out = {"topics": topics.TOPICS, "students": {}, "by_level": None, "source": "mastery_map",
+               "rung0": self.rung0.report()}
         if callable(report):
             try:
                 data = report()
@@ -304,7 +440,7 @@ def _read_image(relative_path):
         return None
 
 
-SESSION = Session()
+SESSION = Session(stats_path=RUNG0_FILE)
 
 
 def routes(session=SESSION):
@@ -316,6 +452,7 @@ def routes(session=SESSION):
         ("GET", "/api/lang/{lang}", session.set_lang),
         ("GET", "/api/next", session.next),
         ("GET", "/api/answer/{letter}", session.answer_letter),
+        ("GET", "/api/translate/{action}", session.translate),
         ("GET", "/api/hint", session.hint),
         ("GET", "/api/solution", session.solution),
         ("GET", "/api/image", session.image),

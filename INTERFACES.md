@@ -226,3 +226,34 @@ raises mastery.
 Every module above exists as a stub that returns fixed test data and raises nothing.
 `tests/test_interfaces.py` checks that the stubs (and later the real code) keep these shapes.
 Run `python3 -m unittest discover tests` before every commit.
+
+## Rung 0: the problem in the other language (14 Nov 2026, branch `innov-bilingual`)
+
+M3Kang aligns Catalan and English by `id`, so before any mathematical hint the student can
+read the same statement in the other language. Rung 0 separates "I don't understand the
+statement" from "I can't solve it" and is **not a hint for mastery**: the web app keeps
+`hint_rung_used` at 0 when only rung 0 was used, and `record_answer` is unchanged.
+
+```python
+hints.translation(problem_id: str, lang: str = "cat") -> dict   # lang = what the student reads now
+hints.get_hint(problem_id, 0, lang)                              # the same; rungs are now clamped to 0..4
+```
+
+```python
+{
+  "rung": 0, "kind": "translation",
+  "language": "eng",            # the other language: eng for a Catalan reader, cat for an English one
+  "available": True,            # False when the data has no version in that language (then text "" and options {})
+  "text": "...", "options": {"A": "12", ...},   # text and options of that version; NEVER its label
+  "text_ca": "El mateix problema, en anglès.", "text_en": "The same problem, in English.",
+  "estimated_board_seconds": 0.0,   # a dictionary lookup, no model
+}
+```
+
+Web (`copilot/webapp.py`): `GET /api/translate/{show|hide}`. `/api/state` carries
+`translation` (the result above while shown, else `null`), `translation_available`,
+`other_language` and `rung0` (uses on this problem). Each `show` is a `timeline` row
+`rung0:translation` and is counted per session and per student (uses, problems, answers
+and correct answers after using it, against answers and correct answers without it).
+`/api/teacher` adds `rung0`: `{"students_using", "students_total", "uses", "with": {"answers", "correct"},
+"without": {"answers", "correct"}, "by_student": {name: {...}}}`.
