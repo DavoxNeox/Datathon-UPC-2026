@@ -141,6 +141,14 @@ class LlmHintTest(unittest.TestCase):
         self.assertEqual(r["rejected"], ["value:10"])
         self.assertIn("gave the answer away", calls[2])
 
+    def test_no_retry_when_the_first_attempt_was_already_expensive(self):
+        heavy = ("The answer is C.", {"prompt_n": 400, "predicted_n": 40})  # ~43 s on the board
+        with mock.patch.object(hints, "_call", return_value=heavy) as call:
+            r = hints.llm_hint(self.problem(), "cat")
+        self.assertFalse(r["ok"])
+        self.assertEqual(call.call_count, 2)  # one attempt, two languages, no retry
+        self.assertIn("no-retry:over-budget", r["rejected"])
+
     def test_two_leaks_give_up(self):
         with mock.patch.object(hints, "_call", return_value=("The answer is C.", {"prompt_n": 1, "predicted_n": 5})):
             r = hints.llm_hint(self.problem(), "cat")
