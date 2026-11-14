@@ -41,10 +41,13 @@ EXPERIMENT_BUDGET = float(CONFIG.get("EXPERIMENT_BUDGET_SECONDS", "50") or 50)
 # Brief reasoning by the 0.8B (copilot/think.py): THINK_LEVELS lists the levels on which the model writes a
 # few lines of working before the letter (empty = off, "all" = every level); THINK_TEXT_ONLY=1 keeps it to
 # problems without a figure. It runs after the solvers and before the middle-value rule, only when the
-# board estimate leaves at least THINK_MIN_TOKENS of output inside EXPERIMENT_BUDGET seconds, and it
+# board estimate leaves at least THINK_MIN_TOKENS of output inside THINK_BUDGET_SECONDS, and it
 # abstains (the rest of the policy answers) on a budget skip, a timeout, a server error or unreadable working.
 THINK_LEVELS = think.levels_from_config()
 THINK_TEXT_ONLY = CONFIG.get("THINK_TEXT_ONLY", "1") != "0"
+# THINK_NUMERIC=0 keeps the stage to problems whose options are not five distinct numbers (the middle-value
+# prior answers those); 1 runs it on every problem with five options.
+THINK_NUMERIC = CONFIG.get("THINK_NUMERIC", "1") != "0"
 
 
 LETTERS = "ABCDE"
@@ -118,10 +121,10 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
                               seconds=round(time.perf_counter() - start, 2), board_seconds=round(clock.board_seconds(), 2))
                 return result
         remaining = time_limit - (time.perf_counter() - start) - MARGIN
-        if THINK_LEVELS and image_b64 is None and think.applies(problem, THINK_LEVELS, THINK_TEXT_ONLY):
+        if THINK_LEVELS and image_b64 is None and think.applies(problem, THINK_LEVELS, THINK_TEXT_ONLY, THINK_NUMERIC):
             try:
                 letter, info, timings = think.think_letter(problem, timeout=max(remaining, 1.0), url=llm_url,
-                                                           budget=EXPERIMENT_BUDGET - clock.board_seconds(),
+                                                           budget=think.BUDGET - clock.board_seconds(),
                                                            cold=clock.prompt_tokens > 0)
             except (socket.timeout, TimeoutError, urllib.error.URLError) as error:
                 # the working never arrived: the rest of the policy answers, and the time is unknown here

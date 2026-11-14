@@ -23,7 +23,7 @@ The letter is parsed instead: "Answer: C" (the prompt asks for that line), "the 
 with that value. Anything else abstains and the caller falls through to its usual policy
 (family solvers already ran; middle value, then FALLBACK_ANSWER).
 
-Budget: the pipeline passes EXPERIMENT_BUDGET_SECONDS (50) minus what the problem has already cost.
+Budget: the pipeline passes THINK_BUDGET_SECONDS (45) minus what the problem has already cost.
 The prompt is counted with the server's /tokenize (one cheap request; chars / CHARS_PER_TOKEN if it
 fails), the system prompt is added when the cache is cold, and the output is capped so that prompt
 plus output fit the budget at BOARD_PREFILL_TPS / BOARD_GEN_TPS. Fewer than THINK_MIN_TOKENS of
@@ -48,12 +48,23 @@ LETTERS = "ABCDE"
 # Stable text first: the start of the prompt is read once per run as long as it does not change.
 THINK_SYSTEM = ("You solve multiple-choice math competition problems for school students. "
                 "Reason in English in a few short steps, then give the letter of the correct option.")
-INSTRUCTION = ("\n\nSolve it step by step in English, briefly: at most 6 short lines. "
-               "End with a line \"Answer: X\" where X is the letter of the correct option.")
+INSTRUCTIONS = {
+    # steps: the first prompt measured (Experiment 5). 60% of the workings hit the 200-token cap.
+    "steps": ("\n\nSolve it step by step in English, briefly: at most 6 short lines. "
+              "End with a line \"Answer: X\" where X is the letter of the correct option."),
+    # short: the same, asking for plain text and a word limit, to cut the LaTeX and the cut-offs.
+    "short": ("\n\nSolve it in English in plain text, no LaTeX, at most 60 words. "
+              "End with a line \"Answer: X\" where X is the letter of the correct option."),
+}
+STYLE = CONFIG.get("THINK_STYLE", "steps") or "steps"
+INSTRUCTION = INSTRUCTIONS.get(STYLE, INSTRUCTIONS["steps"])
 TEMPLATE_TOKENS = 16  # <|im_start|>, roles, <|im_end|>, the closed think block
 SYSTEM_TOKENS = 40    # THINK_SYSTEM, paid when the cache is cold (a different stage ran just before)
 
 MAX_TOKENS = int(CONFIG.get("THINK_MAX_TOKENS", "200") or 200)
+# Board seconds one problem may spend here, minus what it already cost (the pipeline subtracts). 45, not the
+# experiments' 50: on the board one request estimated at 49.5 s ran into the 57 s HTTP timeout (Experiment 6).
+BUDGET = float(CONFIG.get("THINK_BUDGET_SECONDS", "45") or 45)
 MIN_TOKENS = int(CONFIG.get("THINK_MIN_TOKENS", "80") or 80)
 
 
@@ -74,10 +85,14 @@ def levels_from_config(value=None):
     return levels
 
 
-def applies(problem, levels, text_only_only=True):
-    """Whether the stage runs on this problem: five options, a selected level, and (by default) no figure."""
+def applies(problem, levels, text_only_only=True, numeric_too=True):
+    """Whether the stage runs on this problem: five options, a selected level, (by default) no figure,
+    and, with numeric_too=False, only when the options are not five distinct numbers (where the
+    middle-value prior already answers)."""
     options = problem.get("options") or {}
     if len(options) != 5:
+        return False
+    if not numeric_too and numeric_options(options) is not None:
         return False
     level = problem.get("level")
     try:

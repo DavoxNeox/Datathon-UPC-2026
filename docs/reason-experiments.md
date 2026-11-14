@@ -175,6 +175,102 @@ previous request's prompt tokens, read again, plus one letter) would pass it; an
 vote never elects. Whoever turns these flags on gets a policy that respects the 60-second
 rule, and nothing else: they still do not beat always D.
 
+## Experiment 5: brief reasoning by the 0.8B itself (`copilot/think.py`, flag `THINK_LEVELS`)
+
+**Hypothesis.** Every policy above asked the model for one token with the reasoning switched
+off. A few lines of working before the letter might turn the 0.8B's near-chance letter into
+something better on the easier problems, if they fit the board's clock: a 150-token prompt
+leaves about 200 output tokens inside `EXPERIMENT_BUDGET_SECONDS=50` (13 s to read, 36 s to
+write at 5.6 tokens/s).
+
+**What the server allows (checked against the running `2cbe0ec`, not assumed).** The Qwen3.5
+template honours `chat_template_kwargs: {"enable_thinking": true}` per request
+(`/apply-template` ends the prompt with `<think>\n`), but the service's `--reasoning-budget 0`
+closes the block at once: the completion is identical to the one without it (same text, empty
+`reasoning_content`). Real thinking mode, through `/completion` with a hand-edited prompt,
+spent 250 tokens on the simplest sample problem ("Thinking Process: 1. Analyze the Request...")
+and had not reached an answer: 45 s of board time for nothing. With the block closed the model
+still writes a short solution when asked ("Anna starts with 3 bags ... The correct answer is
+C) 10", 63 tokens), so the working goes in the content, in **one** request, and the letter is
+read from the text: an explicit `Answer: X` line (the prompt asks for it), else "the answer
+is X", `**X)**`, a lone `X)` on the last lines, or the option whose value equals the last
+number written, when the five options are distinct numbers. A working cut by `max_tokens`
+only counts an explicit `Answer:` line: on the smoke run its last number or letter was the
+middle of a case analysis ("If a = 7", "Comparing to the options: A) 16"). Anything else
+abstains and the usual policy answers (middle value, then D). Two requests (working, then a
+grammar-forced letter that sees it) were ruled out by the cache: this hybrid model restores
+its state only at the start of the last user message, so the second request would re-read
+problem and working, about 300 tokens, 26 s.
+
+**Budget.** The prompt is counted with `/tokenize` (one cheap request; the 3-characters-per-
+token guess is used if it fails), the system prompt is added when the cache is cold, and
+`max_tokens` is what fits in the budget at the board's speeds, capped at `THINK_MAX_TOKENS=200`;
+fewer than `THINK_MIN_TOKENS=80` left means no request. The guess was 2 to 6 tokens above the
+server's `prompt_n` on warm runs and 30 below on the first, cold problem of a run (the system
+prompt): the 10 s between the 50 s budget and the 60 s limit cover it. Measured on the laptop:
+think requests cost 42.2 s of board time on average (median 46.5, worst 51.5), none over 60.
+
+**Protocol.** Validation: the 281 English problems. Decision set: a stratified sample of the
+English training problems by level (0 to 7) x figure (`text_only`) x numeric options
+(`ladder.numeric_options`), proportional with at least one per stratum, seed 42
+(`dev/stratified_sample.py`, 297 ids, `eval.py --ids`). Both sets were run with the stage on
+every level and both kinds of problem (`THINK_LEVELS=all THINK_TEXT_ONLY=0`) and with the
+shipped policy, and compared problem by problem (paired bootstrap, 10 000 resamples, seed 42).
+The stage is skipped when a problem has no five options (114 of 281, 112 of 297) or when the
+budget is gone after a solver read the text (5 and 6).
+
+**Result, everything on.** Validation **76/281 = 27.0%** against 77 for the shipped policy
+(gain -1, 95% [-11, +9], P(gain <= 0) = 0.61). Training sample **82/297 = 27.6%** against 75
+(gain +7, 95% [-5, +20], P = 0.15). The model answered 66 validation problems (18 right, the
+shipped policy was right on 19 of them) and 84 training problems (28 right against 21). Of
+the 162 + 179 requests, **97 + 95 hit the 200-token cap** without an `Answer:` line and
+abstained: the model writes long, LaTeX-heavy working, and the board's 5.6 tokens/s is the
+binding constraint, not the prompt.
+
+By stratum, gain of the stage over the shipped policy (think's letter where it answered,
+the shipped policy elsewhere):
+
+| stratum | val gain, 95%, P(<=0) | answered (think right / shipped right) | train gain, 95%, P(<=0) | answered |
+| --- | --- | --- | --- | --- |
+| all | -1 [-11, +9] 0.61 | 66 (18 / 19) | +7 [-5, +20] 0.15 | 84 (28 / 21) |
+| level 0 | -4 | 6 (1 / 5) | +1 | 7 (3 / 2) |
+| level 1 | -2 | 5 (0 / 2) | +1 | 7 (2 / 1) |
+| level 2 | +4 | 4 (4 / 0) | 0 | 5 (0 / 0) |
+| level 3 | 0 | 2 (1 / 1) | +3 | 6 (4 / 1) |
+| level 4 | +2 | 10 (2 / 0) | +3 | 20 (8 / 5) |
+| level 5 | +2 | 17 (5 / 3) | 0 | 14 (4 / 4) |
+| level 6 | -2 | 12 (3 / 5) | -3 | 13 (3 / 6) |
+| level 7 | -1 | 10 (2 / 3) | +2 | 12 (4 / 2) |
+| no figure (`text_only`) | -2 [-9, +5] 0.77 | 31 | +5 [-5, +16] 0.20 | 49 |
+| with a figure | +1 [-7, +8] 0.45 | 35 | +2 [-5, +9] 0.34 | 35 |
+| numeric options | -3 [-11, +5] 0.81 | 44 | +1 [-9, +12] 0.47 | 58 |
+| non-numeric options | +2 [-4, +8] 0.32 | 22 | +6 [-1, +13] 0.045 | 26 |
+| **levels 2 to 5** | **+8 [+2, +14] 0.004** | 33 (12 / 4) | **+6 [-3, +15] 0.12** | 45 (16 / 10) |
+| levels 2 to 4 | +6 [+2, +11] 0.002 | 16 (7 / 1) | +6 [-2, +14] 0.08 | 31 (12 / 6) |
+| levels 1 to 5 | +6 [-1, +13] 0.05 | 38 | +7 [-3, +17] 0.10 | 52 |
+| levels 2 to 6 | +6 [-2, +14] 0.08 | 45 | +3 [-8, +14] 0.33 | 58 |
+| levels 0 to 3 | -2 [-9, +5] 0.77 | 17 | +5 [-1, +11] 0.06 | 25 |
+
+**Reading it.** The guess that went in (low levels without a figure) is wrong: levels 0 and 1
+lose on validation (the model's working on the easiest problems replaced 7 right answers of
+the prior with 1), and `text_only` is a wash. The only stratum positive on both sets with a
+usable size is **levels 2 to 5**: 78 problems answered over the two sets, the model right on
+28, the shipped policy on 14; validation +8 with an interval that excludes zero, training +6
+with one that does not. Caveat, stated plainly: that stratum was picked after looking at
+eleven candidates, so its validation interval is optimistic (the pick itself is part of the
+luck). Levels 6 and 7 lose or wash on both sets, and should never run the stage: the model's
+working on hard problems is wrong more often than the prior.
+__SHORT_STYLE__
+__CATALAN__
+**Time.** The stage costs about 42 s of board time per request, whatever the result (a
+cut-off working costs the same as a parsed one). With `THINK_LEVELS=2,3,4,5` on the 281
+validation problems, 84 requests: board estimate mean 13.4 s per problem, median 0, worst
+51.5 s, 63 minutes for the set; the shipped policy takes 4 minutes, the stage on every level
+118. __EXAM_TIME__
+
+## Experiment 6: the board, 50 problems (`eval.py --limit 50`, real seconds)
+__BOARD__
+
 ## Decision
 
 `MIDDLE_VALUE=1` is the default in `config.env` (review of 14 Nov): it is the only change

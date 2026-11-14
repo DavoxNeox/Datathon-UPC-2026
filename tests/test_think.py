@@ -90,6 +90,15 @@ class AppliesTest(unittest.TestCase):
         self.assertEqual(think.levels_from_config(""), set())
         self.assertEqual(think.levels_from_config("all"), set(range(8)))
 
+    def test_every_flag_is_in_config_env_so_the_environment_can_override_it(self):
+        # copilot.config applies environment overrides only to keys present in config.env
+        from copilot.config import CONFIG
+        for key in ("THINK_LEVELS", "THINK_TEXT_ONLY", "THINK_NUMERIC", "THINK_STYLE", "THINK_BUDGET_SECONDS",
+                    "THINK_MAX_TOKENS", "THINK_MIN_TOKENS"):
+            self.assertIn(key, CONFIG, key)
+        self.assertEqual(think.BUDGET, 45.0)
+        self.assertIn(think.STYLE, think.INSTRUCTIONS)
+
     def test_the_flag_is_off_by_default(self):
         from copilot.config import CONFIG
         self.assertEqual(think.levels_from_config(CONFIG.get("THINK_LEVELS", "")), set(),
@@ -110,8 +119,13 @@ class PipelineTest(unittest.TestCase):
                 patch.stop()
 
     def test_a_parsed_letter_answers_with_rule_think_and_the_clock_counts_it(self):
-        result = self.solve(fake_server("12 - 2 = 10.\nAnswer: B"))
+        post = fake_server("12 - 2 = 10.\nAnswer: B")
+        result = self.solve(post)
         self.assertEqual((result["answer"], result["rule"], result["status"]), ("B", "think", "ok"))
+        # the pipeline's budget is THINK_BUDGET_SECONDS (45): a 100-token prompt leaves 195 output tokens, not the 200 cap
+        self.assertEqual(post.calls[0]["max_tokens"], think.output_budget(100, think.BUDGET))
+        self.assertLess(post.calls[0]["max_tokens"], think.MAX_TOKENS)
+        self.assertLessEqual(board_clock.estimate_tokens(100 + think.TEMPLATE_TOKENS, post.calls[0]["max_tokens"]), think.BUDGET)
         self.assertEqual(result["prompt_tokens"], 120)
         self.assertGreater(result["board_seconds"], 10)
         self.assertEqual(result["extra"]["think"]["how"], "answer_line")
