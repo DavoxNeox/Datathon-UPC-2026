@@ -192,13 +192,16 @@ Callers never know which one runs.
 
 ### `copilot/lineage.py` (innovation: the lineage of a problem)
 
+An exploration, not a hint: "look how this idea grows across the levels". The rungs are
+further problems, shown unsolved and without their answers; nothing in the chain helps to
+answer the current problem, so it never counts as a hint rung.
+
 ```python
-lineage(problem_id: str, lang: str = "cat", min_similarity: float = 0.6,
+lineage(problem_id: str, lang: str = "cat", min_similarity: float = 0.75,
         max_links: int = 5) -> list[dict]
-    # The same idea across the Kangaroo levels: at every level other than the problem's own,
-    # the most similar training problem of the SAME topic (embedding index, English vectors),
-    # kept when similarity >= min_similarity, at most max_links (the most similar stay),
-    # ordered easiest level first. Each link:
+    # At every level other than the problem's own, the most similar training problem of the
+    # SAME topic (embedding index, English vectors), kept when similarity >= min_similarity,
+    # at most max_links (the most similar stay), ordered easiest level first. Each link:
     # {"id", "level", "year", "topic", "similarity", "text" (in lang), "language",
     #  "options", "text_only"}  -- never the label, never problem_id itself.
     # Empty list without an index or for an unknown id.
@@ -207,17 +210,23 @@ led_frame(chain: list[dict], current_level: int) -> list[list[int]]
     # left at brightness 3 whose length is its similarity (0.5 -> 0 LEDs, 1.0 -> 13);
     # the current level is a full row at 7. Returns the frame; the caller draws it.
 embeddings_needed(problem_id: str) -> int   # 0 for a training id (stored vector), 1 otherwise
-RECOMMENDED_MIN_SIMILARITY = 0.75           # hand-calibrated on validation, see docs/lineage.md
+DEFAULT_MIN_SIMILARITY = 0.75               # the default above; calibration in docs/lineage.md
 ```
 
 Cost on the board: one embedding at most (0.12 s) for a validation id, none for a training
 id, plus about 12 ms of Python on the laptop (one dot product per same-topic row).
 
-Web proposal (not implemented, `webapp.py` untouched): a "Llinatge" button on the problem
-page draws a staircase of up to five thumbnails, one step per level from easiest (bottom
-left) to hardest (top right), each with its level, year and the `data/images/<id>_<lang>.png`
-miniature when the topic is visual, the current problem's step highlighted; clicking a step
-opens that problem read-only (no label), and the LED shows `led_frame(chain, level)`.
+Calibration (docs/lineage.md): on a clean second sample of 15 validation chains at 0.75,
+14/65 links (21.5%) are the same mathematical idea; links at 0.85 or above are 18/20 over
+both samples. The web should show the similarity of every rung (the bar of `led_frame`)
+and may mark rungs at 0.85 or above as strong.
+
+Web proposal (not implemented, `webapp.py` untouched): an "Explora el llinatge" button,
+apart from the hint ladder, draws a staircase of up to five thumbnails, one step per level
+from easiest (bottom left) to hardest (top right), each with its level, year, similarity bar
+and the `data/images/<id>_<lang>.png` miniature when the topic is visual, the current
+problem's step highlighted; clicking a step opens that problem read-only (no label), and
+the LED shows `led_frame(chain, level)`.
 
 ## Phase 0 stubs
 

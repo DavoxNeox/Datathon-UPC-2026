@@ -6,7 +6,10 @@ case draw from a bag. `copilot/lineage.py` makes that visible: for a problem it 
 chain by levels, the most similar training problem of the same topic at every other level,
 ordered from the easiest to the hardest, with the similarity and the year. Nothing reasons:
 the chain is a lookup in the embedding index, and the student is the one who compares the
-rungs. `led_frame()` turns the chain into an 8x13 frame, one row per level, for the matrix.
+rungs. It is an exploration ("look how this idea grows"), not a hint: the rungs are further
+problems, shown unsolved and without their answers, and nothing in them helps to answer the
+current one. `led_frame()` turns the chain into an 8x13 frame, one row per level, for the
+matrix.
 
 Measured with `python3 laptop/measure_lineage.py` on 14 Nov 2026 (laptop, shared servers,
 index of 1466 English training vectors, 281 English validation problems). Problems are
@@ -38,7 +41,7 @@ cosine scale is compressed: 0.6 is below the random floor and keeps almost every
 | 0.80 | 72/281 = 25.6% | 1.56 | 3.2% | 0.838 |
 | 0.85 | 10/281 = 3.6% | 0.41 | 0.0% | 0.887 |
 
-With the default `max_links=5`: mean 4.93 links at 0.60, 3.16 links at 0.75 (64.4% of the
+With `max_links=5`: mean 4.93 links at 0.60, 3.16 links at the default 0.75 (64.4% of the
 problems keep at least 3 links).
 
 Per topic (n = validation problems of the topic):
@@ -74,10 +77,10 @@ product per same-topic English row (33 to 398 rows), so it stays far below the e
 on the board's CPU. A chain never costs more than one embedding; a second call for the same
 id costs none (`retrieval._QUERY_CACHE`).
 
-## Hand judgement of 15 chains
+## Hand judgement, round 1: 15 chains at 0.60 (calibration sample)
 
-`measure_lineage.py --judge 15` picks, with a fixed seed, 15 validation problems with at least
-3 links at 0.60, two per topic in LED order (the fifteenth stops the second round, so
+`measure_lineage.py --judge 15 --judge-threshold 0.6 --judge-seed 7` picks 15 validation
+problems with at least 3 links at 0.60, two per topic in LED order (the fifteenth stops the second round, so
 `boards` has one), and writes their texts outside the repository. Each link was read in its
 English text, and the figure in `data/images/<id>_eng.png` for the problems that need it, and
 judged "same idea" when the same mathematical idea or technique solves both, not merely the
@@ -102,8 +105,8 @@ all.
 | 14 | lvl-3_2016_30 (3, angles) | nested equilateral triangles, parallel sides | 2 (2017, .66, n), 4 (2007, .75, n), 5 (2020, .82, y), 6 (2020, .80, y), 7 (2024, .74, n) | 2/5 | no |
 | 15 | lvl-4_2015_30 (4, spatial) | painted faces of a cube cut into small cubes | 1 (2018, .86, y), 2 (2021, .89, y), 3 (2021, .89, y), 5 (2020, .88, y), 6 (2014, .84, n) | 4/5 | yes |
 
-Totals: 33/74 links are the same idea (44.6%); 6/15 chains pass (40%) at the signature
-default of 0.6.
+Totals: 33/74 links are the same idea (44.6%); 6/15 chains pass (40%) at 0.6, the
+signature's first default.
 
 Precision of a link by similarity (the same 74 links):
 
@@ -122,13 +125,64 @@ Precision of a link by similarity (the same 74 links):
 | 0.75 | 40/74 | 68% | 82% |
 | 0.80 | 20/74 | 80% | 48% |
 
-So `min_similarity=0.6` (the contract's default) shows a full staircase that is right less
-than half of the time, and 0.75 is the knee: two links in three are the same idea and 82% of
-the good links survive, at the price of showing a chain of 3 or more rungs for 64% of the
-problems instead of 99%. `lineage.RECOMMENDED_MIN_SIMILARITY = 0.75` records this; the web
-should pass it. Small n: 15 chains, one judge.
+So 0.6 shows a full staircase that is right less than half of the time, and on this sample
+0.75 looked like the knee: two links in three the same idea, 82% of the good links kept, a
+chain of 3 or more rungs for 64% of the problems instead of 99%. The default of `lineage()`
+was set to 0.75 (`DEFAULT_MIN_SIMILARITY`). This threshold was chosen on the same 74 links
+that were judged, so it had to be checked on a clean sample (next section).
 
-What the judgement also showed:
+## Hand judgement, round 2: 15 new chains at the fixed 0.75 (clean sample)
+
+`measure_lineage.py --judge 15 --judge-threshold 0.75 --judge-seed 11 --judge-exclude <the
+15 ids above>` picks 15 other validation problems, at random with that seed, among those
+with at least 3 links at 0.75 (181 of 281), two per topic in LED order, `boards` one. Same
+criterion and same judge, 65 links, texts and figures read as in round 1.
+
+| # | query (level, topic) | idea of the query | links: level (year, similarity, same idea) | yes | chain |
+|---|---|---|---|---|---|
+| 1 | lvl-5_2017_11 (5, arithmetic) | fractions of a crowd by group | 0 (2019, .80, n), 1 (2022, .80, n), 4 (2016, .84, n), 6 (2017, .79, y), 7 (2019, .80, n) | 1/5 | no |
+| 2 | lvl-5_2022_23 (5, logic) | 3-1-0 tournament points, totals | 1 (2022, .85, y), 3 (2020, .85, y), 4 (2011, .80, n), 6 (2022, .87, y), 7 (2014, .87, y) | 4/5 | yes |
+| 3 | lvl-6_2014_28 (6, digits) | middle element of an ordered list of digit-restricted numbers | 0 (2017, .77, n), 2 (2017, .78, n), 4 (2023, .80, n), 5 (2019, .77, n), 7 (2022, .80, y) | 1/5 | no |
+| 4 | lvl-7_2017_3 (7, counting) | minimum cut in a graph | 1 (2017, .77, n), 4 (2016, .76, n), 5 (2019, .76, n), 6 (2018, .78, n) | 0/4 | no |
+| 5 | lvl-6_2008_14 (6, areas) | chord symmetry of a circle cutting a rectangle | 1 (2021, .76, n), 3 (2021, .76, n), 4 (2015, .77, n), 5 (2017, .78, n), 7 (2022, .81, y) | 1/5 | no |
+| 6 | lvl-5_2008_28 (5, angles) | lines forming a set of angles | 3 (2023, .76, n), 4 (2017, .78, n), 6 (2015, .75, n), 7 (2015, .78, n) | 0/4 | no |
+| 7 | lvl-2_2020_7 (2, spatial) | counting pieces after cutting sheets | 0 (2018, .87, y), 1 (2016, .76, n), 3 (2019, .82, y), 4 (2019, .77, n), 6 (2013, .80, n) | 2/5 | no |
+| 8 | lvl-4_2011_20 (4, boards) | tiling a square with a pentomino | 0 (2016, .83, n), 1 (2024, .78, n), 3 (2024, .76, n), 5 (2024, .78, n), 6 (2011, .75, n) | 0/5 | no |
+| 9 | lvl-5_2021_18 (5, arithmetic) | divisibility of a total after removing one part | 1 (2015, .75, n), 2 (2022, .78, n), 3 (2021, .81, n) | 0/3 | no |
+| 10 | lvl-4_2024_22 (4, logic) | deduce the leftover card from arithmetic clues | 2 (2021, .77, n), 5 (2015, .76, n), 6 (2014, .78, n) | 0/3 | no |
+| 11 | lvl-7_2015_26 (7, digits) | numbers as sums of distinct powers of 2 | 0 (2022, .81, n), 3 (2022, .82, n), 4 (2020, .83, n), 5 (2007, .85, n), 6 (2015, .87, y) | 1/5 | no |
+| 12 | lvl-3_2017_30 (3, counting) | colourings under an adjacency constraint | 4 (2024, .76, n), 5 (2010, .81, y), 6 (2017, .76, n), 7 (2016, .82, y) | 2/4 | yes |
+| 13 | lvl-2_2024_19 (2, areas) | area of a region from the areas around it | 0 (2020, .77, n), 6 (2015, .81, n), 7 (2008, .78, n) | 0/3 | no |
+| 14 | lvl-4_2022_28 (4, angles) | angle chasing in isosceles triangles | 3 (2024, .75, y), 5 (2009, .83, n), 6 (2008, .88, y), 7 (2024, .78, n) | 2/4 | yes |
+| 15 | lvl-4_2015_7 (4, spatial) | overlapping strips, total length | 0 (2019, .79, n), 2 (2019, .78, n), 3 (2019, .79, n), 6 (2013, .78, n), 7 (2024, .78, n) | 0/5 | no |
+
+Totals of the clean sample: 14/65 links are the same idea (21.5%); 3/15 chains pass (20%).
+
+Precision by similarity, both rounds, links at 0.75 or above only:
+
+| similarity | round 1 (calibration) | round 2 (clean) | both |
+|---|---|---|---|
+| 0.75 to 0.80 | 11/20 = 55% | 3/41 = 7% | 14/61 = 23% |
+| 0.80 to 0.85 | 5/8 = 62% | 4/16 = 25% | 9/24 = 38% |
+| 0.85 and above | 11/12 = 92% | 7/8 = 88% | 18/20 = 90% |
+| all at 0.75+ | 27/40 = 68% | 14/65 = 22% | 41/105 = 39% |
+
+The clean sample does not confirm 0.75: round 1 was a lucky draw whose strong lineages (the
+bag, the painted cube, the rectangles) filled the 0.75 to 0.85 band with good links, and
+round 2 shows that band at 7 to 25%. What holds in both rounds is the top band: at 0.85 or
+above, 18 of 20 links are the same idea. Validation coverage at 0.85 is 3.6% of the problems
+with 3 or more rungs (mean 0.41 rungs), so a threshold that is right nine times in ten shows
+a staircase almost never. The default stays at 0.75 as agreed with the reviewer; the web
+should show every rung's similarity (the bar of `led_frame`) and may mark rungs at 0.85 or
+above as strong. Still one judge; 30 chains, 139 links in all.
+
+Why the 0.75 to 0.85 band is weak: in round 2 the query's topic is wrong or too broad for 7
+of the 15 chains (a count of pieces of paper and a strip-overlap problem under `spatial`, a
+divisibility problem under `arithmetic`, a minimum cut under `counting`, a pentomino tiling
+under `boards`), so the same-topic filter searches the wrong shelf, and bge rewards shared
+nouns (football, chocolate, sheets, paper) over the mathematics.
+
+What the round-1 judgement also showed:
 
 - M3Kang gives the same problem at two adjacent levels in the same year (chains 8, 10 and
   15: levels 2 and 3 of 2018, 2020 and 2021; chain 14: levels 5 and 6 of 2020). The chain
@@ -142,7 +196,8 @@ What the judgement also showed:
 
 ## Demo candidates
 
-The three clearest chains, in order:
+The three clearest chains (all from round 1, every link at 0.76 or above, so they are the
+same at the default 0.75), in order:
 
 1. `lvl-0_2016_8` (level 0, counting): the worst case draw from a bag, 5/5 links, from level 1
    (2016) to level 7 (2018), all text-only, similarities 0.76 to 0.88. A level-0 student sees
@@ -153,7 +208,8 @@ The three clearest chains, in order:
    levels 0, 3, 4, 5, 7 (2013 to 2024), with figures, similarities 0.83 to 0.87.
 
 Reserve: `lvl-1_2016_11` (level 1, areas), overlapping squares, whose true lineage is level 4
-in 2007, level 1 in 2016 and levels 2 and 3 in 2024.
+in 2007, level 1 in 2016 and levels 2 and 3 in 2024; from round 2, `lvl-5_2022_23` (level 5,
+logic), the 3-1-0 tournament points at levels 1, 3, 6 and 7 (2014 to 2022), 4/5, text-only.
 
 All three are validation ids, so the first call costs one embedding (0.13 s on the board);
 `data/val.jsonl` must be present for the text lookup, as it is for retrieval.
@@ -161,6 +217,7 @@ All three are validation ids, so the first call costs one embedding (0.13 s on t
 ## Not done
 
 - The web page and the LED call: `webapp.py` is untouched; the proposal is in INTERFACES.md.
-- A second judge, and more than two chains per topic.
+- A second judge, and more than two chains per topic; a topic table with fewer mis-filed
+  problems would lift the 0.75 to 0.85 band more than any change in this module.
 - Nothing was run on the board; the cost is the measured embedding time plus the laptop's
   Python time.
