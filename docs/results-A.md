@@ -85,6 +85,25 @@ Our 125 tests pass on the board; `predict.py` on the sample problems answers at 
 So every "board estimate" printed on the laptop before this date (constants 11 / 5.5 / 0.25) was
 within about 4% on the model work and twice too pessimistic on embeddings.
 
+Baseline on the board (`LETTER_MODEL=1 SOLVERS=0 eval.py --limit 50 --languages eng`, the same 50
+problems as the laptop run):
+
+| | laptop (estimate) | board (real) |
+| --- | --- | --- |
+| accuracy | 15/50 = 30.0% | 15/50 = 30.0% |
+| answers identical | | 47/50 (3 near-ties flip with the platform's float arithmetic) |
+| mean per problem | 9.1 s | 10.3 s real, 10.7 s estimated with the old constants |
+| estimate error | | mean +3.7%, worst +5.7%, 50/50 within 15% |
+| worst problem | 16.7 s | 16.0 s from the pipeline itself |
+
+Two problems took 54 s and 41 s of wall time: the service log shows two foreign requests (348
+prompt tokens, 60 generated, 41 s each) sent to the board's server at that moment, and the
+evaluation's requests queued behind them (`--parallel 1`). The pipeline never generated more
+than one token. In the jury's run the server is alone.
+
+RAM with both servers and the evaluation running: 2758 MB available; `llama-server` 1059 MB
+(LLM) and 75 MB (embeddings).
+
 ## Known measurement artifact
 
 Several sessions share one `llama-server` with `--parallel 1 --cache-ram 0`: the system prompt
