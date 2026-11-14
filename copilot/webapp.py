@@ -184,7 +184,7 @@ class Session:
         self.rung, self.hints, self.answer = 0, [], None
         self.hint_uses = 0
         self.translation_shown, self.rung0_uses = False, 0
-        self.message = {"ca": "Tria una resposta, o demana una pista.", "en": "Choose an answer, or ask for a hint."}
+        self.message = {"ca": "Tria una resposta o demana una pista.", "en": "Choose an answer, or ask for a hint."}
         hints.prefetch(self.problem["id"], self.lang)
         self._show_mastery()
         self._record("next", started)
@@ -292,10 +292,10 @@ class Session:
             self.mastery = trainer.mastery_map(self.student)
             led.show_result(result["correct"])
             if result["correct"]:
-                self.message = {"ca": "Correcte!", "en": "Correct!"}
+                self.message = {"ca": "Molt bé, correcte!", "en": "Correct!"}
             else:
-                self.message = {"ca": f"No és això. La resposta era {result['label']}.",
-                                "en": f"Not this time. The answer was {result['label']}."}
+                self.message = {"ca": f"No és aquesta. La resposta correcta era la {result['label']}.",
+                                "en": f"Not quite. The correct answer was {result['label']}."}
                 # Error signature (copilot/signatures.py, when present): an explanation of the
                 # slip, shown ONLY now that the problem is closed and the answer is on screen.
                 # Never before answering: most signatures pin the correct option.
@@ -348,13 +348,13 @@ class Session:
             if self.hint_uses >= HINT_MAX_USES:
                 # The ladder is capped: three hints per problem, then the student answers or asks
                 # for the solution on purpose. Rung 0 (the other language) does not count.
-                self.message = {"ca": f"Ja has fet servir les {HINT_MAX_USES} pistes d'aquest problema. Prova-ho, o demana la solució.",
+                self.message = {"ca": f"Ja has fet servir les {HINT_MAX_USES} pistes d'aquest problema. Prova-ho o demana la solució.",
                                 "en": f"You have used the {HINT_MAX_USES} hints for this problem. Give it a try, or ask for the solution."}
                 return {"error": "no hints left", "hints_left": 0}
             self.hint_uses += 1
             rung = min(3, self.rung + 1)
             self.busy = True
-            self.message = {"ca": "Pensant una pista…", "en": "Thinking of a hint…"}
+            self.message = {"ca": "Preparant una pista…", "en": "Thinking of a hint…"}
         threading.Thread(target=self._compute_hint, args=(rung,), daemon=True).start()
         return {"ok": True, "busy": True, "rung": rung}
 
@@ -374,7 +374,7 @@ class Session:
             result = hints.get_hint(problem_id, rung, self.lang)
         except Exception as error:  # never leave the page waiting
             result = {"rung": rung, "kind": "strategy", "estimated_board_seconds": 0.0,
-                      "text_ca": "No he pogut preparar la pista.", "text_en": "I could not prepare the hint.",
+                      "text_ca": "Ara no puc preparar cap pista. Torna-ho a provar.", "text_en": "I could not prepare the hint.",
                       "error": f"{type(error).__name__}: {error}"}
         laptop_s = time.perf_counter() - started
         if result.get("kind") == "neighbour" and result.get("problem"):

@@ -73,7 +73,7 @@ def compute(params, options):
              "text_en": f"Now the total is {n}·{common.fmt(mean)} = {common.fmt(total)}."},
             {"text_ca": f"Amb k proves més de {common.fmt(p)} punts, la mitjana és ({common.fmt(total)} + {common.fmt(p)}k)/({n} + k) = {common.fmt(b)}.",
              "text_en": f"With k more tests of {common.fmt(p)} points, the mean is ({common.fmt(total)} + {common.fmt(p)}k)/({n} + k) = {common.fmt(b)}."},
-            {"text_ca": f"Resolent, k = {common.fmt(value)}.", "text_en": f"Solving, k = {common.fmt(value)}.", "value": common.fmt(value)},
+            {"text_ca": f"Si ho resols, k = {common.fmt(value)}.", "text_en": f"Solving, k = {common.fmt(value)}.", "value": common.fmt(value)},
         ]
     else:
         raise ValueError("unknown kind")

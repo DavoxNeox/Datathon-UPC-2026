@@ -214,14 +214,14 @@ def _rung1(problem, lang):
     fitting = [h for h in hits if int(h.get("level", level) or 0) <= level and h.get("topic", topic) == topic]
     if not fitting:
         return {"kind": "neighbour", "problem": None,
-                "text_ca": "No tinc cap problema semblant més fàcil. Prova una estratègia.",
+                "text_ca": "No tinc cap problema semblant més fàcil. Prova-ho amb una estratègia.",
                 "text_en": "I have no similar, easier problem. Try a strategy."}
     shown = {k: v for k, v in fitting[0].items() if k != "label"}
     if topics.is_visual(topic):
         shown["image"] = _image_path(shown["id"], shown.get("language", lang))
     easier = int(shown.get("level", level) or 0) < level
     if easier:
-        text_ca = f"Un problema semblant, més fàcil (nivell {shown['level']}). Com el resoldries?"
+        text_ca = f"Un problema semblant i més fàcil (nivell {shown['level']}). Com el resoldries?"
         text_en = f"A similar, easier problem (level {shown['level']}). How would you solve it?"
     else:
         text_ca = "Un problema semblant, del mateix nivell. Com el resoldries?"
@@ -233,7 +233,7 @@ def _rung2(problem, state):
     cards = strategies(_topic_of(problem))
     if not cards:
         return {"kind": "strategy", "manipulative": None,
-                "text_ca": "Escriu les dades del problema i què et demanen.",
+                "text_ca": "Escriu les dades del problema i encercla què et demanen.",
                 "text_en": "Write down the data and what the problem asks."}
     with _lock:
         i = state["strategy"] % len(cards)

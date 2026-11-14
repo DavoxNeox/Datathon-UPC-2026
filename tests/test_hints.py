@@ -52,7 +52,7 @@ class LadderTest(unittest.TestCase):
         with mock.patch.object(hints.retrieval, "neighbors", return_value=[harder, other]):
             h = hints.get_hint("sample-1", 1, "cat")
         self.assertIsNone(h["problem"])
-        self.assertIn("Prova una estratègia", h["text_ca"])
+        self.assertIn("Prova-ho amb una estratègia", h["text_ca"])
 
     def test_rung1_visual_topic_has_image_key(self):
         h = hints.get_hint("sample-3", 1, "eng")  # sample-3 is "areas", a visual topic
