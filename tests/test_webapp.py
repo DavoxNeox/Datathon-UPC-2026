@@ -195,6 +195,23 @@ class Rung0Test(unittest.TestCase):
         self.assertIn("error", out)
         self.assertEqual(self.s.teacher()["rung0"]["uses"], 0)
 
+    def test_start_forgets_the_student_counters_like_the_trainer_does(self):
+        quiet(self.s.translate, "show")
+        quiet(self.s.answer_letter, "C")
+        self.assertEqual(self.s.teacher()["rung0"]["by_student"]["Mar"]["uses"], 1)
+        quiet(self.s.start, "Mar", "1")  # start_student resets the pseudonym in the trainer
+        report = self.s.teacher()["rung0"]
+        self.assertNotIn("Mar", report["by_student"])
+        self.assertEqual(report["students_total"], 0)
+        self.assertEqual(quiet(self.s.state)["rung0"]["uses"], 0)
+
+    def test_start_without_start_student_keeps_the_counters(self):
+        del self.trainer.start_student
+        quiet(self.s.translate, "show")
+        quiet(self.s.answer_letter, "C")
+        quiet(self.s.start, "Mar", "1")  # the older flow does not reset the student
+        self.assertEqual(self.s.teacher()["rung0"]["by_student"]["Mar"]["uses"], 1)
+
     def test_reset_forgets_the_student_counters(self):
         quiet(self.s.translate, "show")
         quiet(self.s.answer_letter, "C")
