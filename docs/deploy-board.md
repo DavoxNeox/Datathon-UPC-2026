@@ -118,6 +118,12 @@ the app container at 91 MB, the servers at 1059 MB and 75 MB.
 
 ## 5. Demo mode
 
+Make the app start on its own at boot, next to the two model services and the relay:
+
+```bash
+arduino-app-cli properties set default user:math-copilot
+```
+
 Wi-Fi off, services started at boot, the laptop only shows the page over USB:
 
 ```bash
