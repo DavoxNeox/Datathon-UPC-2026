@@ -1,78 +1,136 @@
-/* Math copilot: local styles only, system fonts, nothing fetched from the network.
-   Sized for a 90-second demo on a laptop: big answer buttons, a visible LED, no layout jumps. */
-:root { --ink: #1d2433; --muted: #5c667a; --line: #dfe3ea; --bg: #f5f7fa; --card: #fff;
-        --ok: #1b7f3b; --ok-bg: #e6f4ea; --bad: #b3261e; --bad-bg: #fce8e6; --accent: #1f5fbf; --warn: #a15c00; --warn-bg: #fff4e0; }
+/* Math copilot, student page. Local styles only: system fonts, nothing fetched from the network.
+   Colours come from theme.css (light and dark). One column, the problem first, the rest in a
+   collapsible panel. Sized for a 3-minute demo on a 1280x800 laptop and for a phone. */
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; font: 18px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
-header { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 8px 20px; background: var(--card); border-bottom: 1px solid var(--line); }
-header h1 { font-size: 22px; margin: 0 4px 0 0; }
-header .who { font-weight: 600; padding: 4px 12px; background: var(--bg); border-radius: 999px; }
-header .grow { flex: 1; }
-.lang button { font: inherit; padding: 6px 12px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
-.lang button:first-child { border-radius: 6px 0 0 6px; } .lang button:last-child { border-radius: 0 6px 6px 0; }
-.lang button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
-a.teacher { color: var(--muted); font-size: 14px; }
-canvas.led { background: #0d0d0d; border-radius: 10px; border: 3px solid #333; width: 234px; height: 144px; }
-main { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; padding: 20px; max-width: 1240px; margin: 0 auto; }
-main#start { grid-template-columns: 1fr; max-width: 560px; padding-top: 48px; }
-section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; }
-section h2 { font-size: 15px; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-section.start h2 { font-size: 24px; text-transform: none; letter-spacing: 0; color: var(--ink); }
-.field { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; font-size: 15px; color: var(--muted); }
-.field input, .field select { font: inherit; font-size: 20px; color: var(--ink); padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font: 18px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); min-height: 100vh; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+a { color: var(--accent); }
+
+/* The bar: quiet, one line, everything secondary lives behind "Més" */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; max-width: 920px; margin: 0 auto; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 15px; color: var(--muted); font-weight: 600; }
+.brand .who { font-weight: 600; color: var(--ink); background: var(--card); border: 1px solid var(--line); padding: 4px 12px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; }
+.tools { display: flex; align-items: center; gap: 8px; }
+.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); }
+.lang button { min-width: 44px; min-height: 44px; padding: 0 10px; border: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.lang button.on { background: var(--accent-soft); color: var(--accent); }
+.icon { min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; }
+.icon:hover, .lang button:hover { color: var(--ink); }
+.icon[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+/* The panel: progress, LED, timings, teacher, reset */
+.panel { position: fixed; top: 60px; right: 16px; z-index: 5; width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 76px); overflow: auto;
+         display: grid; grid-template-columns: 1fr; gap: 10px; padding: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 12px 32px rgba(0, 0, 0, .18); }
+.panel-block { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
+.panel-block h2, .panel summary { font-size: 13px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.panel summary { cursor: pointer; margin: 0; }
+.panel-block.links { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; font-size: 15px; }
+.panel-block.links a { color: var(--muted); }
+canvas.led { display: block; background: #121212; border-radius: 10px; border: 3px solid #2a2a2a; width: 195px; height: 120px; }
+.mastery { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; align-items: center; }
+.mastery .segs { display: flex; gap: 4px; }
+.mastery .segs span { flex: 1; max-width: 36px; height: 10px; border-radius: 999px; background: var(--line); }
+.mastery .segs span.on { background: var(--accent); }
+#timeline { border-collapse: collapse; font-size: 13px; color: var(--muted); margin-top: 6px; }
+#timeline td, #timeline th { padding: 2px 12px 2px 0; text-align: left; font-weight: 500; }
+#timeline .over { color: var(--bad); font-weight: 600; }
+
+/* The start screen */
+main { max-width: 920px; margin: 0 auto; padding: 8px 16px 48px; }
+main#start { max-width: 520px; padding-top: 10vh; }
+section.start { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 28px 28px 24px; box-shadow: var(--shadow); }
+section.start h1 { font-size: 26px; margin: 0 0 14px; }
+.field { display: flex; flex-direction: column; gap: 4px; margin: 14px 0; font-size: 14px; color: var(--muted); }
+.field input, .field select { font: inherit; font-size: 20px; color: var(--ink); padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); min-height: 48px; }
 .meta { color: var(--muted); font-size: 14px; }
-.text { white-space: pre-wrap; margin: 12px 0; font-size: 21px; }
-/* rung 0: the statement in the other language, side by side on a laptop, stacked on a phone */
-.meta-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; }
-button.translate { font: inherit; font-size: 14px; color: var(--accent); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; cursor: pointer; }
-button.translate:hover { border-color: var(--accent); }
-button.translate.on { background: var(--accent); color: #fff; border-color: var(--accent); }
-.bilingual.on { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-.bilingual .other { background: #fafbfd; border: 1px dashed var(--line); border-left: 5px solid var(--accent); border-radius: 8px; padding: 6px 14px 10px; margin: 12px 0; }
-.bilingual .other .kind { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.bilingual .other .text { margin: 6px 0; font-size: 19px; }
-.bilingual .other-options { font-size: 16px; color: var(--muted); white-space: pre-wrap; }
-img.problem { max-width: 100%; max-height: 300px; border: 1px solid var(--line); border-radius: 6px; margin-top: 8px; }
-.letters { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
-.letters button { min-width: 96px; height: 76px; padding: 0 16px; font-size: 28px; font-weight: 700; border: 3px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; }
-.letters button small { display: block; font-size: 15px; font-weight: 400; color: var(--muted); line-height: 1.1; }
+
+/* The problem: the picture first, the text behind a chip when the picture already carries it */
+#app > .meta { margin: 6px 2px 10px; }
+.figure { margin: 0; cursor: zoom-in; background: var(--figure-bg); border: 1px solid var(--line); border-radius: 14px; padding: 10px; filter: var(--figure-dim); }
+.figure img { display: block; width: 100%; height: auto; max-height: 62vh; object-fit: contain; }
+.statement { margin: 14px 2px 0; }
+.text { white-space: pre-wrap; font-size: 22px; line-height: 1.45; }
+.options-text { color: var(--muted); font-size: 17px; margin-top: 8px; white-space: pre-wrap; }
+.text-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.chip { min-height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--muted); font-size: 15px; cursor: pointer; }
+.chip:hover { color: var(--ink); }
+.chip.on, .chip[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+/* rung 0: the same problem in the other language */
+.other { margin: 12px 0 0; padding: 10px 16px 14px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; }
+.other .kind { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.other .text { font-size: 19px; margin-top: 4px; }
+
+/* The answers: five big letters in the order of the picture, or full rows when the text has the options */
+.letters { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+.letters button { flex: 1 1 0; min-width: 60px; min-height: 68px; padding: 10px 8px; border: 2px solid var(--line); border-radius: 14px; background: var(--card); cursor: pointer;
+                  display: flex; align-items: center; justify-content: center; gap: 12px; transition: border-color .15s, background-color .15s; }
+.letters button .l { font-size: 28px; font-weight: 700; line-height: 1; }
 .letters button:hover:not(:disabled) { border-color: var(--accent); }
-.letters button:disabled { cursor: default; opacity: .75; }
+.letters button:disabled { cursor: default; }
+.letters button.chosen { background: var(--accent-soft); border-color: var(--accent); }
 .letters button.right { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
 .letters button.wrong { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
-/* the verdict has its own line under the options, with a fixed height so nothing moves or is covered */
-.verdict { font-weight: 700; font-size: 20px; min-height: 2em; padding: 6px 0; }
-.verdict.ok { color: var(--ok); } .verdict.bad { color: var(--bad); }
-.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; }
-.primary { padding: 12px 20px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font: inherit; font-size: 18px; font-weight: 600; cursor: pointer; }
-.primary.big { width: 100%; font-size: 22px; padding: 14px; margin-top: 8px; }
-.secondary { padding: 12px 20px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font: inherit; font-size: 18px; cursor: pointer; }
-.secondary.small { padding: 5px 12px; font-size: 14px; color: var(--muted); }
-.primary:disabled, .secondary:disabled { opacity: .5; cursor: default; }
-.rungs { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
-.rungs span { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,.35); display: inline-block; }
-.rungs span.on { background: #fff; }
-.hints { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-.hint { border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: 8px; padding: 10px 14px; background: #fafbfd; font-size: 18px; }
-.hint .kind { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.hint .kind .badge { background: var(--warn-bg); color: var(--warn); padding: 0 6px; border-radius: 4px; margin-left: 6px; }
+.letters.rows { flex-direction: column; }
+.letters.rows button { flex: none; width: 100%; justify-content: flex-start; padding: 10px 16px; min-height: 60px; text-align: left; }
+.letters.rows button .l { font-size: 20px; min-width: 36px; height: 36px; border-radius: 50%; background: var(--card-2); display: inline-flex; align-items: center; justify-content: center; }
+.letters.rows button.right .l { background: var(--ok); color: var(--ok-bg); }
+.letters.rows button.wrong .l { background: var(--bad); color: var(--bad-bg); }
+.letters.rows button .o { font-size: 19px; }
+
+/* The verdict: a band under the options, never over them; the space is reserved so nothing jumps */
+.feedback { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; min-height: 64px; margin: 14px 0 0; padding: 10px 18px; border-radius: 14px; color: var(--muted); font-size: 18px; }
+.feedback.ok { background: var(--ok-bg); color: var(--ok); font-weight: 600; }
+.feedback.bad { background: var(--bad-bg); color: var(--bad); font-weight: 600; }
+.feedback .verdict { flex: 1 1 240px; }
+.feedback .primary { margin: 0; }
+
+/* Buttons */
+.primary { min-height: 48px; padding: 10px 22px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-size: 18px; font-weight: 600; cursor: pointer; }
+.primary.big { width: 100%; font-size: 21px; min-height: 56px; margin-top: 10px; }
+.secondary { min-height: 48px; padding: 10px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); font-size: 17px; cursor: pointer; }
+.secondary.small { min-height: 40px; padding: 6px 14px; font-size: 14px; color: var(--muted); }
+.link { min-height: 44px; padding: 8px 10px; border: 0; background: none; color: var(--muted); font-size: 16px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.link:hover { color: var(--accent); }
+.primary:disabled, .secondary:disabled, .link:disabled { opacity: .45; cursor: default; }
+.manip-btn { background: var(--warn-bg); border-color: transparent; color: var(--warn); }
+
+/* Help: quiet until needed */
+.help { margin-top: 22px; padding-top: 6px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.rungs { display: inline-flex; gap: 4px; margin-left: 10px; vertical-align: middle; }
+.rungs span { width: 9px; height: 9px; border-radius: 50%; background: var(--line); display: inline-block; }
+.rungs span.on { background: var(--accent); }
+.status { color: var(--muted); min-height: 1.6em; font-size: 15px; margin-top: 6px; }
+.hints { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.hint { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; padding: 10px 16px 12px; background: var(--card); font-size: 18px; }
+.hint .kind { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.hint .kind .badge { background: var(--warn-bg); color: var(--warn); padding: 0 6px; border-radius: 4px; margin-left: 6px; text-transform: none; letter-spacing: 0; }
 .hint.solution { border-left-color: var(--bad); }
-.hint .neighbour { margin-top: 6px; padding: 8px 10px; background: #fff; border: 1px dashed var(--line); border-radius: 6px; font-size: 16px; white-space: pre-wrap; }
-.hint .neighbour.clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.hint .neighbour img { max-width: 100%; max-height: 200px; display: block; margin-top: 6px; }
-.hint .more { font-size: 13px; color: var(--accent); cursor: pointer; background: none; border: 0; padding: 2px 0; }
+.hint .neighbour { margin-top: 8px; padding: 8px 12px; background: var(--card-2); border-radius: 8px; font-size: 16px; white-space: pre-wrap; }
+.hint .neighbour.clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; padding-bottom: 0; }
+.hint .neighbour img { max-width: 100%; max-height: 220px; display: block; margin-top: 6px; background: var(--figure-bg); filter: var(--figure-dim); border-radius: 6px; }
+.hint .more { font-size: 13px; color: var(--accent); cursor: pointer; background: none; border: 0; padding: 4px 0; min-height: 32px; }
 .hint .time { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.manip-btn { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
-.status { color: var(--muted); min-height: 1.5em; font-size: 16px; }
-.mastery { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 14px; margin-top: 8px; }
-.mastery .bar { height: 14px; background: var(--line); border-radius: 4px; overflow: hidden; align-self: center; }
-.mastery .bar div { height: 100%; background: var(--accent); transition: width .4s; }
-footer { max-width: 1240px; margin: 0 auto; padding: 0 20px 20px; color: var(--muted); font-size: 13px; }
-footer table { border-collapse: collapse; } footer td, footer th { padding: 2px 10px 2px 0; text-align: left; }
-footer .over { color: var(--bad); font-weight: 600; }
-dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(760px, 95vw); }
-dialog iframe { width: 100%; height: 520px; border: 0; display: block; }
-dialog .bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
-dialog::backdrop { background: rgba(0,0,0,.35); }
-@media (max-width: 900px) { main { grid-template-columns: 1fr; } canvas.led { width: 156px; height: 96px; } .bilingual.on { grid-template-columns: 1fr; } }
+.hint ol { margin: 8px 0 0; padding-left: 22px; }
+
+/* The manipulatives open in a dialog */
+dialog { border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(760px, 95vw); background: var(--card); color: var(--ink); }
+dialog iframe { width: 100%; height: min(520px, 75vh); border: 0; display: block; background: var(--card); }
+.dialog-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--line); }
+.zoom-box { overflow: auto; max-height: 75vh; background: var(--figure-bg); filter: var(--figure-dim); }
+.zoom-box img { display: block; min-width: 1100px; width: 100%; padding: 12px; }
+dialog::backdrop { background: rgba(0, 0, 0, .45); }
+
+@media (max-width: 640px) {
+  body { font-size: 17px; }
+  .brand > span:first-child { display: none; }           /* the name of the app is the tab's title */
+  .text { font-size: 20px; }
+  .letters { gap: 8px; }
+  .letters button { min-width: 56px; min-height: 60px; padding: 8px 4px; }
+  .letters button .l { font-size: 24px; }
+  .feedback { padding: 10px 14px; min-height: 56px; }
+  .feedback .primary { width: 100%; }
+}

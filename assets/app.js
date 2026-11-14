@@ -1,12 +1,14 @@
 // Math copilot page. Talks to the JSON endpoints of copilot/webapp.py and polls /api/state.
 // Catalan first, English on the switch. No network access beyond this board.
+// Layout rule: the problem is the only thing on the screen; the picture is the statement when
+// the data has one (M3Kang pictures carry the text and the options), the text sits behind a chip.
 const T0 = performance.now();
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
 const I18N = {
   cat: {title: "Copilot de mates", student: "Àlies", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
-        solution: "Solució", next: "Següent problema", mastery: "Domini per tema", close: "Tanca",
+        solution: "Solució", next: "Següent problema", mastery: "El teu progrés", close: "Tanca",
         level: "Nivell", topic: "Tema", thinking: "Pensant…", kinds: {neighbour: "Pista 1 · problema semblant",
         strategy: "Estratègia", trace: "Pas de la solució", llm: "Pista del model", solution: "Solució"},
         manip: {rotate: "Gira i volteja", paths: "Comptador de camins", dice: "El dau"},
@@ -18,9 +20,12 @@ const I18N = {
         more: "mostra'l sencer", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
         read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
         other_kind: {eng: "Esglaó 0 · en anglès · no compta com a pista", cat: "Esglaó 0 · en català · no compta com a pista"},
+        show_text: "Mostra el text", hide_text: "Amaga el text", more_panel: "Més", board_led: "La placa",
+        timing: "Temps (per al professor)", problem: "Problema",
+        theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"},
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
-        solution: "Solution", next: "Next problem", mastery: "Mastery by topic", close: "Close",
+        solution: "Solution", next: "Next problem", mastery: "Your progress", close: "Close",
         level: "Level", topic: "Topic", thinking: "Thinking…", kinds: {neighbour: "Hint 1 · similar problem",
         strategy: "Strategy", trace: "Solution step", llm: "Model hint", solution: "Solution"},
         manip: {rotate: "Rotate and flip", paths: "Path counter", dice: "The die"},
@@ -32,9 +37,14 @@ const I18N = {
         more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
         read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
         other_kind: {eng: "Rung 0 · in English · not counted as a hint", cat: "Rung 0 · in Catalan · not counted as a hint"},
+        show_text: "Show the text", hide_text: "Hide the text", more_panel: "More", board_led: "The board",
+        timing: "Timings (for the teacher)", problem: "Problem",
+        theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"},
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
+const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
 let lang = "cat", state = null, lastProblem = null, imageKey = null, loadReported = false;
+let textOpen = matchMedia("(max-width: 640px)").matches;   // the statement text when the picture already shows it: closed on a laptop, open on a phone (the picture is too wide to read there); the student's choice stays
 const t = () => I18N[lang];
 const txt = (obj, key) => obj[key + "_" + (lang === "cat" ? "ca" : "en")] ?? obj[key + "_ca"] ?? "";
 
@@ -55,11 +65,26 @@ function applyI18n() {
   const sel = $("level"), keep = sel.value;
   sel.innerHTML = `<option value="auto">${esc(t().auto)}</option>` + t().courses.map((c, i) => `<option value="${i}">${esc(c)} (${t().levelName.toLowerCase()} ${i})</option>`).join("");
   sel.value = keep || "auto";
+  renderTheme();
+  renderTextToggle();
+}
+
+function renderTheme() {
+  const mode = window.Theme ? Theme.get() : "auto";
+  $("theme-label").textContent = THEME_GLYPH[mode];
+  $("theme").title = t().theme[mode];
+  $("theme").setAttribute("aria-label", t().theme[mode]);
+}
+
+function renderTextToggle() {
+  const b = $("toggle-text");
+  b.textContent = textOpen ? t().hide_text : t().show_text;
+  b.setAttribute("aria-expanded", String(textOpen));
 }
 
 function drawLed(frame) {
   const c = $("led"), ctx = c.getContext("2d");
-  ctx.fillStyle = "#0d0d0d"; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.fillStyle = "#121212"; ctx.fillRect(0, 0, c.width, c.height);
   (frame || []).forEach((row, r) => row.forEach((v, col) => {
     if (v) { ctx.shadowColor = "rgba(255,90,40,.9)"; ctx.shadowBlur = 8; } else { ctx.shadowBlur = 0; }
     ctx.fillStyle = v ? `rgba(255,96,48,${0.35 + 0.65 * v / 7})` : "#262626";
@@ -68,36 +93,49 @@ function drawLed(frame) {
   ctx.shadowBlur = 0;
 }
 
+function optionLines(options) {
+  return "ABCDE".split("").filter(l => options[l]).map(l => `${l}) ${options[l]}`).join("   ");
+}
+
 function renderProblem(p) {
   if (!p) { $("text").textContent = ""; return; }
   const changed = !lastProblem || lastProblem.id !== p.id;
   lastProblem = p;
   const text = (lang === "eng" && p.text_eng) || (lang === "cat" && p.text_cat) || p.text;
   const options = (lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options || {};
-  $("meta").textContent = `${t().level} ${p.level} · ${t().courses[p.level] || ""} · ${t().topic}: ${lang === "cat" ? p.topic_name_ca : p.topic_name_en} · ${p.id}`;
+  const hasOptions = Object.keys(options).length > 0;
+  $("meta").textContent = `${t().level} ${p.level} · ${t().courses[p.level] || ""} · ${lang === "cat" ? p.topic_name_ca : p.topic_name_en}`;
+  $("problem-id").textContent = `${t().problem}: ${p.id}`;
   $("text").textContent = text;
+  // the picture carries the statement and the options: letters only, in the picture's order;
+  // without a picture the text is the statement and the options go on the buttons
+  const pictureFirst = !!p.has_image;
+  $("figure").hidden = !pictureFirst;
+  $("toggle-text").hidden = !pictureFirst;
+  $("statement").hidden = pictureFirst && !textOpen;
+  $("options-text").textContent = pictureFirst && hasOptions ? optionLines(options) : "";
+  $("letters").classList.toggle("rows", !pictureFirst && hasOptions);
   $("letters").innerHTML = "ABCDE".split("").map(l =>
-    `<button data-l="${l}">${l}${options[l] ? `<small>${esc(options[l])}</small>` : ""}</button>`).join("");
-  if (p.has_image) {
+    `<button data-l="${l}" aria-label="${l}${!pictureFirst && options[l] ? ": " + esc(options[l]) : ""}"><span class="l">${l}</span>${!pictureFirst && options[l] ? `<span class="o">${esc(options[l])}</span>` : ""}</button>`).join("");
+  if (pictureFirst) {
     if (changed || imageKey !== p.id) {
       imageKey = p.id;
-      api("/api/image").then(r => { if (r.image_b64 && imageKey === p.id) { $("img").src = "data:image/png;base64," + r.image_b64; $("img").hidden = false; } });
+      api("/api/image").then(r => { if (r.image_b64 && imageKey === p.id) { $("img").src = "data:image/png;base64," + r.image_b64; } });
     }
-  } else { $("img").hidden = true; $("img").removeAttribute("src"); imageKey = null; }
+  } else { $("img").removeAttribute("src"); imageKey = null; }
   $("img").alt = t().image;
 }
 
 function renderTranslation(s) {
-  // rung 0: the same problem in the other language, side by side with the statement; never its label
+  // rung 0: the same problem in the other language, under the statement; never its label
   const other = s.other_language, tr = s.translation;
   $("translate").hidden = !s.translation_available;
   if (s.translation_available) { $("translate").textContent = tr ? t().hide_other[other] : t().read_in[other]; $("translate").classList.toggle("on", !!tr); }
-  $("other").hidden = !tr; $("bilingual").classList.toggle("on", !!tr);
+  $("other").hidden = !tr;
   if (!tr) return;
-  const opts = tr.options || {};
   $("other-kind").textContent = t().other_kind[tr.language];
   $("other-text").textContent = tr.text;
-  $("other-options").textContent = "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${opts[l]}`).join("   ");
+  $("other-options").textContent = optionLines(tr.options || {});
 }
 
 function renderAnswer(s) {
@@ -108,7 +146,7 @@ function renderAnswer(s) {
     b.classList.toggle("wrong", !!a && b.dataset.l === a.letter && !a.correct);
   });
   $("verdict").textContent = txt(s.message, "text") || (lang === "cat" ? s.message.ca : s.message.en) || "";
-  $("verdict").className = "verdict " + (a ? (a.correct ? "ok" : "bad") : "");
+  $("feedback").className = "feedback " + (a ? (a.correct ? "ok" : "bad") : "");
   $("next").hidden = !a;
   $("hint").disabled = !!a || s.busy;
   $("solution").disabled = s.busy || s.hints.some(h => h.kind === "solution");
@@ -140,12 +178,13 @@ function renderHints(s) {
 }
 
 function renderMastery(s) {
+  // something that grows: five segments per topic that light up, never a mark
   const topics = ["arithmetic", "logic", "digits", "counting", "areas", "angles", "spatial", "boards"];
   const label = {arithmetic: ["Aritmètica", "Arithmetic"], logic: ["Lògica", "Logic"], digits: ["Xifres", "Digits"],
     counting: ["Comptatge", "Counting"], areas: ["Àrees", "Areas"], angles: ["Angles", "Angles"],
     spatial: ["Espacial", "Spatial"], boards: ["Taulers", "Boards"]};
   $("mastery").innerHTML = topics.map(k => `<span>${label[k][lang === "cat" ? 0 : 1]}</span>` +
-    `<div class="bar"><div style="width:${20 * (s.mastery[k] || 0)}%"></div></div>`).join("");
+    `<div class="segs" aria-label="${label[k][lang === "cat" ? 0 : 1]} ${s.mastery[k] || 0}/5">${[1, 2, 3, 4, 5].map(i => `<span class="${i <= (s.mastery[k] || 0) ? "on" : ""}"></span>`).join("")}</div>`).join("");
 }
 
 function renderTimeline(s) {
@@ -181,9 +220,16 @@ $("begin").onclick = async () => render(await api(`/api/start/${encodeURICompone
 $("student").addEventListener("keydown", e => { if (e.key === "Enter") $("begin").click(); });
 $("reset").onclick = async () => { if (confirm(t().confirm_reset)) { lastProblem = null; render(await api("/api/reset")); } };
 $("hints").addEventListener("click", e => { const b = e.target.closest("button[data-more]"); if (!b) return; const box = b.previousElementSibling; box.classList.toggle("clamped"); b.textContent = box.classList.contains("clamped") ? t().more : t().less; });
-$("manip").onclick = () => { const m = $("manip").dataset.m; $("dialog-title").textContent = t().manip[m]; $("dialog-frame").src = `manip/${m}.html?lang=${lang}`; $("dialog").showModal(); };
-$("dialog-close").onclick = () => { $("dialog").close(); $("dialog-frame").src = "about:blank"; };
+$("manip").onclick = () => { const m = $("manip").dataset.m; $("dialog-title").textContent = t().manip[m]; $("dialog-frame").src = `manip/${m}.html?lang=${lang}${window.Theme ? Theme.query() : ""}`; $("dialog").showModal(); };
+$("dialog-close").onclick = () => $("dialog").close();
+$("dialog").addEventListener("close", () => { $("dialog-frame").src = "about:blank"; $("zoom").hidden = true; $("dialog-frame").hidden = false; });  // also after Escape
+// the picture, bigger: useful on a phone, where M3Kang's wide scans get small
+$("figure").onclick = () => { if (!$("img").src) return; $("dialog-title").textContent = t().image; $("zoom").src = $("img").src; $("zoom").hidden = false; $("dialog-frame").hidden = true; $("dialog").showModal(); };
+$("toggle-text").onclick = () => { textOpen = !textOpen; renderTextToggle(); if (state) renderProblem(state.problem); };
+$("theme").onclick = () => { if (window.Theme) Theme.next(); renderTheme(); };
+$("more").onclick = () => { const open = $("panel").hidden; $("panel").hidden = !open; $("more").setAttribute("aria-expanded", String(open)); };
 document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("panel").hidden) { $("more").click(); return; }
   if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.metaKey || e.ctrlKey || e.altKey || $("dialog").open || !state || !state.started) return;
   const k = e.key.toUpperCase();
   if ("ABCDE".includes(k) && k.length === 1) { const b = document.querySelector(`#letters button[data-l="${k}"]`); if (b && !b.disabled) b.click(); }
