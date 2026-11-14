@@ -3,8 +3,12 @@
 Owner: D (branch `hints-app`). Contract in INTERFACES.md.
 
     prefetch(problem_id, lang)          # when the problem is shown: warm the LLM prompt cache in a thread
-    get_hint(problem_id, rung, lang)    # rung 1..4, see below
+    get_hint(problem_id, rung, lang)    # rung 0..4, see below
+    translation(problem_id, lang)       # rung 0 on its own: the problem in the other language
 
+Rung 0  the same problem in the other language (M3Kang aligns Catalan and English by id), text
+        and options, never the label. It separates "I don't understand the statement" from
+        "I can't solve it", so it is NOT a hint for mastery: the app keeps hint_rung_used at 0.
 Rung 1  an easier solved neighbour (retrieval.neighbors), with its image when the topic is visual
 Rung 2  a strategy card of the topic (data_curated/strategies.json), maybe with a manipulative
 Rung 3  (a) the next step of the solver trace, never the last one;
@@ -111,6 +115,35 @@ def problem_for(problem_id, lang="cat"):
         if pid == problem_id:
             return p
     return None
+
+
+def problem_in(problem_id, lang):
+    """The problem exactly in `lang`, or None (no fallback to another language)."""
+    _load_problems()
+    return _problems.get((problem_id, lang))
+
+
+def other_language(lang):
+    """The other student language: Catalan for English and English for anything else."""
+    return "cat" if lang == "eng" else "eng"
+
+
+def translation(problem_id, lang="cat"):
+    """Rung 0: the problem of this id in the other language, text and options, never the label.
+
+    `lang` is the language the student is reading now. Returns a Hint result of kind
+    "translation" with `available` False (and no text) when the data has no such version.
+    Costs no model time: a dictionary lookup.
+    """
+    other = other_language(lang)
+    problem = problem_in(problem_id, other)
+    base = {"rung": 0, "kind": "translation", "language": other, "estimated_board_seconds": 0.0,
+            "text_ca": "El mateix problema, en anglès." if other == "eng" else "El mateix problema, en català.",
+            "text_en": "The same problem, in English." if other == "eng" else "The same problem, in Catalan."}
+    if problem is None:
+        return {**base, "available": False, "text": "", "options": {}}
+    options = {k: str(v) for k, v in (problem.get("options") or {}).items() if k in "ABCDE"}
+    return {**base, "available": True, "text": problem.get("text", ""), "options": options}
 
 
 def reset(problem_id):
@@ -268,8 +301,10 @@ def _rung4(problem, state):
 
 
 def get_hint(problem_id, rung, lang="cat"):
-    """Hint result for one rung (1..4), see INTERFACES.md. Never raises for a known problem."""
-    rung = max(1, min(4, int(rung)))
+    """Hint result for one rung (0..4), see INTERFACES.md. Never raises for a known problem."""
+    rung = max(0, min(4, int(rung)))
+    if rung == 0:
+        return translation(problem_id, lang)
     problem = problem_for(problem_id, lang)
     base = {"rung": rung, "estimated_board_seconds": 0.0}
     if problem is None:
