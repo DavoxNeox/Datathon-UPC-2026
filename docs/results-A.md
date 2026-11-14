@@ -44,7 +44,16 @@ validation problems against 30.0% raw and 34.0% always D on the same 50; it was 
 - Grammar-constrained JSON extraction: correct on two made-up problems, 74 to 87 prompt
   tokens, 16 to 24 written, about 11 s estimated on the board.
 - Family `consecutive`: made-up problem answered correctly, 132 prompt tokens, 17.3 s estimated.
-- Coverage and accuracy on validation: pending B's family frequency table.
+- Yield on real data (B's `families.json`, 21 English problems tagged `consecutive`, train+val):
+  6 pass the keyword classifier, **1 fires and is right** (13.5 s estimated), 0 wrong. The other
+  20 use the word "consecutive" in puzzles that follow no template (jumps, dates, calendars,
+  squares of consecutive integers...). B's table: `digit_sum` 112, `speed_time` 48, `sharing` 43,
+  `money` 33, `ages` 31 problems, but a sample of each shows the same heterogeneity (the
+  `speed_time` tag includes an ant on a cube and seats in a car).
+- Conclusion: Kangaroo problems are not templated. Parametric family solvers never answer wrong
+  (exactly-one-option check) but fire on about 1 problem in 20 of their own family, so on the
+  hidden test they add at most about one point over always-D. The Reason track stays near the
+  always-D floor; the project's value is the Teach track.
 
 ## Known measurement artifact
 
