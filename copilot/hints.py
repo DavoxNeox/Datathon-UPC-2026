@@ -25,6 +25,7 @@ import json
 import os
 import re
 import threading
+import unicodedata
 
 from . import retrieval, solvers, topics
 from .board_clock import estimate
@@ -381,18 +382,44 @@ def _rung3(problem, state, lang):
     return _rung2(problem, state)
 
 
+_UNIT_SQ = re.compile(r"(?<=\d)\s*(cm|dm|mm|km|m)\s*(?:²|2)\s*\d?(?![A-Za-z0-9])", re.IGNORECASE)
+_UNIT_CU = re.compile(r"(?<=\d)\s*(cm|dm|mm|km|m)\s*(?:³|3)\s*\d?(?![A-Za-z0-9])", re.IGNORECASE)
+_OPERATOR = re.compile(r"[/:+\-×x·*=]")
+
+
+def display_value(raw):
+    """An option value as the student should read it, or "" when the OCR left it illegible.
+
+    "4cm²2" -> "4 cm²", "27cm2" -> "27 cm²", "48cm" -> "48 cm", "10%" -> "10%", "1/2" -> "1/2";
+    "2 11 cm2", "12 m 1m" or "1 10" (two numbers with nothing between them) -> "".
+    """
+    text = unicodedata.normalize("NFC", str(raw or "")).strip()
+    text = re.sub(r"\s+", " ", text)
+    text = _UNIT_SQ.sub(lambda m: f" {m.group(1).lower()}²", text)
+    text = _UNIT_CU.sub(lambda m: f" {m.group(1).lower()}³", text)
+    text = re.sub(r"(?<=\d)(?=[A-Za-z])", " ", text)        # "48cm" -> "48 cm"
+    text = re.sub(r"\s+", " ", text).strip(" .;,")
+    if not text or len(text) > 30:
+        return ""
+    numbers = re.findall(r"\d+(?:[.,]\d+)?", text)
+    if len(numbers) >= 2 and not _OPERATOR.search(text):
+        return ""   # OCR noise: two numbers side by side ("2 11 cm²", "1 10", "12 m 1 m")
+    return text
+
+
 def _rung4(problem, state):
     solved = _solved(problem, state)
     label = problem.get("label", "?")
     value = (problem.get("options") or {}).get(label) or (solved or {}).get("value") or ""
-    head_ca = f"Solució: opció {label}" + (f" ({value})" if value else "") + "."
-    head_en = f"Solution: option {label}" + (f" ({value})" if value else "") + "."
+    shown = display_value(value)
+    head_ca = f"Solució: opció {label}" + (f" ({shown})" if shown else "") + "."
+    head_en = f"Solution: option {label}" + (f" ({shown})" if shown else "") + "."
     steps = demo_steps(problem["id"])
     source = "demo_set" if steps else ("solver" if solved else None)
     trace = steps or (solved or {}).get("trace") or []
     text_ca = head_ca + "".join(" " + (s.get("text_ca") or s.get("text_en") or "") for s in trace)
     text_en = head_en + "".join(" " + (s.get("text_en") or s.get("text_ca") or "") for s in trace)
-    return {"kind": "solution", "label": label, "value": value, "source": source,
+    return {"kind": "solution", "label": label, "value": value, "value_shown": shown, "source": source,
             "trace": [{"text_ca": s.get("text_ca") or s.get("text_en") or "",
                        "text_en": s.get("text_en") or s.get("text_ca") or ""} for s in trace],
             "text_ca": text_ca, "text_en": text_en}

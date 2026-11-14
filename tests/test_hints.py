@@ -195,6 +195,35 @@ class Rung0Test(unittest.TestCase):
         self.assertEqual(hints.other_language("eng"), "cat")
 
 
+class DisplayValueTest(unittest.TestCase):
+    """The solution shows the option value cleaned of OCR residue, or no value at all."""
+
+    def test_units_and_superscripts(self):
+        cases = {"4cm²2": "4 cm²", "27cm2": "27 cm²", "80 cm2": "80 cm²", "165 cm²": "165 cm²", "48cm": "48 cm",
+                 "24 cm": "24 cm", "3m3": "3 m³", "10%": "10%", "1/2": "1/2", "0,5": "0,5", "18": "18",
+                 "x = 4": "x = 4", "2 + 3": "2 + 3", "15:30": "15:30", "hexagon": "hexagon", " 12 ": "12"}
+        for raw, want in cases.items():
+            self.assertEqual(hints.display_value(raw), want, raw)
+
+    def test_illegible_values_are_dropped(self):
+        for raw in ("2 11 cm2", "1 10", "12 m 1m", "", None, "   ", "x" * 31):
+            self.assertEqual(hints.display_value(raw), "", repr(raw))
+
+    def test_solution_text_uses_the_cleaned_value_or_none(self):
+        base = {"id": "fake-sol", "language": "cat", "level": 3, "text": "t", "label": "E"}
+        with mock.patch.object(hints, "problem_for", return_value=dict(base, options={"E": "4cm²2"})):
+            hints.reset("fake-sol")
+            h = hints.get_hint("fake-sol", 4, "cat")
+        self.assertTrue(h["text_ca"].startswith("Solució: opció E (4 cm²)."), h["text_ca"])
+        self.assertTrue(h["text_en"].startswith("Solution: option E (4 cm²)."))
+        self.assertEqual((h["value"], h["value_shown"]), ("4cm²2", "4 cm²"))
+        with mock.patch.object(hints, "problem_for", return_value=dict(base, options={"E": "2 11 cm2"})):
+            hints.reset("fake-sol")
+            h = hints.get_hint("fake-sol", 4, "cat")
+        self.assertTrue(h["text_ca"].startswith("Solució: opció E."), h["text_ca"])
+        self.assertEqual(h["value_shown"], "")
+
+
 class DemoSetTest(unittest.TestCase):
     """Hand-written steps from data_curated/demo_set.json come first on rung 3, never the last one."""
 
