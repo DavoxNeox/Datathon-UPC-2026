@@ -81,9 +81,24 @@ the repository root is the app: `app.yaml`, `python/`, `assets/` and `sketch/` s
 ln -s ~/Datathon-UPC-2026 ~/ArduinoApps/math-copilot
 ```
 
+The app's container runs on its own Docker network, where `127.0.0.1` is the container, not
+the board. The model servers keep listening on the board's loopback only; the `math-relay`
+service forwards the two ports from Docker's host-gateway address (`docker0`, 172.17.0.1 on our
+board), which the container reaches as `msgpack-rpc-router`. `config.env` has
+`LLM_HOST=auto` and `EMBED_HOST=auto`: `127.0.0.1` on the host, the gateway alias inside the
+container. Install the relay once (needs sudo; `docker0` must exist, so start the app once first):
+
+```bash
+./board/06_install_relay.sh
+```
+
 ```bash
 TMPDIR=/tmp arduino-app-cli app start user:math-copilot
 ```
+
+`app start` refuses when the app is already running; use `app restart` after a `git pull`.
+`RUNTIME=auto` detects the board inside the container too (App Lab mounts the device-tree
+model under `/sys/firmware/devicetree/base/model` and sets `APP_HOME`).
 
 Verified on our board: App Lab lists the symlinked folder as `user:math-copilot`. The
 `TMPDIR=/tmp` matters when you run this over `adb shell`, whose environment sets
