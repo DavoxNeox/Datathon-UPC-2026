@@ -40,12 +40,12 @@ QUALITY_MIN = float(CONFIG.get("HINT_QUALITY_MIN", 70))
 MAX_TOKENS = int(CONFIG.get("HINT_MAX_TOKENS", 40))
 LLM_URL = f"http://127.0.0.1:{CONFIG['LLM_PORT']}/v1/chat/completions"
 LLM_TIMEOUT = float(CONFIG.get("TIME_LIMIT_SECONDS", 60))
-# "two": one short call per language (English first, then Catalan). "one": both in one JSON answer.
-LLM_MODE = CONFIG.get("HINT_LLM_MODE", "two")
+# What prefetch() does in its thread: "full" writes the hint ahead, "warm" only reads the prompt, "off" nothing
+PREFETCH = CONFIG.get("HINT_PREFETCH", "full")
 
 # Stable system prompt: llama-server caches the start of the prompt, so keep it identical.
-SYSTEM = ("You are a maths tutor for school students aged 10 to 18. You help with ONE short sentence "
-          "that points to the first step, without giving the answer.")
+SYSTEM = ("You are a maths tutor. You never give answers. You help with ONE short question that makes "
+          "the student think about the first step of the problem.")
 LANG_NAME = {"cat": "Catalan", "eng": "English", "spa": "Spanish"}
 
 _lock = threading.Lock()
@@ -210,7 +210,7 @@ def _rung3(problem, state, lang):
                 return {"kind": "trace", "text_ca": text_ca, "text_en": text_en}
             state["trace_step"] = shown  # skip the rest of the trace
     if llm_allowed(_topic_of(problem)):
-        result = llm_hint(problem, lang)
+        result = _prefetched(state) or llm_hint(problem, lang)
         if result.get("ok"):
             return {"kind": "llm", "text_ca": result["text_ca"], "text_en": result["text_en"],
                     "estimated_board_seconds": result["estimated_board_seconds"]}
@@ -254,6 +254,19 @@ def get_hint(problem_id, rung, lang="cat"):
 
 
 # ---------------------------------------------------------------- the LLM hint (rung 3b)
+#
+# Qwen3.5 is a hybrid (recurrent) model, so llama-server can restore its prompt cache only at
+# checkpoints: the start of the LAST user message and the end of the prompt (--ctx-checkpoints 2).
+# The problem therefore goes in its own user message, with a fixed "OK." in between, and the hint
+# request is the last message: a second request about the same problem reads only its own tokens.
+# Measured on the samples (laptop, n=10): plain "write a hint" prompts leaked the value 5/10 times;
+# asking for ONE QUESTION with a grammar that allows no digits leaked 0/10 and wrote fewer tokens.
+
+# A character whitelist: letters (Catalan accents included), spaces and punctuation. No digits of
+# any alphabet, so the hint cannot spell the value with 36, ٣٦, ³⁶ or ½.
+HINT_GRAMMAR = ("root ::= [a-zA-ZàèéíïòóúüçÀÈÉÍÏÒÓÚÜÇñÑ·'’ ,;:.?!()-]+")
+ACK = "OK."
+
 
 def _problem_block(problem):
     """The stable part of the prompt: the problem in English when we have it, and its options."""
@@ -270,19 +283,19 @@ def _request(problem, lang, strict=False):
     label = problem.get("label", "")
     value = (problem.get("options") or {}).get(label, "")
     answer = f"{label} ({value})" if value else label
-    text = (f"The correct answer is {answer}. Write ONE short sentence in {LANG_NAME.get(lang, 'Catalan')} "
-            f"that helps the student find it, without revealing the answer, the letter or the value.")
+    name = LANG_NAME.get(lang, "Catalan")
     if strict:
-        text += (f" Do NOT write '{value}', the letter {label}, or the words 'answer' or 'solution'. "
-                 "Point only to the first step of the reasoning.")
-    return text
+        return (f"The correct answer is {answer}. Your previous question gave the answer away. Ask a different "
+                f"short question in {name} about the very first step only, with no numbers and no option letters.")
+    return (f"The correct answer is {answer}. Ask the student ONE short question in {name} about the first step. "
+            f"Do not mention the answer, the letter or any number.")
 
 
 def _messages(problem, lang=None, strict=False):
-    content = _problem_block(problem)
+    messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": _problem_block(problem)}]
     if lang:
-        content += "\n\n" + _request(problem, lang, strict)
-    return [{"role": "system", "content": SYSTEM}, {"role": "user", "content": content}]
+        messages += [{"role": "assistant", "content": ACK}, {"role": "user", "content": _request(problem, lang, strict)}]
+    return messages
 
 
 def _one_sentence(text):
@@ -301,42 +314,60 @@ def _call(messages, max_tokens, grammar=None, timeout=LLM_TIMEOUT):
 
 
 def warm(problem_id, lang="cat"):
-    """Read the problem into the prompt cache now (max_tokens 1), so the hint request reads only
-    its last lines. Returns the server timings, or {} when the server is unreachable."""
+    """Read the exact Catalan hint prompt into the server's cache now (max_tokens 1), so the hint
+    request later reads only a few tokens. Returns the server timings, {} if unreachable."""
     problem = problem_for(problem_id, lang)
     if problem is None:
         return {}
     try:
-        _text, timings = _call(_messages(problem), max_tokens=1, timeout=LLM_TIMEOUT)
+        _text, timings = _call(_messages(problem, "cat"), max_tokens=1, timeout=LLM_TIMEOUT)
         return timings
     except (OSError, ValueError, KeyError):
         return {}
 
 
+def _prefetch_full(problem_id, lang):
+    problem = problem_for(problem_id, lang)
+    if problem is None:
+        return
+    result = llm_hint(problem, lang)
+    with _lock:
+        if problem_id in _state:
+            _state[problem_id]["llm"]["result"] = result
+
+
 def prefetch(problem_id, lang="cat"):
-    """Warm the LLM prompt cache for this problem in a background thread, and start the ladder over."""
+    """Start the ladder over and, for topics that may use the LLM, work ahead in a background thread:
+    HINT_PREFETCH=warm reads the prompt into the cache; full (default) also writes the hint."""
     reset(problem_id)
-    if not llm_allowed(_topic_of(problem_for(problem_id, lang) or {"id": problem_id})):
-        return None  # no LLM for this topic, nothing to warm
-    threading.Thread(target=warm, args=(problem_id, lang), daemon=True).start()
+    problem = problem_for(problem_id, lang)
+    if PREFETCH == "off" or problem is None or not llm_allowed(_topic_of(problem)):
+        return None
+    target = _prefetch_full if PREFETCH == "full" else warm
+    thread = threading.Thread(target=target, args=(problem_id, lang), daemon=True)
+    _st(problem_id)["llm"]["thread"] = thread
+    thread.start()
     return None
 
 
-_ONE_CALL_GRAMMAR = ('root ::= "{\\"en\\": \\"" str "\\", \\"ca\\": \\"" str "\\"}"\n'
-                     'str ::= [^"\\\\\\n{}]+')
+def _prefetched(state, timeout=LLM_TIMEOUT):
+    """The hint a full prefetch produced, waiting for its thread if it is still running."""
+    thread = state["llm"].get("thread")
+    if thread is not None:
+        thread.join(timeout)
+    return state["llm"].pop("result", None)
 
 
-def llm_hint(problem, lang="cat", mode=None, strict_first=False):
-    """One-sentence hint in Catalan and English, filtered by leak_filter and retried once.
+def llm_hint(problem, lang="cat", strict_first=False):
+    """One-sentence hint in English and Catalan, filtered by leak_filter and retried once.
 
-    Returns {"ok", "text_ca", "text_en", "estimated_board_seconds", "prompt_n", "predicted_n",
-             "attempts", "rejected": [reasons]}.
-    `mode` is "two" (one call per language) or "one" (one JSON call); default HINT_LLM_MODE.
+    Two short calls (English first, then Catalan): the second reads only its request thanks to
+    the message split above. Returns {"ok", "text_ca", "text_en", "estimated_board_seconds",
+    "prompt_n", "predicted_n", "attempts", "rejected": [reasons]}.
     """
-    mode = mode or LLM_MODE
     label, options = problem.get("label"), problem.get("options") or {}
     out = {"ok": False, "text_ca": "", "text_en": "", "estimated_board_seconds": 0.0,
-           "prompt_n": 0, "predicted_n": 0, "attempts": 0, "rejected": [], "mode": mode}
+           "prompt_n": 0, "predicted_n": 0, "attempts": 0, "rejected": []}
 
     def record(timings):
         out["prompt_n"] += int(timings.get("prompt_n", 0) or 0)
@@ -346,24 +377,14 @@ def llm_hint(problem, lang="cat", mode=None, strict_first=False):
     for attempt, strict in enumerate((strict_first, True)):
         out["attempts"] = attempt + 1
         try:
-            if mode == "one":
-                raw, timings = _call(_messages(problem, "cat", strict), 2 * MAX_TOKENS + 12, grammar=_ONE_CALL_GRAMMAR)
-                record(timings)
-                try:
-                    both = json.loads(raw)
-                except ValueError:
-                    out["rejected"].append("format")
-                    continue
-                text_en, text_ca = _one_sentence(both.get("en", "")), _one_sentence(both.get("ca", ""))
-            else:
-                raw_en, t1 = _call(_messages(problem, "eng", strict), MAX_TOKENS)
-                record(t1)
-                raw_ca, t2 = _call(_messages(problem, "cat", strict), MAX_TOKENS)
-                record(t2)
-                text_en, text_ca = _one_sentence(raw_en), _one_sentence(raw_ca)
+            raw_ca, t1 = _call(_messages(problem, "cat", strict), MAX_TOKENS, grammar=HINT_GRAMMAR)
+            record(t1)
+            raw_en, t2 = _call(_messages(problem, "eng", strict), MAX_TOKENS, grammar=HINT_GRAMMAR)
+            record(t2)
         except (OSError, ValueError, KeyError) as error:
             out["rejected"].append(f"error:{error}")
             return out
+        text_ca, text_en = _one_sentence(raw_ca), _one_sentence(raw_en)
         reason = leak_reason(text_ca, label, options) or leak_reason(text_en, label, options)
         if reason:
             out["rejected"].append(reason)
