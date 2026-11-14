@@ -52,9 +52,10 @@ Choosing the next problem
 1. Diagnostic for a new student: 3 to 5 problems of increasing level (DIAGNOSTIC_LEVELS),
    on rotating topics. It stops after the first wrong answer once 3 are done. The base
    level is the highest level answered correctly (0 when none).
-2. Review, about one problem in five (REVIEW_RATE, never two in a row): the worked topic
-   whose last answer is the oldest, at its practice level. The student is not told; the
-   `record_answer` result carries `review: True`.
+2. Review, about one problem in five (REVIEW_RATE): the worked topic whose last answer is
+   the oldest, other than the current one, at its practice level. The student is not told;
+   the `record_answer` result carries `review: True`. The main path then resumes from
+   the last non-review problem: a review is a detour, not a change of course.
 3. Otherwise the adaptive rule from the last answered problem: correct -> an embedding
    neighbour one level up, any topic; wrong -> a neighbour on the same topic one level down.
 4. A problem the student has already seen is never served again while candidates remain.
@@ -411,8 +412,9 @@ def next_problem(student_id):
         n_answers = db.execute("SELECT COUNT(*) FROM answers WHERE student_id=?", (student_id,)).fetchone()[0]
         rng = _rng(student_id, n_answers)
         seen = _seen_ids(db, student_id)
-        last_row = db.execute("SELECT problem_id, topic, level, correct, review FROM answers "
-                              "WHERE student_id=? ORDER BY id DESC LIMIT 1", (student_id,)).fetchone()
+        # The chain follows the last problem of the main path: a review is a detour
+        last_row = db.execute("SELECT problem_id, topic, level, correct FROM answers "
+                              "WHERE student_id=? AND review=0 ORDER BY id DESC LIMIT 1", (student_id,)).fetchone()
         last = dict(last_row) if last_row else None
         given = None
         review = False
@@ -420,7 +422,7 @@ def next_problem(student_id):
             pid, _ = _choose_diagnostic(db, student, rng, seen, n_answers)
         else:
             pid = None
-            if not last["review"] and rng.random() < REVIEW_RATE:
+            if rng.random() < REVIEW_RATE:
                 pid = _choose_review(db, student, rng, seen, last)
                 review = pid is not None
             if pid is None:
