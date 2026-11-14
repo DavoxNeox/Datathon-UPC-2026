@@ -38,6 +38,9 @@ STUDENT_LANGS = ("cat", "eng")
 
 QUALITY_MIN = float(CONFIG.get("HINT_QUALITY_MIN", 70))
 MAX_TOKENS = int(CONFIG.get("HINT_MAX_TOKENS", 40))
+# A leaking hint is retried once only if the first attempt cost less than this (board seconds):
+# a cold retry on a long problem would push rung 3 past the 60 s limit (measured max 92.5 s on val)
+RETRY_BUDGET = float(CONFIG.get("HINT_RETRY_BUDGET", 30))
 LLM_URL = f"http://127.0.0.1:{CONFIG['LLM_PORT']}/v1/chat/completions"
 LLM_TIMEOUT = float(CONFIG.get("TIME_LIMIT_SECONDS", 60))
 # What prefetch() does in its thread: "full" writes the hint ahead, "warm" only reads the prompt, "off" nothing
@@ -395,6 +398,9 @@ def llm_hint(problem, lang="cat", strict_first=False):
         reason = leak_reason(text_ca, label, options) or leak_reason(text_en, label, options)
         if reason:
             out["rejected"].append(reason)
+            if out["estimated_board_seconds"] > RETRY_BUDGET:
+                out["rejected"].append("no-retry:over-budget")
+                return out
             continue
         out.update(ok=True, text_ca=text_ca, text_en=text_en)
         return out
