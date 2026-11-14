@@ -104,6 +104,14 @@ than one token. In the jury's run the server is alone.
 RAM with both servers and the evaluation running: 2758 MB available; `llama-server` 1059 MB
 (LLM) and 75 MB (embeddings).
 
+### The official run on the board
+
+`python3 predict.py --input data/val.jsonl --output results/predictions.csv` on the UNO Q, the
+whole validation set (281 English + 281 Catalan problems), nothing else using the servers:
+**130/562 = 23.1%**, exactly always D (65/281 in each language). No family solver fired.
+Mean 0.38 s per problem, worst 40.0 s (a problem the classifier routed to a family, whose
+extraction then matched no option), none over 60 s, every status `ok`.
+
 ### The App Lab app on the board (same day)
 
 Verified end to end: the repository root is the app, linked into `~/ArduinoApps/math-copilot`;
