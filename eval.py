@@ -74,7 +74,7 @@ def main():
         writer = csv.writer(out)
         writer.writerow(["id", "language", "level", "has_options", "label", "answer",
                          "correct", "seconds", "board_seconds", "status", "prompt_tokens", "retrieved",
-                         "raw_letter", "margin"])
+                         "raw_letter", "margin", "family"])
         for n, problem in enumerate(problems, 1):
             result = solve(problem, index=index, k=args.rag, exclude_id=problem["id"])
             if args.simulate_latency and result["board_seconds"] > result["seconds"]:
@@ -85,7 +85,7 @@ def main():
             writer.writerow([problem["id"], problem["language"], problem["level"], row["has_options"],
                              problem["label"], result["answer"], int(correct), result["seconds"],
                              result["board_seconds"], result["status"], result["prompt_tokens"], result["retrieved"],
-                             result.get("raw_letter", ""), result.get("margin", "")])
+                             result.get("raw_letter", ""), result.get("margin", ""), result.get("family", "")])
             out.flush()
             running = 100 * sum(r["correct"] for r in rows) / len(rows)
             print(f"[{n}/{len(problems)}] {problem['id']} {problem['language']}: "
@@ -112,6 +112,11 @@ def main():
           f"median {statistics.median(board):.1f} s, worst {max(board):.1f} s, over {TIME_LIMIT:.0f} s: {over}"
           + ("   (ESTIMATE: constants from the README, not yet calibrated on the board)" if sim else ""))
     print(f"Status: {dict(Counter(r['status'] for r in rows))}")
+    solved = [r for r in rows if r.get("family")]
+    if solved:
+        print(f"Family solvers: {len(solved)}/{len(rows)} problems routed, "
+              f"{sum(r['correct'] for r in solved)}/{len(solved)} correct, by family "
+              f"{dict(Counter(r['family'] for r in solved))}")
 
     for field, title in (("language", "By language"), ("level", "By level"),
                          ("has_options", "By whether OCR found the options")):
