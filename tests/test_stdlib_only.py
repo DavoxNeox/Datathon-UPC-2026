@@ -13,8 +13,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LAPTOP_ONLY = {"laptop", "dev", "tests", ".venv", ".git", "__pycache__", "node_modules"}
 OURS = {"copilot", "explorer", "app"}
 APP_LAB_PROVIDES = {"arduino", "numpy"}
-# The one place outside app/ that may touch App Lab: the LED HAL's board backend, inside try/except
-EXCEPTIONS = {os.path.join("copilot", "hal", "led.py"): {"arduino"}}
+# The HAL board backends are the only places outside app/ that may touch App Lab, inside try/except
+EXCEPTIONS = {os.path.join("copilot", "hal", "led.py"): {"arduino"},
+              os.path.join("copilot", "hal", "web.py"): {"arduino"}}
 
 
 def board_files():
