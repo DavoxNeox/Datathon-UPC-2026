@@ -123,7 +123,7 @@ const CELL = 2, HGAP = 10;   // cells per step, cells of blank bridged inside a 
 const CLEAN = /^[\p{L}\p{N}\s.,:;%°€$'"\/+\-=<>!?…×√·—–{}∞≤≥÷*′″＇（）#^_|\[\]~±≠≈π∈→]+$/u;
 const optionsClean = o => Object.keys(o || {}).length >= 2 && Object.values(o).every(v => v.trim() && CLEAN.test(v));
 // two habits of the OCR on these scans: a V for a root sign, and a stray letter of the next option at the end
-const tidyOption = v => String(v).replace(/\bV(?=\s?\d)/g, "√").replace(/^(.*\d.*?)\s+[A-E]$/, "$1").trim();
+const tidyOption = v => String(v).replace(/V(?=\s?\d)/g, "√").replace(/^(.*\d.*?)\s+[A-E]$/, "$1").trim();
 
 function scanComponents(img) {
   const W = img.naturalWidth, H = img.naturalHeight;
