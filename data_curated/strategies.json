@@ -1,0 +1,103 @@
+{
+  "_comment": "Strategy cards for hint rung 2: one-sentence strategies per topic, Catalan and English. Draft by D (hints-app); the team reviews it. `manipulative` is optional: rotate | paths | dice.",
+  "arithmetic": [
+    {"text_ca": "Escriu les dades del problema i encercla què et demanen.",
+     "text_en": "Write down the data of the problem and circle what it asks for."},
+    {"text_ca": "Fes el problema pas a pas: primer el total, després el que es treu o s'afegeix.",
+     "text_en": "Go step by step: first the total, then what is taken away or added."},
+    {"text_ca": "Comprova la resposta tornant enrere amb l'operació contrària.",
+     "text_en": "Check your answer by working backwards with the inverse operation."},
+    {"text_ca": "Prova amb nombres petits per veure el patró i després aplica'l als nombres del problema.",
+     "text_en": "Try small numbers to see the pattern, then apply it to the problem's numbers."},
+    {"text_ca": "Dibuixa un esquema o una línia de nombres amb les quantitats.",
+     "text_en": "Draw a diagram or a number line with the quantities."}
+  ],
+  "logic": [
+    {"text_ca": "Fes una taula amb totes les possibilitats i tatxa les que contradiuen alguna pista.",
+     "text_en": "Make a table of every possibility and cross out those that contradict a clue."},
+    {"text_ca": "Comença per la pista que més limita: la que només permet una o dues opcions.",
+     "text_en": "Start with the most restrictive clue: the one that leaves only one or two options."},
+    {"text_ca": "Suposa que una afirmació és certa i mira si arribes a una contradicció.",
+     "text_en": "Assume one statement is true and check whether you reach a contradiction."},
+    {"text_ca": "Si uns diuen la veritat i altres menteixen, compta quantes afirmacions poden ser certes alhora.",
+     "text_en": "If some tell the truth and some lie, count how many statements can be true at once."},
+    {"text_ca": "Comprova cada opció de resposta contra totes les pistes.",
+     "text_en": "Test each answer option against all the clues."}
+  ],
+  "digits": [
+    {"text_ca": "Pensa en el valor de cada xifra: unitats, desenes, centenes.",
+     "text_en": "Think about the place value of each digit: units, tens, hundreds."},
+    {"text_ca": "Escriu els nombres en una llista ordenada i compta'ls amb cura.",
+     "text_en": "List the numbers in order and count them carefully."},
+    {"text_ca": "Mira la darrera xifra: sovint decideix si un nombre és parell o múltiple de 5 o de 10.",
+     "text_en": "Look at the last digit: it often decides whether a number is even or a multiple of 5 or 10."},
+    {"text_ca": "Per saber si un nombre és divisible per 3 o per 9, suma les seves xifres.",
+     "text_en": "To test whether a number is divisible by 3 or 9, add its digits."},
+    {"text_ca": "Per trobar el nombre més gran o més petit possible, omple les xifres d'esquerra a dreta.",
+     "text_en": "To find the largest or smallest possible number, fill the digits from left to right."}
+  ],
+  "counting": [
+    {"text_ca": "Organitza els casos per no repetir-ne cap ni oblidar-ne cap: per exemple, per la primera lletra o la primera xifra.",
+     "text_en": "Organise the cases so you neither repeat nor miss any: for example, by the first letter or the first digit."},
+    {"text_ca": "En una quadrícula, cada casella rep la suma dels camins que arriben de dalt i de l'esquerra.",
+     "text_en": "In a grid, each cell receives the sum of the paths arriving from above and from the left.",
+     "manipulative": "paths"},
+    {"text_ca": "Si hi ha dues decisions independents, multiplica el nombre d'opcions de cadascuna.",
+     "text_en": "If there are two independent choices, multiply the number of options of each."},
+    {"text_ca": "Compta-ho tot i després resta els casos que no valen.",
+     "text_en": "Count everything, then subtract the cases that are not allowed."},
+    {"text_ca": "Fes un arbre amb les possibilitats i compta les fulles.",
+     "text_en": "Draw a tree of possibilities and count the leaves."}
+  ],
+  "areas": [
+    {"text_ca": "Talla la figura en peces que coneguis: quadrats, rectangles i triangles.",
+     "text_en": "Cut the figure into shapes you know: squares, rectangles and triangles."},
+    {"text_ca": "Compara peces iguals: si dues peces són congruents, tenen la mateixa àrea.",
+     "text_en": "Compare equal pieces: congruent pieces have the same area."},
+    {"text_ca": "Per saber quina fracció del total és la part ombrejada, compta quadradets iguals.",
+     "text_en": "To find what fraction of the whole is shaded, count equal small squares."},
+    {"text_ca": "Si saps el perímetre, troba primer la mida del costat.",
+     "text_en": "If you know the perimeter, find the side length first."},
+    {"text_ca": "Moure una peça sense estirar-la no canvia la seva àrea.",
+     "text_en": "Moving a piece without stretching it does not change its area."}
+  ],
+  "angles": [
+    {"text_ca": "Recorda: els angles d'un triangle sumen 180° i els d'un quadrilàter 360°.",
+     "text_en": "Remember: the angles of a triangle add up to 180° and those of a quadrilateral to 360°."},
+    {"text_ca": "Busca triangles isòsceles: dos costats iguals volen dir dos angles iguals.",
+     "text_en": "Look for isosceles triangles: two equal sides mean two equal angles."},
+    {"text_ca": "Els angles sobre una línia recta sumen 180°.",
+     "text_en": "Angles on a straight line add up to 180°."},
+    {"text_ca": "Marca a la figura tots els angles que coneixes abans de buscar el que et demanen.",
+     "text_en": "Mark every angle you know on the figure before looking for the one asked."},
+    {"text_ca": "En un polígon regular tots els angles són iguals: divideix el total.",
+     "text_en": "In a regular polygon all angles are equal: divide the total."}
+  ],
+  "spatial": [
+    {"text_ca": "Gira la figura al cap o sobre el paper: quins trets no canvien?",
+     "text_en": "Rotate the figure in your head or on paper: which features stay the same?",
+     "manipulative": "rotate"},
+    {"text_ca": "Una reflexió intercanvia esquerra i dreta; una rotació no.",
+     "text_en": "A reflection swaps left and right; a rotation does not.",
+     "manipulative": "rotate"},
+    {"text_ca": "En un dau, les cares oposades sumen 7 i no es poden veure alhora.",
+     "text_en": "On a die, opposite faces add up to 7 and are never seen together.",
+     "manipulative": "dice"},
+    {"text_ca": "Compta els cubs per capes o per files, i no oblidis els amagats.",
+     "text_en": "Count the cubes layer by layer or row by row, and do not forget the hidden ones."},
+    {"text_ca": "Segueix un punt concret de la figura i mira on va a parar.",
+     "text_en": "Follow one specific point of the figure and see where it ends up."}
+  ],
+  "boards": [
+    {"text_ca": "Busca el patró que es repeteix i mira cada quantes caselles torna a començar.",
+     "text_en": "Find the repeating pattern and see after how many cells it starts again."},
+    {"text_ca": "Pinta el tauler com un escaquer: blanc i negre t'ajuden a comptar.",
+     "text_en": "Colour the board like a chessboard: black and white help you count."},
+    {"text_ca": "Comença a omplir per la casella que tingui menys possibilitats.",
+     "text_en": "Start filling from the cell with the fewest possibilities."},
+    {"text_ca": "Compta quantes vegades hi cap la peça en una fila i després en una columna.",
+     "text_en": "Count how many times the piece fits in a row, then in a column."},
+    {"text_ca": "Prova el tauler més petit i fes-lo créixer d'un en un.",
+     "text_en": "Try the smallest board and grow it one step at a time."}
+  ]
+}
