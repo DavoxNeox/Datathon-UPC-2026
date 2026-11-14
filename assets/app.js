@@ -5,20 +5,30 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
 const I18N = {
-  cat: {title: "Copilot de mates", student: "Alumne", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
+  cat: {title: "Copilot de mates", student: "Àlies", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
         solution: "Solució", next: "Següent problema", mastery: "Domini per tema", close: "Tanca",
         level: "Nivell", topic: "Tema", thinking: "Pensant…", kinds: {neighbour: "Pista 1 · problema semblant",
         strategy: "Estratègia", trace: "Pas de la solució", llm: "Pista del model", solution: "Solució"},
         manip: {rotate: "Gira i volteja", paths: "Comptador de camins", dice: "El dau"},
         time: "temps", laptop: "portàtil", board: "placa (est.)", action: "acció", load: "càrrega de la pàgina",
-        over: "supera els 60 s", image: "Imatge del problema", answered: "Ja has respost. Pots veure la solució."},
-  eng: {title: "Maths copilot", student: "Student", teacher: "Teacher view", help: "Help", hint: "Hint",
+        over: "supera els 60 s", image: "Imatge del problema", answered: "Ja has respost. Pots veure la solució.",
+        welcome: "Hola! Com et dius?", course: "Curs", course_help: "Si no tries curs, el copilot el descobreix amb tres o quatre problemes.",
+        begin: "Comença", reset: "Reinicia l'alumne", auto: "Deixa que el copilot ho descobreixi",
+        confirm_reset: "Vols esborrar l'historial d'aquest alumne i tornar a l'inici?", neighbour_intro: "Un problema semblant, més fàcil:",
+        more: "mostra'l sencer", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
+        courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
+  eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
         solution: "Solution", next: "Next problem", mastery: "Mastery by topic", close: "Close",
         level: "Level", topic: "Topic", thinking: "Thinking…", kinds: {neighbour: "Hint 1 · similar problem",
         strategy: "Strategy", trace: "Solution step", llm: "Model hint", solution: "Solution"},
         manip: {rotate: "Rotate and flip", paths: "Path counter", dice: "The die"},
         time: "time", laptop: "laptop", board: "board (est.)", action: "action", load: "page load",
-        over: "over 60 s", image: "Problem picture", answered: "Already answered. You can see the solution."},
+        over: "over 60 s", image: "Problem picture", answered: "Already answered. You can see the solution.",
+        welcome: "Hi! What's your name?", course: "School year", course_help: "If you don't choose one, the copilot finds it out with three or four problems.",
+        begin: "Start", reset: "Reset student", auto: "Let the copilot find out",
+        confirm_reset: "Erase this student's history and go back to the start?", neighbour_intro: "A similar, easier problem:",
+        more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
+        courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
 let lang = "cat", state = null, lastProblem = null, imageKey = null, loadReported = false;
 const t = () => I18N[lang];
@@ -38,15 +48,20 @@ function applyI18n() {
   $("lang-cat").classList.toggle("on", lang === "cat");
   $("lang-eng").classList.toggle("on", lang === "eng");
   document.title = t().title;
+  const sel = $("level"), keep = sel.value;
+  sel.innerHTML = `<option value="auto">${esc(t().auto)}</option>` + t().courses.map((c, i) => `<option value="${i}">${esc(c)} (${t().levelName.toLowerCase()} ${i})</option>`).join("");
+  sel.value = keep || "auto";
 }
 
 function drawLed(frame) {
   const c = $("led"), ctx = c.getContext("2d");
-  ctx.fillStyle = "#111"; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.fillStyle = "#0d0d0d"; ctx.fillRect(0, 0, c.width, c.height);
   (frame || []).forEach((row, r) => row.forEach((v, col) => {
-    ctx.fillStyle = v ? `rgba(255,80,40,${0.25 + 0.75 * v / 7})` : "#2a2a2a";
-    ctx.beginPath(); ctx.arc(10 * col + 5, 10 * r + 5, 3.4, 0, 2 * Math.PI); ctx.fill();
+    if (v) { ctx.shadowColor = "rgba(255,90,40,.9)"; ctx.shadowBlur = 8; } else { ctx.shadowBlur = 0; }
+    ctx.fillStyle = v ? `rgba(255,96,48,${0.35 + 0.65 * v / 7})` : "#262626";
+    ctx.beginPath(); ctx.arc(20 * col + 10, 20 * r + 10, v ? 7.5 : 6, 0, 2 * Math.PI); ctx.fill();
   }));
+  ctx.shadowBlur = 0;
 }
 
 function renderProblem(p) {
@@ -55,7 +70,7 @@ function renderProblem(p) {
   lastProblem = p;
   const text = (lang === "eng" && p.text_eng) || (lang === "cat" && p.text_cat) || p.text;
   const options = (lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options || {};
-  $("meta").textContent = `${t().level} ${p.level} · ${t().topic}: ${lang === "cat" ? p.topic_name_ca : p.topic_name_en} · ${p.id}`;
+  $("meta").textContent = `${t().level} ${p.level} · ${t().courses[p.level] || ""} · ${t().topic}: ${lang === "cat" ? p.topic_name_ca : p.topic_name_en} · ${p.id}`;
   $("text").textContent = text;
   $("letters").innerHTML = "ABCDE".split("").map(l =>
     `<button data-l="${l}">${l}${options[l] ? `<small>${esc(options[l])}</small>` : ""}</button>`).join("");
@@ -86,17 +101,19 @@ function renderAnswer(s) {
 
 function renderHints(s) {
   $("hints").innerHTML = s.hints.map(h => {
-    let body = `<div>${esc(txt(h, "text"))}</div>`;
+    let body = `<div>${h.kind === "neighbour" ? esc(t().neighbour_intro) : esc(txt(h, "text"))}</div>`;
     if (h.kind === "neighbour" && h.problem) {
-      const np = h.problem, opts = np.options || {};
-      body += `<div class="neighbour">${esc(np.text)}${Object.keys(opts).length ? "\n" + "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${esc(opts[l])}`).join("   ") : ""}` +
-        (np.image_b64 ? `<img src="data:image/png;base64,${np.image_b64}" alt="">` : "") + `</div>`;
+      const np = h.problem, opts = np.options || {}, long = (np.text || "").length > 160;
+      body += `<div class="neighbour ${long ? "clamped" : ""}">${esc(np.text)}${Object.keys(opts).length ? "\n" + "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${esc(opts[l])}`).join("   ") : ""}</div>` +
+        (long ? `<button class="more" data-more>${esc(t().more)}</button>` : "") +
+        (np.image_b64 ? `<div class="neighbour"><img src="data:image/png;base64,${np.image_b64}" alt=""></div>` : "");
     }
     if (h.kind === "solution" && h.trace && h.trace.length) {
       body += `<ol>${h.trace.map(step => `<li>${esc(txt(step, "text"))}</li>`).join("")}</ol>`;
     }
     const time = h.estimated_board_seconds ? ` · ${t().board} ${h.estimated_board_seconds.toFixed(1)} s` : "";
-    return `<div class="hint ${h.kind}"><div class="kind">${t().kinds[h.kind] || h.kind} · ${lang === "cat" ? "esglaó" : "rung"} ${h.rung}</div>${body}` +
+    const badge = h.kind === "llm" && h.llm_lang === "eng" && lang === "cat" ? `<span class="badge">${esc(t().in_english)}</span>` : "";
+    return `<div class="hint ${h.kind}"><div class="kind">${t().kinds[h.kind] || h.kind} · ${lang === "cat" ? "esglaó" : "rung"} ${h.rung}${badge}</div>${body}` +
       `<div class="time">${t().laptop} ${(h.laptop_seconds ?? 0).toFixed(2)} s${time}</div></div>`;
   }).join("");
   // the manipulative of the last strategy card, if any
@@ -123,8 +140,12 @@ function renderTimeline(s) {
 function render(s) {
   state = s;
   if (lang !== s.lang) { lang = s.lang; applyI18n(); }
-  $("student").value === "" && ($("student").value = s.student);
-  renderProblem(s.problem); renderAnswer(s); renderHints(s); renderMastery(s); renderTimeline(s); drawLed(s.led);
+  $("start").hidden = s.started; $("app").hidden = !s.started;
+  $("who").hidden = !s.started; $("reset").hidden = !s.started;
+  $("who").textContent = s.student + (s.level !== null && s.level !== undefined ? ` · ${t().courses[s.level]}` : "");
+  drawLed(s.led); renderTimeline(s);
+  if (!s.started) { if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; } return; }
+  renderProblem(s.problem); renderAnswer(s); renderHints(s); renderMastery(s);
   if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; }
 }
 
@@ -138,11 +159,14 @@ $("solution").onclick = async () => { await api("/api/solution"); poll(); };
 $("next").onclick = async () => render(await api("/api/next"));
 $("lang-cat").onclick = async () => render(await api("/api/lang/cat"));
 $("lang-eng").onclick = async () => render(await api("/api/lang/eng"));
-$("student").addEventListener("change", async () => render(await api("/api/student/" + encodeURIComponent($("student").value || "demo"))));
+$("begin").onclick = async () => render(await api(`/api/start/${encodeURIComponent($("student").value.trim() || "demo")}/${$("level").value}`));
+$("student").addEventListener("keydown", e => { if (e.key === "Enter") $("begin").click(); });
+$("reset").onclick = async () => { if (confirm(t().confirm_reset)) { lastProblem = null; render(await api("/api/reset")); } };
+$("hints").addEventListener("click", e => { const b = e.target.closest("button[data-more]"); if (!b) return; const box = b.previousElementSibling; box.classList.toggle("clamped"); b.textContent = box.classList.contains("clamped") ? t().more : t().less; });
 $("manip").onclick = () => { const m = $("manip").dataset.m; $("dialog-title").textContent = t().manip[m]; $("dialog-frame").src = `manip/${m}.html?lang=${lang}`; $("dialog").showModal(); };
 $("dialog-close").onclick = () => { $("dialog").close(); $("dialog-frame").src = "about:blank"; };
 document.addEventListener("keydown", e => {
-  if (e.target.tagName === "INPUT" || e.metaKey || e.ctrlKey || e.altKey || $("dialog").open) return;
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.metaKey || e.ctrlKey || e.altKey || $("dialog").open || !state || !state.started) return;
   const k = e.key.toUpperCase();
   if ("ABCDE".includes(k) && k.length === 1) { const b = document.querySelector(`#letters button[data-l="${k}"]`); if (b && !b.disabled) b.click(); }
   else if (k === "P" || k === "H") $("hint").click();

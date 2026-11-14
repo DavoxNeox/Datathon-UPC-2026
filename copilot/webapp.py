@@ -28,6 +28,8 @@ class Session:
     def __init__(self):
         self.lock = threading.Lock()
         self.student = "demo"
+        self.started = False         # the start screen is shown until the student presses "Comença"
+        self.level = None            # the level chosen on the start screen, None = let the trainer decide
         self.lang = "cat"
         self.problem = None          # the Problem dict as served (with its label, never sent)
         self.rung = 0                # highest rung used on this problem
@@ -83,7 +85,8 @@ class Session:
     def state(self):
         with self.lock:
             return {
-                "student": self.student, "lang": self.lang, "problem": self._public_problem(),
+                "student": self.student, "started": self.started, "level": self.level,
+                "lang": self.lang, "problem": self._public_problem(),
                 "rung": self.rung, "hints": self.hints, "answer": self.answer, "busy": self.busy,
                 "message": self.message, "timeline": self.timeline, "mastery": self.mastery,
                 "led": led.last_frame(), "llm_allowed": bool(self.problem) and
@@ -91,12 +94,56 @@ class Session:
             }
 
     def set_student(self, student):
+        return self.start(student, "auto")
+
+    def start(self, student, level="auto"):
+        """The start screen's button: pseudonym, optional level 0..7 ("auto" = the trainer decides).
+
+        Calls trainer.start_student(student_id, level) when the trainer has it (it returns the
+        mastery map); otherwise the current flow, which starts with the trainer's diagnostic.
+        """
         student = student.strip()[:32] or "demo"
+        chosen = int(level) if str(level).isdigit() and 0 <= int(level) <= 7 else None
+        started = time.perf_counter()
         with self.lock:
-            self.student = student
+            self.student, self.level = student, chosen
             self.students.add(student)
+            start_student = getattr(trainer, "start_student", None)
+            if callable(start_student):
+                try:
+                    start_student(student, chosen) if chosen is not None else start_student(student)
+                except Exception as error:  # an older trainer: keep going with its own flow
+                    self.message = {"ca": "", "en": ""}
+                    self.timeline.append({"action": f"start_student failed: {type(error).__name__}", "laptop_s": 0, "board_s": 0})
+            self.started = True
             self._load_next()
+            self._record("start", started)
         return self.state()
+
+    def reset(self):
+        """"Reinicia l'alumne": forget this student's history (trainer.reset_student when it exists)
+        and go back to the start screen."""
+        with self.lock:
+            if self.busy:
+                return {"error": "busy"}
+            reset_student = getattr(trainer, "reset_student", None)
+            done = False
+            if callable(reset_student):
+                try:
+                    reset_student(self.student)
+                    done = True
+                except Exception as error:
+                    self.timeline.append({"action": f"reset_student failed: {type(error).__name__}", "laptop_s": 0, "board_s": 0})
+            if self._timer:
+                self._timer.cancel()
+            self.problem, self.rung, self.hints, self.answer = None, 0, [], None
+            self.started, self.level = False, None
+            self.message = {"ca": "", "en": ""}
+            self.mastery = trainer.mastery_map(self.student) if done else {}
+            led.show_mastery(self.mastery)
+        state = self.state()
+        state["reset_supported"] = done
+        return state
 
     def set_lang(self, lang):
         with self.lock:
@@ -120,6 +167,7 @@ class Session:
             started = time.perf_counter()
             result = trainer.record_answer(self.student, self.problem["id"], letter, self.rung)
             self.answer = {"letter": letter, **result}
+            self.mastery = trainer.mastery_map(self.student)
             led.show_result(result["correct"])
             if result["correct"]:
                 self.message = {"ca": "Correcte!", "en": "Correct!"}
@@ -212,9 +260,7 @@ class Session:
             try:
                 data = report()
                 if isinstance(data, dict):
-                    out.update(data)
-                    out["source"] = "teacher_report"
-                    return out
+                    return _normalise_report(data, out)
             except Exception as error:
                 out["error"] = f"teacher_report: {type(error).__name__}: {error}"
         for s in students:
@@ -224,6 +270,30 @@ class Session:
     def estimate(self, prompt_tokens, output_tokens):
         """Board seconds for a request of this size (the page shows it next to measured times)."""
         return {"board_seconds": round(estimate_tokens(int(prompt_tokens), int(output_tokens)), 2)}
+
+
+def _normalise_report(data, out):
+    """The page wants {"students": {name: {topic: 0..5}}, "by_level": {name: {level: {"correct", "total"}}}}.
+
+    The trainer's teacher_report gives a list of students with "mastery" and "by_level"
+    {level: {"answers", "correct"}}; an older shape with a dict of students is passed through.
+    """
+    out["source"] = "teacher_report"
+    rows = data.get("students")
+    if isinstance(rows, dict):
+        out["students"] = rows
+        out["by_level"] = data.get("by_level")
+        return out
+    by_level = {}
+    for row in rows or []:
+        name = str(row.get("student_id", "?"))
+        out["students"][name] = row.get("mastery") or {}
+        levels = row.get("by_level") or {}
+        by_level[name] = {str(lvl): {"correct": int(v.get("correct") or 0), "total": int(v.get("answers", v.get("total", 0)) or 0)}
+                          for lvl, v in levels.items()}
+        out.setdefault("details", {})[name] = {k: row.get(k) for k in ("base_level", "diagnostic_done", "answers", "correct", "reviews")}
+    out["by_level"] = by_level if any(by_level.values()) else None
+    return out
 
 
 def _read_image(relative_path):
@@ -241,6 +311,8 @@ def routes(session=SESSION):
     return [
         ("GET", "/api/state", session.state),
         ("GET", "/api/student/{student}", session.set_student),
+        ("GET", "/api/start/{student}/{level}", session.start),
+        ("GET", "/api/reset", session.reset),
         ("GET", "/api/lang/{lang}", session.set_lang),
         ("GET", "/api/next", session.next),
         ("GET", "/api/answer/{letter}", session.answer_letter),
@@ -255,7 +327,7 @@ def routes(session=SESSION):
 
 
 def start(session=SESSION):
-    """Load the first problem and draw the resting frame."""
+    """Draw the resting frame. The first problem loads when the student presses "Comença"."""
     with session.lock:
         session.students.add(session.student)
-        session._load_next()
+        session._show_mastery()

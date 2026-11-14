@@ -9,13 +9,27 @@
 <body>
 <header>
   <h1 data-i18n="title">Copilot de mates</h1>
-  <label><span data-i18n="student">Alumne</span> <input id="student" maxlength="32" placeholder="nom o àlies"></label>
+  <span class="who" id="who" hidden></span>
+  <button class="secondary small" id="reset" data-i18n="reset" hidden>Reinicia l'alumne</button>
   <span class="grow"></span>
   <span class="lang"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
-  <canvas id="led" class="led" width="130" height="80" title="LED 8x13"></canvas>
+  <canvas id="led" class="led" width="260" height="160" title="LED 8x13"></canvas>
   <a class="teacher" href="teacher.html" data-i18n="teacher">Vista del professor</a>
 </header>
-<main>
+
+<main id="start">
+  <section class="start">
+    <h2 data-i18n="welcome">Hola! Com et dius?</h2>
+    <label class="field"><span data-i18n="student">Àlies</span>
+      <input id="student" maxlength="32" placeholder="per exemple: Mar" autocomplete="off"></label>
+    <label class="field"><span data-i18n="course">Curs</span>
+      <select id="level"></select></label>
+    <p class="meta" data-i18n="course_help">Si no tries curs, el copilot el descobreix amb tres o quatre problemes.</p>
+    <button class="primary big" id="begin" data-i18n="begin">Comença</button>
+  </section>
+</main>
+
+<main id="app" hidden>
   <div class="col">
     <section>
       <div class="meta" id="meta">…</div>

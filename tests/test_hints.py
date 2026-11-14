@@ -194,6 +194,26 @@ class LlmHintTest(unittest.TestCase):
         self.assertFalse(r["ok"])
         self.assertTrue(r["rejected"][0].startswith("error:"))
 
+    def test_hint_llm_lang_en_makes_one_english_call_and_shows_it_in_catalan_too(self):
+        calls = []
+
+        def fake(messages, max_tokens, grammar=None, timeout=0):
+            calls.append(messages[-1]["content"])
+            return "What is the total first?", {"prompt_n": 10, "predicted_n": 6}
+
+        with mock.patch.object(hints, "LLM_LANG", "en"), mock.patch.object(hints, "_call", side_effect=fake):
+            r = hints.llm_hint(self.problem(), "cat")
+        self.assertTrue(r["ok"])
+        self.assertEqual(len(calls), 1)
+        self.assertIn("English", calls[0])
+        self.assertEqual(r["lang"], "eng")
+        self.assertEqual(r["text_ca"], r["text_en"])
+        # the gate then reads the English quality
+        with mock.patch.object(hints, "LLM_LANG", "en"):
+            self.assertEqual(hints._llm_lang("cat"), "eng")
+        with mock.patch.object(hints, "LLM_LANG", ""):
+            self.assertEqual(hints._llm_lang("cat"), "cat")
+
     def test_only_the_first_sentence_is_kept(self):
         self.assertEqual(hints._one_sentence('"Count first. Then subtract."'), "Count first.")
         self.assertEqual(hints._one_sentence("Compta\nprimer"), "Compta primer")
