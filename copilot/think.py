@@ -86,9 +86,11 @@ def levels_from_config(value=None):
 
 
 def applies(problem, levels, text_only_only=True, numeric_too=True):
-    """Whether the stage runs on this problem: five options, a selected level, (by default) no figure,
+    """Whether the stage runs on this problem: a text, five options, a selected level, (by default) no figure,
     and, with numeric_too=False, only when the options are not five distinct numbers (where the
     middle-value prior already answers)."""
+    if not (problem.get("text") or "").strip():
+        return False  # nothing to reason about: a request on the options alone answered A in the review
     options = problem.get("options") or {}
     if len(options) != 5:
         return False
