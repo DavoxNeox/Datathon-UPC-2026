@@ -94,6 +94,22 @@ class Rung0Stats:
             pass  # counters are a convenience, never a reason to fail the page
 
 
+
+def _diagnose(problem, letter):
+    """The error signature of a wrong answer, or None: module absent, no signature, or low confidence."""
+    try:
+        from . import signatures  # optional module (branch innov-error-signatures)
+    except ImportError:
+        return None
+    try:
+        result = signatures.diagnose(problem, letter)
+    except Exception:  # a diagnosis must never break the correction
+        return None
+    if not result or result.get("confidence", "high") == "low":
+        return None
+    return result
+
+
 class Session:
     """One student at the page. The app serves one student at a time (one board, one page)."""
 
@@ -280,6 +296,14 @@ class Session:
             else:
                 self.message = {"ca": f"No és això. La resposta era {result['label']}.",
                                 "en": f"Not this time. The answer was {result['label']}."}
+                # Error signature (copilot/signatures.py, when present): an explanation of the
+                # slip, shown ONLY now that the problem is closed and the answer is on screen.
+                # Never before answering: most signatures pin the correct option.
+                diagnosis = _diagnose(self.problem, letter)
+                if diagnosis:
+                    self.answer["signature"] = diagnosis.get("signature")
+                    self.message = {"ca": self.message["ca"] + " " + diagnosis.get("text_ca", ""),
+                                    "en": self.message["en"] + " " + diagnosis.get("text_en", "")}
             self._record("answer", started)
             if self._timer:
                 self._timer.cancel()

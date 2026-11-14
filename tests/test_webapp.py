@@ -284,3 +284,45 @@ class HintCapTest(unittest.TestCase):
         self.s.answer_letter("A")
         self.s.next()
         self.assertEqual(self.s.state()["hints_left"], webapp.HINT_MAX_USES)
+
+
+class SignatureWiringTest(unittest.TestCase):
+    """The error signature is appended only after a WRONG answer, only with high confidence."""
+
+    def _fake(self, result):
+        import types
+        fake = types.ModuleType("copilot.signatures")
+        fake.diagnose = lambda problem, letter: result
+        return mock.patch.dict("sys.modules", {"copilot.signatures": fake})
+
+    def test_wrong_answer_gets_the_explanation(self):
+        s = webapp.Session(); s.start("sig-test", "auto")
+        label = s.problem_label() if hasattr(s, "problem_label") else None
+        wrong = next(l for l in "ABCDE" if l != (label or "A"))
+        with self._fake({"signature": "double", "text_ca": "Has comptat el doble.", "text_en": "You counted double.", "confidence": "high"}):
+            state = s.answer_letter(wrong)
+        if not state["answer"]["correct"]:
+            self.assertIn("Has comptat el doble.", state["message"]["ca"])
+            self.assertEqual(state["answer"].get("signature"), "double")
+
+    def test_low_confidence_or_missing_module_adds_nothing(self):
+        s = webapp.Session(); s.start("sig-test-2", "auto")
+        with self._fake({"signature": "pm1", "text_ca": "X", "text_en": "X", "confidence": "low"}):
+            state = s.answer_letter("A")
+        self.assertNotIn(" X", state["message"]["ca"])
+        s2 = webapp.Session(); s2.start("sig-test-3", "auto")
+        with mock.patch.dict("sys.modules", {"copilot.signatures": None}):
+            state = s2.answer_letter("B")
+        self.assertNotIn("signature", state["answer"])
+
+    def test_correct_answer_never_shows_a_signature(self):
+        s = webapp.Session(); s.start("sig-test-4", "auto")
+        called = []
+        import types
+        fake = types.ModuleType("copilot.signatures"); fake.diagnose = lambda p, l: called.append(l) or {"signature": "x", "text_ca": "X", "text_en": "X"}
+        with mock.patch.dict("sys.modules", {"copilot.signatures": fake}):
+            for letter in "ABCDE":
+                s = webapp.Session(); s.start(f"sig-{letter}", "auto")
+                state = s.answer_letter(letter)
+                if state["answer"]["correct"]:
+                    self.assertNotIn(" X", state["message"]["ca"])
