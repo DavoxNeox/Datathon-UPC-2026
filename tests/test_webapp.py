@@ -1,10 +1,13 @@
 """copilot/webapp.py: the session behind the page, with the trainer mocked where the contract is optional."""
 import contextlib
 import io
+import json
+import os
+import tempfile
 import unittest
 from unittest import mock
 
-from copilot import webapp
+from copilot import hints, webapp
 
 
 def quiet(fn, *args):
@@ -76,6 +79,148 @@ class StartResetTest(unittest.TestCase):
         self.assertEqual(state["mastery"], {"arithmetic": 2})
         self.assertTrue(state["answer"]["correct"])
         self.s._timer.cancel()
+
+
+BI_CAT = {"id": "bi-web", "language": "cat", "level": 1, "topic": "arithmetic", "text": "Quants cromos li queden?",
+          "options": {"A": "6", "B": "8", "C": "9", "D": "11", "E": "21"}, "label": "C"}
+BI_ENG = {**BI_CAT, "language": "eng", "text": "How many cards are left?"}
+
+
+class Rung0Test(unittest.TestCase):
+    """Rung 0 on the page: the other language by id, counted, never a hint for mastery."""
+
+    def setUp(self):
+        hints.register_problem(BI_CAT)
+        hints.register_problem(BI_ENG)
+        self.rungs = []
+        self.trainer = mock.MagicMock(wraps=webapp.trainer)
+        self.trainer.next_problem = lambda student: dict(BI_CAT)
+        self.trainer.record_answer = lambda student, pid, letter, rung: self.rungs.append(rung) or {
+            "correct": letter == "C", "label": "C", "topic": "arithmetic", "mastery_before": 0, "mastery_after": 0, "review": False}
+        self.trainer.mastery_map = lambda student: {}
+        self.trainer.start_student = lambda student, level=None: {}
+        self.trainer.reset_student = lambda student: None
+        del self.trainer.teacher_report
+        self.patch = mock.patch.object(webapp, "trainer", self.trainer)
+        self.patch.start()
+        self.s = webapp.Session()
+        quiet(self.s.start, "Mar", "1")
+
+    def tearDown(self):
+        self.patch.stop()
+        if self.s._timer:
+            self.s._timer.cancel()
+
+    def test_show_puts_the_english_version_without_label_in_the_state(self):
+        before = quiet(self.s.state)
+        self.assertTrue(before["translation_available"])
+        self.assertEqual(before["other_language"], "eng")
+        self.assertIsNone(before["translation"])
+        state = quiet(self.s.translate, "show")
+        tr = state["translation"]
+        self.assertEqual(tr["language"], "eng")
+        self.assertEqual(tr["text"], "How many cards are left?")
+        self.assertEqual(tr["options"]["C"], "9")
+        self.assertNotIn("label", tr)
+        self.assertNotIn("label", json.dumps(state["translation"]))
+        self.assertNotIn("label", state["problem"])
+
+    def test_show_is_a_timeline_row_with_zero_board_seconds_and_leaves_rung_at_0(self):
+        state = quiet(self.s.translate, "show")
+        rows = [r for r in state["timeline"] if r["action"] == "rung0:translation"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["board_s"], 0.0)
+        self.assertEqual(state["rung"], 0)
+        self.assertEqual(state["hints"], [])
+        self.assertEqual(state["rung0"]["uses"], 1)
+
+    def test_hide_keeps_the_count_and_a_second_show_counts_again(self):
+        quiet(self.s.translate, "show")
+        hidden = quiet(self.s.translate, "hide")
+        self.assertIsNone(hidden["translation"])
+        self.assertEqual(hidden["rung0"]["uses"], 1)
+        again = quiet(self.s.translate, "show")
+        self.assertEqual(again["rung0"]["uses"], 2)
+        self.assertEqual(again["rung0"]["session"]["uses"], 2)
+        self.assertEqual(again["rung0"]["session"]["problems"], 1)  # the same problem, counted once
+
+    def test_record_answer_receives_rung_0_after_using_only_rung_0(self):
+        quiet(self.s.translate, "show")
+        state = quiet(self.s.answer_letter, "C")
+        self.assertEqual(self.rungs, [0])
+        self.assertTrue(state["answer"]["correct"])
+        report = self.s.teacher()["rung0"]
+        self.assertEqual(report["students_using"], 1)
+        self.assertEqual(report["students_total"], 1)
+        self.assertEqual(report["with"], {"answers": 1, "correct": 1})
+        self.assertEqual(report["without"], {"answers": 0, "correct": 0})
+        self.assertEqual(report["by_student"]["Mar"]["uses"], 1)
+
+    def test_answers_without_rung_0_are_counted_apart(self):
+        quiet(self.s.answer_letter, "A")
+        report = self.s.teacher()["rung0"]
+        self.assertEqual(self.rungs, [0])
+        self.assertEqual(report["students_using"], 0)
+        self.assertEqual(report["students_total"], 1)
+        self.assertEqual(report["without"], {"answers": 1, "correct": 0})
+
+    def test_rung_0_then_a_real_hint_keeps_the_hint_rung(self):
+        quiet(self.s.translate, "show")
+        with self.s.lock:
+            self.s.rung = 2  # as _compute_hint would leave it after rung 2
+        quiet(self.s.answer_letter, "C")
+        self.assertEqual(self.rungs, [2])
+        self.assertEqual(self.s.teacher()["rung0"]["with"]["answers"], 1)
+
+    def test_next_problem_forgets_the_shown_translation(self):
+        quiet(self.s.translate, "show")
+        state = quiet(self.s.next)
+        self.assertIsNone(state["translation"])
+        self.assertEqual(state["rung0"]["uses"], 0)
+        self.assertEqual(state["rung0"]["session"]["uses"], 1)
+
+    def test_english_page_offers_the_catalan_version(self):
+        quiet(self.s.set_lang, "eng")
+        state = quiet(self.s.translate, "show")
+        self.assertEqual(state["shown_language"], "eng")
+        self.assertEqual(state["other_language"], "cat")
+        self.assertEqual(state["translation"]["text"], "Quants cromos li queden?")
+
+    def test_no_other_language_is_an_error_and_counts_nothing(self):
+        self.trainer.next_problem = lambda student: {"id": "sample-4", "language": "cat", "level": 1, "text": "x",
+                                                     "options": {}, "label": "B"}
+        quiet(self.s.next)
+        self.assertFalse(quiet(self.s.state)["translation_available"])
+        out = quiet(self.s.translate, "show")
+        self.assertIn("error", out)
+        self.assertEqual(self.s.teacher()["rung0"]["uses"], 0)
+
+    def test_reset_forgets_the_student_counters(self):
+        quiet(self.s.translate, "show")
+        quiet(self.s.answer_letter, "C")
+        quiet(self.s.reset)
+        self.assertEqual(self.s.teacher()["rung0"]["students_total"], 0)
+
+
+class Rung0StatsTest(unittest.TestCase):
+    def test_counters_survive_a_restart_through_the_json_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "rung0.json")
+            stats = webapp.Rung0Stats(path)
+            stats.use("Pau", first_on_this_problem=True)
+            stats.answer("Pau", used_rung0=True, correct=False)
+            stats.answer("Pau", used_rung0=False, correct=True)
+            again = webapp.Rung0Stats(path)
+            self.assertEqual(again.report()["by_student"]["Pau"],
+                             {"uses": 1, "problems": 1, "with": {"answers": 1, "correct": 0}, "without": {"answers": 1, "correct": 1}})
+            self.assertEqual(again.session["uses"], 0)  # the session counters start afresh
+            again.forget("Pau")
+            self.assertEqual(webapp.Rung0Stats(path).report()["students_total"], 0)
+
+    def test_without_a_path_nothing_is_written(self):
+        stats = webapp.Rung0Stats(None)
+        stats.use("x", True)
+        self.assertEqual(stats.report()["students_using"], 1)
 
 
 class TeacherReportTest(unittest.TestCase):
