@@ -148,8 +148,8 @@ topic; the server (D) will send it inside `hints` with `kind: "lesson"` and `tit
   book, a 20 px title, the text at 18 px with line height 1.6 and a 68-character measure, on
   the quieter `--card-2` surface with no accent edge and no laptop/board time. It sits under
   the help row like the hints, so it never covers the options. `lesson-card-1280-light.png`,
-  `lesson-card-1280-dark.png`, `lesson-card-390-light.png` (the card is 358 px wide on the
-  phone, no horizontal scroll). Keys and the 44 px targets are unchanged; the button is 48 px.
+  `lesson-card-1280-dark.png`; on the phone (390x844, checked in the browser pane) the card
+  is 358 px wide with no horizontal scroll (that capture shows a neighbour problem, so it is not committed). Keys and the 44 px targets are unchanged; the button is 48 px.
 - Until the server serves it, `dev/fixtures/lesson_hint.json` (own text, 99 words in Catalan
   and 105 in English, on counting in a grid) with the console recipe in `dev/fixtures/README.md`
   shows the card; the captures above were made that way on the sim with `HINT_MAX_USES=4`.
