@@ -120,7 +120,7 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
 .manip-btn { color: var(--warn); border-color: var(--warn); box-shadow: 0 4px 0 var(--warn); background: var(--card); }
 
 /* The action sheet: fixed at the bottom like a lesson's bar; neutral before the answer, green or red after it */
-.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; background: var(--card); border-top: 2px solid var(--line); transition: background-color .2s; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; background: var(--card); border-top: 2px solid var(--control); transition: background-color .2s; }
 .sheet .inner { max-width: 920px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; min-height: 76px; }
 .sheet .verdict { flex: 1 1 220px; font-size: 17px; font-weight: 700; color: var(--muted); }
 .sheet .actions { display: flex; align-items: center; gap: 10px; }
@@ -176,5 +176,5 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
   .sheet .actions { flex: 1; }
   .sheet .actions:last-of-type { justify-content: flex-end; }
   .sheet .secondary, .sheet .primary { padding: 8px 14px; min-height: 46px; font-size: 13px; }
-  main { padding-bottom: 130px; }
+  main { padding-bottom: 220px; }   /* the sheet with the verdict, the buttons and the status line is 210 px tall */
 }

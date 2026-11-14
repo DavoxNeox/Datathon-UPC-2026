@@ -463,7 +463,7 @@ function render(s) {
   $("start").hidden = s.started; $("app").hidden = !s.started; $("feedback").hidden = !s.started; $("progress").hidden = !s.started;
   $("reset").hidden = !s.started;
   $("who").textContent = s.started ? s.student + (s.level !== null && s.level !== undefined ? ` · ${t().courses[s.level]}` : "") : t().title;
-  drawLed(s.led); renderTimeline(s);
+  drawLed(s.led); renderTimeline(s); renderMastery(s);   // also on the start screen, so a reset empties the map
   if (!s.started) { if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; } return; }
   renderProblem(s.problem); renderAnswer(s); renderHints(s); renderMastery(s); renderTopicProgress(s);
   if (s.answer && !hadAnswer && innerWidth < 1000) setPanel(false);
