@@ -45,6 +45,19 @@ LLM_URL = f"http://{CONFIG['LLM_HOST']}:{CONFIG['LLM_PORT']}/v1/chat/completions
 LLM_TIMEOUT = float(CONFIG.get("TIME_LIMIT_SECONDS", 60))
 # What prefetch() does in its thread: "full" writes the hint ahead, "warm" only reads the prompt, "off" nothing
 PREFETCH = CONFIG.get("HINT_PREFETCH", "full")
+# HINT_LLM_LANG=en: the model writes its hint in English only (its Catalan is poor) and the page shows
+# that English sentence even in Catalan; the quality gate then uses percent_en. Empty: the page language.
+LLM_LANG = (CONFIG.get("HINT_LLM_LANG", "") or "").strip().lower()
+
+
+def _llm_lang(lang):
+    """The language the LLM hint is written in and gated by."""
+    return "eng" if LLM_LANG in ("en", "eng") else lang
+
+
+def _llm_langs(lang):
+    """The calls llm_hint makes: Catalan then English, or English only with HINT_LLM_LANG=en."""
+    return ("eng",) if _llm_lang(lang) == "eng" and lang != "eng" and LLM_LANG else ("cat", "eng")
 
 # Stable system prompt: llama-server caches the start of the prompt, so keep it identical.
 SYSTEM = ("You are a maths tutor. You never give answers. You help with ONE short question that makes "
@@ -160,18 +173,27 @@ def _image_path(problem_id, lang):
 
 
 def _rung1(problem, lang):
-    hits = retrieval.neighbors(problem["id"], level_delta=-1, same_topic=True, lang=lang, k=1)
-    shown = None
-    if hits:
-        shown = {k: v for k, v in hits[0].items() if k != "label"}
-        if topics.is_visual(_topic_of(problem)):
-            shown["image"] = _image_path(shown["id"], shown.get("language", lang))
-    level = shown.get("level") if shown else None
-    return {"kind": "neighbour", "problem": shown,
-            "text_ca": "Mira aquest problema semblant, més fàcil" + (f" (nivell {level})" if level is not None else "") +
-                       ". Com el resoldries? La mateixa idea serveix per al teu.",
-            "text_en": "Look at this similar, easier problem" + (f" (level {level})" if level is not None else "") +
-                       ". How would you solve it? The same idea works for yours."}
+    """An easier neighbour of the same topic. Never a harder one and never another topic: at level 0,
+    or when nothing easier exists, a neighbour of the same level, said so."""
+    level = int(problem.get("level", 0) or 0)
+    topic = _topic_of(problem)
+    hits = retrieval.neighbors(problem["id"], level_delta=-1, same_topic=True, lang=lang, k=5)
+    fitting = [h for h in hits if int(h.get("level", level) or 0) <= level and h.get("topic", topic) == topic]
+    if not fitting:
+        return {"kind": "neighbour", "problem": None,
+                "text_ca": "No tinc cap problema semblant més fàcil. Prova una estratègia.",
+                "text_en": "I have no similar, easier problem. Try a strategy."}
+    shown = {k: v for k, v in fitting[0].items() if k != "label"}
+    if topics.is_visual(topic):
+        shown["image"] = _image_path(shown["id"], shown.get("language", lang))
+    easier = int(shown.get("level", level) or 0) < level
+    if easier:
+        text_ca = f"Un problema semblant, més fàcil (nivell {shown['level']}). Com el resoldries?"
+        text_en = f"A similar, easier problem (level {shown['level']}). How would you solve it?"
+    else:
+        text_ca = "Un problema semblant, del mateix nivell. Com el resoldries?"
+        text_en = "A similar problem of the same level. How would you solve it?"
+    return {"kind": "neighbour", "problem": shown, "easier": easier, "text_ca": text_ca, "text_en": text_en}
 
 
 def _rung2(problem, state):
@@ -219,10 +241,11 @@ def _rung3(problem, state, lang):
                 state["trace_step"] = i + 1
                 return {"kind": "trace", "text_ca": text_ca, "text_en": text_en}
             state["trace_step"] = shown  # skip the rest of the trace
-    if llm_allowed(_topic_of(problem), lang):
+    if llm_allowed(_topic_of(problem), _llm_lang(lang)):
         result = _prefetched(state) or llm_hint(problem, lang)
         if result.get("ok"):
             return {"kind": "llm", "text_ca": result["text_ca"], "text_en": result["text_en"],
+                    "llm_lang": result.get("lang", "cat"),
                     "estimated_board_seconds": result["estimated_board_seconds"]}
         fallback = _rung2(problem, state)
         fallback["estimated_board_seconds"] = result.get("estimated_board_seconds", 0.0)
@@ -330,7 +353,7 @@ def warm(problem_id, lang="cat"):
     if problem is None:
         return {}
     try:
-        _text, timings = _call(_messages(problem, "cat"), max_tokens=1, timeout=LLM_TIMEOUT)
+        _text, timings = _call(_messages(problem, _llm_langs(lang)[0]), max_tokens=1, timeout=LLM_TIMEOUT)
         return timings
     except (OSError, ValueError, KeyError):
         return {}
@@ -351,7 +374,7 @@ def prefetch(problem_id, lang="cat"):
     HINT_PREFETCH=warm reads the prompt into the cache; full (default) also writes the hint."""
     reset(problem_id)
     problem = problem_for(problem_id, lang)
-    if PREFETCH == "off" or problem is None or not llm_allowed(_topic_of(problem), lang):
+    if PREFETCH == "off" or problem is None or not llm_allowed(_topic_of(problem), _llm_lang(lang)):
         return None
     target = _prefetch_full if PREFETCH == "full" else warm
     thread = threading.Thread(target=target, args=(problem_id, lang), daemon=True)
@@ -376,8 +399,9 @@ def llm_hint(problem, lang="cat", strict_first=False):
     "prompt_n", "predicted_n", "attempts", "rejected": [reasons]}.
     """
     label, options = problem.get("label"), problem.get("options") or {}
+    langs = _llm_langs(lang)
     out = {"ok": False, "text_ca": "", "text_en": "", "estimated_board_seconds": 0.0,
-           "prompt_n": 0, "predicted_n": 0, "attempts": 0, "rejected": []}
+           "prompt_n": 0, "predicted_n": 0, "attempts": 0, "rejected": [], "lang": "eng" if langs == ("eng",) else "cat"}
 
     def record(timings):
         out["prompt_n"] += int(timings.get("prompt_n", 0) or 0)
@@ -387,14 +411,16 @@ def llm_hint(problem, lang="cat", strict_first=False):
     for attempt, strict in enumerate((strict_first, True)):
         out["attempts"] = attempt + 1
         try:
-            raw_ca, t1 = _call(_messages(problem, "cat", strict), MAX_TOKENS, grammar=HINT_GRAMMAR)
-            record(t1)
-            raw_en, t2 = _call(_messages(problem, "eng", strict), MAX_TOKENS, grammar=HINT_GRAMMAR)
-            record(t2)
+            texts = {}
+            for call_lang in langs:
+                raw, timings = _call(_messages(problem, call_lang, strict), MAX_TOKENS, grammar=HINT_GRAMMAR)
+                record(timings)
+                texts[call_lang] = _one_sentence(raw)
         except (OSError, ValueError, KeyError) as error:
             out["rejected"].append(f"error:{error}")
             return out
-        text_ca, text_en = _one_sentence(raw_ca), _one_sentence(raw_en)
+        text_en = texts.get("eng", "")
+        text_ca = texts.get("cat", text_en)  # English only: the Catalan page shows the English sentence
         reason = leak_reason(text_ca, label, options) or leak_reason(text_en, label, options)
         if reason:
             out["rejected"].append(reason)

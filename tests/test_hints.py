@@ -17,12 +17,42 @@ class LadderTest(unittest.TestCase):
         hints.reset("sample-4")
         hints.reset("sample-3")
 
+    def neighbour(self, pid, level, topic, label="B"):
+        return {"id": pid, "language": "cat", "level": level, "topic": topic, "text": "x", "options": {"B": "2"}, "label": label}
+
     def test_rung1_neighbour_without_label(self):
-        h = hints.get_hint("sample-4", 1, "cat")
+        easier = self.neighbour("n-1", 0, "arithmetic")
+        with mock.patch.object(hints.retrieval, "neighbors", return_value=[easier]) as nb:
+            h = hints.get_hint("sample-4", 1, "cat")  # sample-4 is level 1, arithmetic
+        nb.assert_called_once_with("sample-4", level_delta=-1, same_topic=True, lang="cat", k=5)
         self.assertEqual(h["kind"], "neighbour")
-        self.assertIsNotNone(h["problem"])
+        self.assertEqual(h["problem"]["id"], "n-1")
         self.assertNotIn("label", h["problem"])
+        self.assertTrue(h["easier"])
+        self.assertIn("més fàcil (nivell 0)", h["text_ca"])
         self.assertEqual(h["estimated_board_seconds"], 0.0)
+
+    def test_rung1_level_0_uses_a_same_level_neighbour_and_says_so(self):
+        same = self.neighbour("n-0", 0, "arithmetic")
+        with mock.patch.object(hints.retrieval, "neighbors", return_value=[same]):
+            h = hints.get_hint("sample-1", 1, "cat")  # sample-1 is level 0
+        self.assertEqual(h["problem"]["id"], "n-0")
+        self.assertFalse(h["easier"])
+        self.assertIn("del mateix nivell", h["text_ca"])
+        self.assertIn("same level", h["text_en"])
+        self.assertNotIn("més fàcil", h["text_ca"])
+
+    def test_rung1_never_goes_up_a_level_or_changes_topic(self):
+        harder = self.neighbour("n-up", 1, "arithmetic")
+        other = self.neighbour("n-areas", 0, "areas")
+        ok = self.neighbour("n-ok", 0, "arithmetic")
+        with mock.patch.object(hints.retrieval, "neighbors", return_value=[harder, other, ok]):
+            h = hints.get_hint("sample-1", 1, "cat")
+        self.assertEqual(h["problem"]["id"], "n-ok")
+        with mock.patch.object(hints.retrieval, "neighbors", return_value=[harder, other]):
+            h = hints.get_hint("sample-1", 1, "cat")
+        self.assertIsNone(h["problem"])
+        self.assertIn("Prova una estratègia", h["text_ca"])
 
     def test_rung1_visual_topic_has_image_key(self):
         h = hints.get_hint("sample-3", 1, "eng")  # sample-3 is "areas", a visual topic
@@ -193,6 +223,26 @@ class LlmHintTest(unittest.TestCase):
             r = hints.llm_hint(self.problem(), "cat")
         self.assertFalse(r["ok"])
         self.assertTrue(r["rejected"][0].startswith("error:"))
+
+    def test_hint_llm_lang_en_makes_one_english_call_and_shows_it_in_catalan_too(self):
+        calls = []
+
+        def fake(messages, max_tokens, grammar=None, timeout=0):
+            calls.append(messages[-1]["content"])
+            return "What is the total first?", {"prompt_n": 10, "predicted_n": 6}
+
+        with mock.patch.object(hints, "LLM_LANG", "en"), mock.patch.object(hints, "_call", side_effect=fake):
+            r = hints.llm_hint(self.problem(), "cat")
+        self.assertTrue(r["ok"])
+        self.assertEqual(len(calls), 1)
+        self.assertIn("English", calls[0])
+        self.assertEqual(r["lang"], "eng")
+        self.assertEqual(r["text_ca"], r["text_en"])
+        # the gate then reads the English quality
+        with mock.patch.object(hints, "LLM_LANG", "en"):
+            self.assertEqual(hints._llm_lang("cat"), "eng")
+        with mock.patch.object(hints, "LLM_LANG", ""):
+            self.assertEqual(hints._llm_lang("cat"), "cat")
 
     def test_only_the_first_sentence_is_kept(self):
         self.assertEqual(hints._one_sentence('"Count first. Then subtract."'), "Count first.")
