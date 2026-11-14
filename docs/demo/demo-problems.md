@@ -128,6 +128,16 @@ the tick (mastery 0→2) and the cross (mastery 0→1), the teacher view with hi
 the reset back to the start screen. On the board, measured earlier the same day
 (`docs/results-A.md` §10), the same flow with the pseudonym `prova` ran without errors.
 
+## Verified on the board (14 Nov 2026, main 8501c23, over `adb forward` from the laptop)
+
+`dev/demo_rehearse.py --base http://127.0.0.1:7002 Mariona1 1 C A --hints 2 --hints2 2` and
+`... Guillem 2 A B --hints 2 --hints2 1` against the board gave exactly the chains above:
+`lvl-1_2024_2` (neighbour `lvl-0_2024_3`, 0.935, with picture, tick, mastery 0 to 2),
+`lvl-3_2019_18` (neighbour `lvl-2_2019_9`, 0.914, strategy with the rotate manipulative, cross,
+mastery 0 to 1), `lvl-2_2020_4` (neighbour `lvl-1_2021_21`, 0.827, tick) and `lvl-4_2010_12`
+(neighbour `lvl-3_2016_29`, 0.810, cross). Every step under 0.5 s real on the board, no LLM
+call, teacher view and reset working. The pseudonyms were reset afterwards.
+
 ## Things seen in the rehearsal that the team should know
 
 - The problem's picture (the statement as Kangaroo printed it) is shown **small** above the
