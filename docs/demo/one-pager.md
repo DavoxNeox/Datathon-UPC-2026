@@ -16,7 +16,7 @@ student by topic and level.
 | --- | --- | --- |
 | Model's letter, English validation | **21.7%** (61 right) vs **23.1%** always D | 281 problems |
 | Most confident quarter of the model | **16.9%** right: confidence anti-correlated with truth | 70 of 281 |
-| Official run on the board, both languages | **130/562 = 23.1%**, mean 0.38 s, worst 40 s, none over 60 s | 562 problems |
+| Official run on the board, both languages | **150/562 = 26.7%** vs 23.1% always D (eng 77/281, cat 73/281); mean 0.38 s, worst 38.7 s, none over 60 s | 562 problems |
 | Template solvers, 4 families | fired on **4** of 911 training problems (3 right, 1 wrong): about +0.3 points | 911 problems |
 | The board, everything running | **2.6 GB free**, cold start **2 min**, embedding **0.12 s**, reading 11.4 tok/s, writing 5.6 tok/s | measured 14 Nov 2026 |
 
@@ -52,7 +52,10 @@ a board estimate of 0.0 s. The "before and after" with people follows the protoc
 ## What did not work, and we say so
 
 - The model's letter carries no information (prefers D 38%, C 3% of the time); bias
-  correction made it worse (17.8%). Shipped policy: solvers, else D.
+  correction made it worse (17.8%). Shipped policy: the middle value when the five options are
+  numeric, else D. That rule is a prior about how Kangaroo distractors are built (the correct
+  value usually sits between distractors above and below), not reasoning; it never enters the
+  hints, and a hidden test may hand part of the gain back (bootstrap on val: -2 to +26 problems).
 - Kangaroo problems are not templated: parametric solvers fire on about 1 problem in 20 of
   their own family. The Reason track stays at the always-D floor.
 - The model's one-sentence hint is off in Catalan until its judged quality passes 70%.

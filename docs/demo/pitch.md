@@ -10,9 +10,9 @@ stamps are cumulative inside each block and assume **2.4 words per second** (12 
 | --- | ---: | ---: | ---: |
 | problem | 47 | 20 s | 20 s |
 | demo (narration; the clicks and the LED fill the rest) | 182 | 76 s | 90 s |
-| numbers | 93 | 39 s | 40 s |
+| numbers | 96 | 40 s | 40 s |
 | lessons | 72 | 30 s | 30 s |
-| **total** | **394** | **164 s** | **180 s** |
+| **total** | **397** | **165 s** | **180 s** |
 
 Four voices. The team decides who is who (see the report); the roles are:
 
@@ -61,15 +61,15 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 | s | text | font |
 | --- | --- | --- |
-| 0 | Abans de construir res, vam mesurar. El model va encertar seixanta-un de dos-cents vuitanta-un problemes de validació: vint-i-un coma set per cent. Respondre sempre D en dóna vint-i-tres coma u. | results-A §1, error-analysis (n = 281) |
-| 12 | I com més segur estava, menys encertava: setze coma nou per cent al quart més confiat. | results-A §2 |
-| 18 | La cursa oficial a la placa, cinc-cents seixanta-dos problemes: vint-i-tres coma u per cent, exactament sempre D, cap per sobre de seixanta segons. | results-A §10 (n = 562) |
-| 28 | Les pistes que heu vist no gasten model: un embedding triga zero coma dotze segons, i la placa arrenca en fred en dos minuts. | results-A §10 |
-| 35 | *(V4 parla)* | |
+| 0 | Vam mesurar abans de construir. El model va encertar seixanta-un de dos-cents vuitanta-un problemes: vint-i-un coma set per cent; sempre D, vint-i-tres coma u. | results-A §1, error-analysis (n = 281) |
+| 10 | Com més segur, menys encertava: setze coma nou per cent al quart més confiat. | results-A §2 |
+| 16 | La cursa oficial a la placa, cinc-cents seixanta-dos problemes: vint-i-sis coma set per cent; sempre D en dóna vint-i-tres coma u. La diferència és una regla sobre com es construeixen els distractors, no raonament, i mai entra a les pistes. | results-A §10, middle-value run (n = 562; bootstrap of the gain on val: -2 to +26 problems) |
+| 33 | Les pistes no gasten model: un embedding triga zero coma dotze segons; la placa arrenca en dos minuts. | results-A §10 |
+| 41 | *(V4 parla)* | |
 
 > **Pendent, a decidir:** la mesura "abans i després" amb persones no està feta. El protocol
 > (`docs/teach-measurement.md`: 3 persones, 5 problemes sense pistes i 5 amb l'escala, n = 15
-> respostes per condició) triga 30 minuts a la placa. Si es fa, afegiu als 35 s: «Amb tres
+> respostes per condició) triga 30 minuts a la placa. Si es fa, afegiu al final del bloc: «Amb tres
 > persones i quinze respostes per condició, l'encert va passar de X a Y: n petit, i som els
 > autors.» (12 words, 5 s.) Si no es fa, no digueu cap xifra d'aprenentatge.
 
@@ -89,9 +89,9 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | --- | ---: | ---: | ---: |
 | problem | 48 | 20 s | 20 s |
 | demo (narration; the clicks and the LED fill the rest) | 179 | 75 s | 90 s |
-| numbers | 93 | 39 s | 40 s |
+| numbers | 98 | 41 s | 40 s |
 | lessons | 74 | 31 s | 30 s |
-| **total** | **394** | **164 s** | **180 s** |
+| **total** | **399** | **166 s** | **180 s** |
 
 ### 1. The problem (20 s), V1
 
@@ -121,11 +121,11 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 | s | text | source |
 | --- | --- | --- |
-| 0 | Before building anything, we measured. The model got sixty-one of two hundred and eighty-one validation problems right: twenty-one point seven percent. Always answering D gives twenty-three point one. | results-A §1, error-analysis (n = 281) |
-| 12 | And the more confident it was, the less it got right: sixteen point nine percent in its most confident quarter. | results-A §2 |
-| 18 | The official run on the board, five hundred and sixty-two problems: twenty-three point one percent, exactly always D, none over sixty seconds. | results-A §10 (n = 562) |
-| 28 | The hints you saw spend no model time: one embedding takes zero point one two seconds, and the board cold-starts in two minutes. | results-A §10 |
-| 35 | *(V4 speaks)* | |
+| 0 | We measured before building. The model got sixty-one of two hundred and eighty-one problems right: twenty-one point seven percent; always D, twenty-three point one. | results-A §1, error-analysis (n = 281) |
+| 10 | The more confident, the less right: sixteen point nine percent in its most confident quarter. | results-A §2 |
+| 16 | The official run on the board, five hundred and sixty-two problems: twenty-six point seven percent; always D gives twenty-three point one. The difference is a rule about how distractors are built, not reasoning, and it never enters the hints. | results-A §10, middle-value run (n = 562; bootstrap of the gain on val: -2 to +26 problems) |
+| 32 | The hints spend no model time: one embedding takes zero point one two seconds; the board boots in two minutes. | results-A §10 |
+| 40 | *(V4 speaks)* | |
 
 > **Pending, to decide:** the "before and after" measurement with people is not done (protocol
 > in `docs/teach-measurement.md`, n = 15 answers per condition, 30 minutes on the board). If it
@@ -153,7 +153,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
   `HINT_MAX_USES` in `config.env` that morning (the fourth use is a lesson).
 
 - The clicks are instant (under 0.5 s measured on the board, no model time), so the
-  narration sets the pace. The demo block has about 14 s of slack for the clicks and the LED; the whole script is about 164 s spoken.
+  narration sets the pace. The demo block has about 14 s of slack for the clicks and the LED; the whole script is about 166 s spoken.
 - The tick or cross stays 3 s on the LED, then the progress map returns. V1 turns the board
   towards the jury the moment V3 clicks the letter.
 - After two answers the diagnostic is still running (it needs three): Mariona1's third problem
