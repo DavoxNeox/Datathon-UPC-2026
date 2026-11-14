@@ -1,7 +1,20 @@
 # Math on the Edge · Teach track · one page for the jury
 
 **A maths copilot that never gives the answer, running entirely on an Arduino UNO Q (4 GB),
-offline, with M3Kang as the teacher.**
+offline, with M3Kang as the teacher.** Graded in two halves: a Reasoning exam corrected from
+`predict.py`'s answers, and this Teaching demo judged in three minutes.
+
+## Reasoning half: deterministic, measured, honest
+
+`predict.py` never calls the language model for a letter (its letter was measured at chance:
+21.7% vs 23.1% always D on 281 problems, and its confidence anti-correlated with being right).
+It answers with deterministic family solvers (grammar-constrained extraction, exactly-one-option
+check) and, otherwise, the **middle-value rule**: when the five options are numeric, the middle
+one, else D. Measured: **77/281 = 27.4%** on validation (always D 65/281), **150/562 = 26.7%**
+on the board over both languages, mean 0.38 s, worst 38.7 s, none over 60 s. The gain is a
+prior about how Kangaroo distractors are built, not reasoning; the bootstrap of the gain over
+always D is -2 to +26 problems, so a hidden exam may hand part of it back. The rule never enters
+the hints. *[Brief-reasoning experiment: result pending; reported only once measured.]*
 
 The 0.8B language model cannot solve Kangaroo problems (we measured it: chance level). So it
 never reasons. The copilot corrects with the M3Kang labels, picks the next problem at the
@@ -10,7 +23,7 @@ neighbour problem found by embeddings, a strategy card, and the solution only on
 The LED matrix shows a tick or a cross and the mastery map; the teacher view shows every
 student by topic and level.
 
-## Five numbers (all measured, `docs/results-A.md`, `docs/error-analysis.md`)
+## Teaching half: five numbers (all measured, `docs/results-A.md`, `docs/error-analysis.md`)
 
 | | number | n |
 | --- | --- | --- |
@@ -23,6 +36,14 @@ student by topic and level.
 Hints cost no model time: every step of the live demo ran in under 0.2 s in rehearsal, with
 a board estimate of 0.0 s. The "before and after" with people follows the protocol in
 `docs/teach-measurement.md` (n = 15 answers per condition) and is reported as such.
+
+## What the jury should notice
+
+1. The model never reasons, and on this board that is a virtue: nothing waits for it, nothing it says can be wrong.
+2. The student reasons: three hints and a lesson, climbed on demand; no answer before the student commits.
+3. M3Kang is the teacher: neighbour hint, correction and level come from the dataset's labels and structure.
+4. Everything is offline on the board, one USB cable; the page's timing table shows real seconds per step.
+5. The Reasoning half is deterministic and stated honestly, numbers and limits included.
 
 ## Architecture (text diagram)
 

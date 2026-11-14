@@ -8,11 +8,29 @@ stamps are cumulative inside each block and assume **2.4 words per second** (12 
 
 | block | Catalan words | at 2.4 w/s | budget |
 | --- | ---: | ---: | ---: |
-| problem | 47 | 20 s | 20 s |
-| demo (narration; the clicks and the LED fill the rest) | 191 | 80 s | 90 s |
-| numbers | 96 | 40 s | 40 s |
+| problem | 49 | 20 s | 20 s |
+| demo (narration; the clicks and the LED fill the rest) | 195 | 81 s | 90 s |
+| numbers (the placeholder counted as 12 words) | 96 | 40 s | 40 s |
 | lessons | 72 | 30 s | 30 s |
-| **total** | **406** | **169 s** | **180 s** |
+| **total** | **412** | **172 s** | **180 s** |
+
+**Grading (rules changed on 14 Nov 2026):** 50% Reasoning, an objective test exam corrected
+from `predict.py`'s CSV (`runbook.md` §11), and 50% Teaching, judged by the jury in these
+three minutes. The script presents both halves as what they are.
+
+## What the jury must notice (five lines)
+
+1. **The model never reasons, and that is a virtue here:** measured at chance level (21.7% vs
+   23.1% always D), so nothing on stage waits for it, nothing it says can be wrong.
+2. **The student reasons:** three hints and a lesson, climbed on demand; the answer never
+   appears before the student commits.
+3. **M3Kang is the teacher:** the neighbour hint, the correction and the level come from the
+   dataset's own labels and structure, not from generated text.
+4. **Everything runs offline on the board:** one USB cable, and the page's own timing table
+   shows real seconds per step (under a second).
+5. **The Reasoning half is deterministic and honest:** solvers plus the middle-value rule,
+   27.4% on validation, a prior about distractors; the brief-reasoning experiment is reported
+   only when measured.
 
 Four voices. The team decides who is who (see the report); the roles are:
 
@@ -39,7 +57,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | --- | --- |
 | 0 | Un problema del Cangur, una placa de quatre gigues i cap connexió a internet. |
 | 5 | El copilot no resol els problemes per l'alumne: l'ensenya a raonar amb pistes, dins la placa. |
-| 13 | Vam mesurar si el model podia raonar. No pot. L'usem per ensenyar, i M3Kang fa de professor. |
+| 13 | Vam mesurar si el model podia raonar. No pot. A l'examen responen regles; a l'aula, M3Kang fa de professor. |
 | 20 | *(V1 aixeca la placa; V2 comença)* |
 
 ### 2. La demo (90 s), V2 parla, V3 clica, V1 sosté la placa
@@ -48,24 +66,24 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | --- | --- | --- |
 | 0 | La placa: un Arduino UNO Q, sense Wi-Fi. El portàtil només mostra la pàgina que serveix pel cable USB. | res; la pantalla d'inici és al projector amb "Mariona1" i "6è de primària" ja escrits |
 | 9 | L'alumna es diu Mariona i fa sisè. Comencem. | clic **Comença** |
-| 13 | Primer problema, de taulers i patrons. La Mariona no ho veu clar i, en lloc d'arriscar, demana una pista. | clic **Pista** |
+| 13 | Primer problema, de taulers i patrons. La Mariona dubta i demana una pista: en té tres, i una lliçó; ella decideix quan pujar. | clic **Pista** |
 | 21 | Pista u: el copilot busca dins la placa, amb embeddings, un problema semblant del mateix tema, un nivell més fàcil, amb la seva figura. Cap resposta, cap model que raoni. | assenyala la targeta "Un problema semblant" |
 | 34 | Pista dos: una estratègia del tema. Ara sí: respon. | clic **Pista**; després clic al valor correcte (notes locals; els botons mostren el valor, no la lletra; la tecla de la lletra també val) |
 | 40 | Tick a la LED, la fulla es tenyeix de verd, i la barra de taulers s'omple dos segments de cinc: encerta amb pistes. | V1 gira la placa cap al jurat; V3 assenyala la barra de progrés de dalt |
 | 47 | Continuem: el diagnòstic puja dos cursos. Raonament espacial. Pista u, el problema germà amb la seva imatge; pista dos, l'estratègia "gira i volteja". | clic **Continua** (o Enter); clic **Pista** a la fulla d'accions de baix; clic **Pista** |
 | 60 | Avui la Mariona s'equivoca. Les pistes no li han dit la resposta; la correcció arriba només ara. Creu a la LED, un sol segment a espacial. Quan acabi el diagnòstic, aquest tema li arribarà més fàcil. | clic a un valor equivocat (notes locals); V1 mostra la creu; la fulla es tenyeix de vermell; V3 assenyala la barra de dalt |
-| 75 | I el professor ho veu tot: progrés per tema i alumne, encerts per nivell. Cada pas ha trigat menys d'un segon dins la placa. | clic **Vista del professor** (pestanya 2) |
+| 75 | I el professor ho veu tot: progrés per tema i alumne, encerts per nivell, i els segons reals de cada pas a la placa. | clic **Vista del professor** (pestanya 2); abans, assenyala la taula "Temps (per al professor)" |
 | 84 | *(V3 torna a la pestanya 1 i parla)* | |
 
 ### 3. Els números (40 s), V3
 
 | s | text | font |
 | --- | --- | --- |
-| 0 | Vam mesurar abans de construir. El model va encertar seixanta-un de dos-cents vuitanta-un problemes: vint-i-un coma set per cent; sempre D, vint-i-tres coma u. | results-A §1, error-analysis (n = 281) |
-| 10 | Com més segur, menys encertava: setze coma nou per cent al quart més confiat. | results-A §2 |
-| 16 | La cursa oficial a la placa, cinc-cents seixanta-dos problemes: vint-i-sis coma set per cent; sempre D en dóna vint-i-tres coma u. La diferència és una regla sobre com es construeixen els distractors, no raonament, i mai entra a les pistes. | results-A §10, middle-value run (n = 562; bootstrap of the gain on val: -2 to +26 problems) |
-| 33 | Les pistes no gasten model: un embedding triga zero coma dotze segons; la placa arrenca en dos minuts. | results-A §10 |
-| 41 | *(V4 parla)* | |
+| 0 | Dues meitats. Raonament: el model sol encerta vint-i-un coma set per cent, menys que respondre sempre D. Per això a l'examen no el cridem. | results-A §1 (n = 281), §2 |
+| 10 | Responem amb solucionadors deterministes i la regla del valor central: setanta-set de dos-cents vuitanta-un en validació, vint-i-set coma quatre; cent cinquanta de cinc-cents seixanta-dos a la placa. Un prior sobre els distractors, no raonament. | results-A §10, middle-value run (val 77/281 = 27.4% vs 65/281 always D; board 150/562 = 26.7%; bootstrap of the gain -2 to +26) |
+| 24 | [PENDENT: una frase amb el resultat de l'experiment de raonament breu, quan estigui mesurat.] | experiment in progress (branch reason-predict); say nothing if no number |
+| 30 | Ensenyament: les pistes no gasten model, un embedding triga zero coma dotze segons, i cada temps que heu vist és real, de la placa. | results-A §10; the page's "Temps (per al professor)" table |
+| 40 | *(V4 parla)* | |
 
 > **Pendent, a decidir:** la mesura "abans i després" amb persones no està feta. El protocol
 > (`docs/teach-measurement.md`: 3 persones, 5 problemes sense pistes i 5 amb l'escala, n = 15
@@ -77,9 +95,8 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 | s | text |
 | --- | --- |
-| 0 | La lliçó principal és un resultat negatiu, i el publiquem: la lletra del model no porta informació. Tria la D un trenta-vuit per cent de les vegades. |
-| 12 | Els solucionadors per plantilla tampoc: quatre famílies sobre nou-cents onze problemes en disparen quatre. El Cangur no és un dataset de plantilles. |
-| 21 | Per això el model mai raona: M3Kang corregeix, tria el següent problema i guia sense donar la resposta. Després, mesurar amb alumnes. Gràcies. |
+| 0 | La lliçó és un resultat negatiu, i el publiquem: la lletra del model no porta informació. Que un model de zero coma vuit no raoni és, a la placa, una virtut: respon en mil·lisegons i no s'inventa cap pista. |
+| 16 | Els solucionadors per plantilla disparen quatre cops en nou-cents onze problemes: el Cangur no és de plantilles. Qui raona és l'alumne, amb l'escala i la lliçó; M3Kang corregeix. Després: mesurar amb alumnes. Gràcies. |
 
 ---
 
@@ -87,11 +104,11 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 | block | English words | at 2.4 w/s | budget |
 | --- | ---: | ---: | ---: |
-| problem | 48 | 20 s | 20 s |
-| demo (narration; the clicks and the LED fill the rest) | 184 | 77 s | 90 s |
-| numbers | 98 | 41 s | 40 s |
-| lessons | 74 | 31 s | 30 s |
-| **total** | **404** | **168 s** | **180 s** |
+| problem | 49 | 20 s | 20 s |
+| demo (narration; the clicks and the LED fill the rest) | 191 | 80 s | 90 s |
+| numbers (the placeholder counted as 12 words) | 99 | 41 s | 40 s |
+| lessons | 75 | 31 s | 30 s |
+| **total** | **414** | **172 s** | **180 s** |
 
 ### 1. The problem (20 s), V1
 
@@ -99,7 +116,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | --- | --- |
 | 0 | A Kangaroo problem, a four-gigabyte board and no internet connection. |
 | 5 | The copilot does not solve problems for the student: it teaches them to reason with hints, on the board. |
-| 13 | We measured whether the model could reason. It cannot. We use it to teach, and M3Kang is the teacher. |
+| 13 | We measured whether the model could reason. It cannot. In the exam, rules answer; in class, M3Kang is the teacher. |
 | 20 | *(V1 lifts the board; V2 starts)* |
 
 ### 2. The demo (90 s), V2 speaks, V3 clicks, V1 holds the board
@@ -108,24 +125,24 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | --- | --- | --- |
 | 0 | The board: an Arduino UNO Q, no Wi-Fi. The laptop only shows the page it serves over USB. | nothing; the start screen is on the projector with "Mariona1" and "6è de primària" already typed |
 | 9 | The student is Mariona, sixth grade. Let's begin. | click **Comença** |
-| 13 | First problem, boards and patterns. Mariona is not sure and, instead of guessing, asks for a hint. | click **Pista** |
+| 13 | First problem, boards and patterns. Mariona hesitates and asks for a hint: she has three, and a lesson; she decides when to climb. | click **Pista** |
 | 21 | Hint one: the copilot searches on the board, with embeddings, for a similar problem of the same topic, one level easier, with its figure. No answer, no model reasoning. | point at the "Un problema semblant" card |
 | 34 | Hint two: a strategy for the topic. Now she answers. | click **Pista**; then click the correct value (local notes; the buttons show the value, not the letter; the letter key also works) |
 | 40 | A tick on the LED, the sheet turns green, and the boards bar fills two segments of five: correct with hints. | V1 turns the board to the jury; V3 points at the progress bar at the top |
 | 47 | We continue: the diagnostic climbs two grades. Spatial reasoning. Hint one, the sister problem with its picture; hint two, the strategy "rotate and flip". | click **Continua** (or Enter); click **Pista** on the bottom action sheet; click **Pista** |
 | 60 | Today Mariona gets it wrong. The hints never told her the answer; the correction comes only now. A cross on the LED, one segment on spatial. Once the diagnostic ends, this topic will come easier. | click a wrong value (local notes); V1 shows the cross; the sheet turns red; V3 points at the bar at the top |
-| 75 | And the teacher sees everything: progress by topic and student, hits by level. Every step took under a second on the board. | click **Vista del professor** (tab 2) |
+| 75 | And the teacher sees everything: progress by topic and student, hits by level, and the real seconds of every step on the board. | click **Vista del professor** (tab 2); before that, point at the "Temps (per al professor)" table |
 | 84 | *(V3 returns to tab 1 and speaks)* | |
 
 ### 3. The numbers (40 s), V3
 
 | s | text | source |
 | --- | --- | --- |
-| 0 | We measured before building. The model got sixty-one of two hundred and eighty-one problems right: twenty-one point seven percent; always D, twenty-three point one. | results-A §1, error-analysis (n = 281) |
-| 10 | The more confident, the less right: sixteen point nine percent in its most confident quarter. | results-A §2 |
-| 16 | The official run on the board, five hundred and sixty-two problems: twenty-six point seven percent; always D gives twenty-three point one. The difference is a rule about how distractors are built, not reasoning, and it never enters the hints. | results-A §10, middle-value run (n = 562; bootstrap of the gain on val: -2 to +26 problems) |
-| 32 | The hints spend no model time: one embedding takes zero point one two seconds; the board boots in two minutes. | results-A §10 |
-| 40 | *(V4 speaks)* | |
+| 0 | Two halves. Reasoning: the model alone gets twenty-one point seven percent, less than always answering D. So in the exam we never call it. | results-A §1 (n = 281), §2 |
+| 10 | We answer with deterministic solvers and the middle-value rule: seventy-seven of two hundred and eighty-one on validation, twenty-seven point four; one hundred and fifty of five hundred and sixty-two on the board. A prior about distractors, not reasoning. | results-A §10, middle-value run (val 77/281 = 27.4% vs 65/281 always D; board 150/562 = 26.7%; bootstrap of the gain -2 to +26) |
+| 26 | [PENDING: one sentence with the result of the brief-reasoning experiment, once measured.] | experiment in progress (branch reason-predict); say nothing if no number |
+| 31 | Teaching: the hints spend no model time, one embedding takes zero point one two seconds, and every time you saw is real, from the board. | results-A §10; the page's "Temps (per al professor)" table |
+| 41 | *(V4 speaks)* | |
 
 > **Pending, to decide:** the "before and after" measurement with people is not done (protocol
 > in `docs/teach-measurement.md`, n = 15 answers per condition, 30 minutes on the board). If it
@@ -136,9 +153,8 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 | s | text |
 | --- | --- |
-| 0 | The main lesson is a negative result, and we publish it: the model's letter carries no information. It picks D thirty-eight percent of the time. |
-| 12 | Template solvers do not help either: four families over nine hundred and eleven problems fire on four. Kangaroo is not a dataset of templates. |
-| 21 | That is why the model never reasons: M3Kang corrects, picks the next problem and guides without giving the answer. Next: measure with students. Thank you. |
+| 0 | The lesson is a negative result, and we publish it: the model's letter carries no information. That a zero point eight model does not reason is, on the board, a virtue: it answers in milliseconds and invents no hint. |
+| 16 | Template solvers fire four times in nine hundred and eleven problems: Kangaroo is not templates. The one who reasons is the student, with the ladder and the lesson; M3Kang corrects. Next: measure with students. Thank you. |
 
 ---
 
@@ -161,7 +177,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
   `HINT_MAX_USES` in `config.env` that morning (the fourth use is a lesson).
 
 - The clicks are instant (under 0.5 s measured on the board, no model time), so the
-  narration sets the pace. The demo block has about 12 s of slack for the clicks and the LED; the whole script is about 169 s spoken.
+  narration sets the pace. The demo block has about 12 s of slack for the clicks and the LED; the whole script is about 172 s spoken.
 - The tick or cross stays 3 s on the LED, then the progress map returns. V1 turns the board
   towards the jury the moment V3 clicks an answer.
 - After two answers the diagnostic is still running (it needs three): Mariona1's third problem

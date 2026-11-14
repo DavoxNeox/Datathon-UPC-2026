@@ -170,3 +170,110 @@ themselves: any pseudonym and course works). Shut down only at the end of the da
 ```bash
 adb shell sudo poweroff
 ```
+
+## 11. The exam (the Reasoning half of the grade)
+
+The organisers grade 50% of the project on a **test exam**: a file of problems in the M3Kang
+format, answered by `predict.py` and corrected from its CSV. The details of the file and of the
+procedure are not known yet; the blanks below are marked `[?]` and the questions to ask the
+organisation **today** are at the end of this section.
+
+### Procedure on the board
+
+1. Copy the exam file to the board (laptop; `[?]` = the file name they give us):
+
+```bash
+adb push [?]exam.jsonl /home/arduino/Datathon-UPC-2026/data/exam.jsonl
+```
+
+   If the exam comes with images, push the folder too; `predict.py` never reads them (the
+   pipeline is text-only), so a missing image changes nothing.
+
+2. Check the file: one JSON object per line, the same fields as `data/sample_problems.jsonl`
+   (`id`, `language`, `level`, `text`, `options`; `label` may be absent):
+
+```bash
+adb shell 'cd ~/Datathon-UPC-2026 && wc -l data/exam.jsonl && head -c 300 data/exam.jsonl && python3 -c "import json,sys; ids=[json.loads(l)[\"id\"] for l in open(\"data/exam.jsonl\") if l.strip()]; print(len(ids), \"rows\", len(set(ids)), \"distinct ids\")"'
+```
+
+3. Nothing else may use the model servers (close every rehearsal tab, no `eval.py` running):
+   the 54 s and 41 s outliers in `docs/results-A.md` §10 came from foreign requests queued on
+   the LLM. The shipped policy (`SOLVERS=1`, `MIDDLE_VALUE=1`, `LETTER_MODEL=0`) calls the
+   model only inside a family solver, so the run is mostly milliseconds per problem.
+
+4. Run it from the repository root on the board, in a shell that survives a dropped `adb`
+   (`nohup`), and watch the progress lines:
+
+```bash
+adb shell 'cd ~/Datathon-UPC-2026 && nohup python3 predict.py --input data/exam.jsonl --output results/exam-predictions.csv > results/exam-run.log 2>&1 &'
+```
+
+```bash
+adb shell 'tail -f /home/arduino/Datathon-UPC-2026/results/exam-run.log'
+```
+
+   Each line prints `[n/N] id -> letter in X s, board est. Y s (status)`. The CSV falls in
+   `results/exam-predictions.csv` on the board, columns `id, language, answer, seconds, status`,
+   flushed after every problem (a crash keeps the rows done so far).
+
+5. When it ends, check **one row per id**, every answer a letter A to E, no row over 60 s:
+
+```bash
+adb shell 'cd ~/Datathon-UPC-2026 && python3 -c "
+import csv,json
+ids=[json.loads(l)[\"id\"] for l in open(\"data/exam.jsonl\") if l.strip()]
+rows=list(csv.DictReader(open(\"results/exam-predictions.csv\")))
+print(len(ids),\"problems\",len(rows),\"rows\")
+got={r[\"id\"] for r in rows}; print(\"missing:\",[i for i in ids if i not in got][:10])
+print(\"not a letter:\",[r[\"id\"] for r in rows if r[\"answer\"] not in list(\"ABCDE\")][:10])
+print(\"over 60 s:\",[(r[\"id\"],r[\"seconds\"]) for r in rows if float(r[\"seconds\"])>60])
+print(\"slowest:\",sorted(((float(r[\"seconds\"]),r[\"id\"]) for r in rows))[-3:])
+print(\"status:\",{s:sum(1 for r in rows if r[\"status\"]==s) for s in {r[\"status\"] for r in rows}})"'
+```
+
+6. Pull the CSV to the laptop and keep two copies (laptop and a USB stick):
+
+```bash
+adb pull /home/arduino/Datathon-UPC-2026/results/exam-predictions.csv ./exam-predictions.csv
+```
+
+### If a problem approaches 60 s
+
+`predict.py` enforces `TIME_LIMIT_SECONDS=60` itself: a problem that runs out answers
+`FALLBACK_ANSWER` (D) with a status other than `ok`, so the row is never missing. Worst
+measured on the full validation set: 38.7 s (a problem routed to a family whose extraction
+then matched no option). If the log shows one problem past 45 s: do not stop the run; note the
+id; after the run, check in the CSV that its status says why. If several problems are slow in a
+row, something else is using the LLM: `adb shell 'journalctl -u math-llm -n 20'` shows the
+foreign requests, and the run is repeated once they stop. Only if the organisers allow a rerun.
+
+### If an id gets no row (a crash)
+
+Rerun on the missing ids only and append (the CSV header must appear once):
+
+```bash
+adb shell 'cd ~/Datathon-UPC-2026 && python3 -c "
+import csv,json
+done={r[\"id\"] for r in csv.DictReader(open(\"results/exam-predictions.csv\"))}
+open(\"data/exam-rest.jsonl\",\"w\").writelines(l for l in open(\"data/exam.jsonl\") if l.strip() and json.loads(l)[\"id\"] not in done)" && python3 predict.py --input data/exam-rest.jsonl --output results/exam-rest.csv && tail -n +2 results/exam-rest.csv >> results/exam-predictions.csv'
+```
+
+### Questions for the organisation (ask today)
+
+1. **Size:** how many problems, and how many per language and level? (It sets the run time:
+   at 0.38 s mean, 500 problems take about 3 minutes; the worst single problem about 40 s.)
+2. **Format:** the same JSONL as `data/sample_problems.jsonl` (`id`, `language`, `level`,
+   `text`, `options` as a dict A to E)? Are images included, and may a problem need its image?
+   Which languages (Catalan, English, both, others)? Is `label` absent?
+3. **Time allowed:** per problem (the README says 60 s) and in total for the whole file? Does
+   the clock include loading the models, or only `predict.py`'s own run?
+4. **Where it runs:** on our board in front of them, or do we deliver the CSV? If on the board,
+   do they bring the file on a USB stick or over the network, and may we keep the services
+   already running?
+5. **Scoring:** does an empty or non-letter answer count as wrong (we always answer a letter),
+   is there a penalty for wrong answers (Kangaroo style) or plain accuracy, and are the two
+   languages of one problem scored as two items?
+6. **Reruns:** if the board crashes or a row is missing, may we rerun on the missing ids?
+7. **Policy freeze:** is the `config.env` of the submitted commit what is graded, or may the
+   run use a later commit?
+
