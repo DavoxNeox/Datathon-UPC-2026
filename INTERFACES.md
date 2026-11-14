@@ -149,6 +149,19 @@ mastery_map(student_id: str) -> dict[str, int]              # all eight topic ke
 
 `student_id` is a pseudonym chosen by the student or teacher; no personal data is stored.
 
+Added for the demo (14 Nov 2026, controller):
+
+```python
+start_student(student_id: str, level: int | None = None) -> dict
+    # Creates or resets the student. With level (0..7, the Kangaroo band the teacher picks)
+    # the diagnostic starts there and every topic's base level is set from it; with None
+    # the diagnostic runs from level 0 as before. Returns mastery_map(student_id).
+reset_student(student_id: str) -> None     # forgets every answer and mastery of that pseudonym
+```
+
+Web (D): a start screen with the pseudonym, an optional level selector (0..7, shown with the
+school-year labels in Catalan) and a "Reinicia" button that calls `reset_student`.
+
 ### `copilot/solvers/__init__.py` (A)
 
 ```python
