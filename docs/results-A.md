@@ -129,6 +129,12 @@ Cold start (`sudo reboot`): about two minutes to the Linux prompt; the two model
 the relay answer as soon as `adb` reconnects, the app page 20 s later, with the app set as App
 Lab's default. 2796 MB available after boot with everything running.
 
+Demo flow verified on the board after integrating `trainer-demo` and `hints-demo` (main
+`c05a8ac`): the page opens on the start screen; starting the pseudonym `prova` at level 2
+serves a level-2 problem; rung 1 brings a neighbour of the same topic and level ("del mateix
+nivell", never harder, never another topic); a wrong answer raises mastery from 0 to 1; the
+reset returns to the start screen with every topic at 0. No errors in the app log.
+
 Pitfalls met on the way, all in `docs/deploy-board.md`: the container sees only the app folder;
 `127.0.0.1` inside it is the container; `adb shell` sets a `TMPDIR` that breaks the sketch build;
 `/proc/device-tree` is absent in the container; `app start` does not restart a running app.
