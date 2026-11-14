@@ -50,6 +50,18 @@ validation problems against 30.0% raw and 34.0% always D on the same 50; it was 
   squares of consecutive integers...). B's table: `digit_sum` 112, `speed_time` 48, `sharing` 43,
   `money` 33, `ages` 31 problems, but a sample of each shows the same heterogeneity (the
   `speed_time` tag includes an ant on a cube and seats in a car).
+- Four families on the 911 English training problems with options (`ages`, `average`,
+  `consecutive`, `digit_count`, each with sub-templates the model picks as a letter):
+
+  | family | classified | fired | right | wrong | board s (mean / max) |
+  | --- | --- | --- | --- | --- | --- |
+  | ages | 17 | 0 | 0 | 0 | - |
+  | average | 15 | 0 | 0 | 0 | - |
+  | consecutive | 11 | 3 | 2 | 1 (false positive, classifier since tightened) | 15.1 / 15.9 |
+  | digit_count | 5 | 1 | 1 | 0 | 12.6 |
+
+  Net gain over always D: about 0.3 points on train. On the 281 English validation problems the
+  shipped policy (solvers, else D) scores **65/281 = 23.1%**, exactly always D: no family fired.
 - Conclusion: Kangaroo problems are not templated. Parametric family solvers never answer wrong
   (exactly-one-option check) but fire on about 1 problem in 20 of their own family, so on the
   hidden test they add at most about one point over always-D. The Reason track stays near the
