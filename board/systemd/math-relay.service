@@ -1,0 +1,14 @@
+[Unit]
+Description=Math on the Edge: relay the model servers to the App Lab container (docker0 only)
+After=docker.service math-llm.service math-embed.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=@USER@
+ExecStart=/usr/bin/python3 @REPO_DIR@/board/relay.py --listen docker0 --ports @LLM_PORT@,@EMBED_PORT@
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
