@@ -46,6 +46,7 @@
     <p class="meta" id="rung0-help"></p>
     <p id="rung0-summary"></p>
     <div class="scroll"><table class="grid" id="rung0"></table></div>
+    <p class="meta" id="rung0-caveat"></p>
   </section>
 </main>
 <script>
@@ -58,6 +59,7 @@ const I18N = {
         rung0_help: "Abans de cap pista, l'alumne pot llegir el mateix enunciat en anglès (o en català). No compta com a pista per al domini: separa \"no entenc l'enunciat\" de \"no sé resoldre'l\".",
         rung0_summary: (u, n, k) => `${u} de ${n} alumnes l'han fet servir, ${k} vegades en total.`,
         rung0_none: "Encara cap alumne amb respostes.",
+        rung0_caveat: (nw, nwo) => `Comparació observacional, no un experiment controlat: cada alumne tria quan fa servir l'esglaó 0, sovint als problemes que ja li costen. n = ${nw} respostes després de l'esglaó 0 i ${nwo} sense. Per mesurar-ne l'efecte, el protocol de docs/teach-measurement.md.`,
         uses: "Vegades", problems: "Problemes", acc_with: "Encerts després de l'esglaó 0", acc_without: "Encerts sense l'esglaó 0", all: "Tots",
         source: {mastery_map: "Dades: trainer.mastery_map (el trainer encara no publica teacher_report)", teacher_report: "Dades: trainer.teacher_report"},
         theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"},
@@ -68,6 +70,7 @@ const I18N = {
         rung0_help: "Before any hint the student can read the same statement in English (or in Catalan). It is not a hint for mastery: it separates \"I don't understand the statement\" from \"I can't solve it\".",
         rung0_summary: (u, n, k) => `${u} of ${n} students used it, ${k} times in all.`,
         rung0_none: "No student with answers yet.",
+        rung0_caveat: (nw, nwo) => `Observational comparison, not a controlled experiment: each student chooses when to use rung 0, often on the problems they already find hard. n = ${nw} answers after rung 0 and ${nwo} without. To measure its effect, see the protocol in docs/teach-measurement.md.`,
         uses: "Uses", problems: "Problems", acc_with: "Correct after rung 0", acc_without: "Correct without rung 0", all: "All",
         source: {mastery_map: "Data: trainer.mastery_map (the trainer does not publish teacher_report yet)", teacher_report: "Data: trainer.teacher_report"},
         theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"},
@@ -108,6 +111,7 @@ function renderRung0(r) {
   $("rung0-section").hidden = false;
   const names = Object.keys(r.by_student || {}).sort();
   $("rung0-summary").textContent = r.students_total ? t().rung0_summary(r.students_using, r.students_total, r.uses) : t().rung0_none;
+  $("rung0-caveat").textContent = t().rung0_caveat(r.with.answers, r.without.answers);
   const row = (name, c) => `<tr><td>${esc(name)}</td><td>${c.uses}</td><td>${c.problems}</td><td>${pct(c.with)}</td><td>${pct(c.without)}</td></tr>`;
   $("rung0").innerHTML = `<tr><th>${t().student}</th><th>${t().uses}</th><th>${t().problems}</th><th>${t().acc_with}</th><th>${t().acc_without}</th></tr>` +
     names.map(n => row(n, r.by_student[n])).join("") +

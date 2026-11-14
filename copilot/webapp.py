@@ -228,6 +228,7 @@ class Session:
             if callable(start_student):
                 try:
                     start_student(student, chosen) if chosen is not None else start_student(student)
+                    self.rung0.forget(student)  # the trainer forgot this pseudonym: so do the rung 0 counters
                 except Exception as error:  # an older trainer: keep going with its own flow
                     self.message = {"ca": "", "en": ""}
                     self.timeline.append({"action": f"start_student failed: {type(error).__name__}", "laptop_s": 0, "board_s": 0})
