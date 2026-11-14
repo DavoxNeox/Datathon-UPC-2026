@@ -429,8 +429,13 @@ function renderProblem(p) {
   lastProblem = p;
   // the scan's line breaks go; a blank line stays a paragraph; the problem's number goes (the page is not a paper)
   const text = ((lang === "eng" && p.text_eng) || (lang === "cat" && p.text_cat) || p.text || "").replace(/^\s*\d+[.)]\s*/, "").replace(/\n{2,}/g, "\u2029").replace(/\s*\n\s*/g, " ").replace(/\u2029/g, "\n\n");
-  const raw = (lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options || {};
-  const options = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, tidyOption(v)]));
+  // the options as text: this language's OCR, or the other language's when it is clean and has no words
+  // (numbers and units do not change language, and one version of a scan often reads better than the other)
+  const tidy = o => Object.fromEntries(Object.entries(o || {}).map(([k, v]) => [k, tidyOption(v)]));
+  const mine = tidy((lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options);
+  const others = [p.options, p.options_eng, p.options_cat].filter(o => o && o !== ((lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options)).map(tidy);
+  const wordless = o => Object.values(o).every(v => !/\p{L}{3,}/u.test(v));
+  const options = optionsClean(mine) ? mine : (others.find(o => optionsClean(o) && wordless(o)) || mine);
   const clean = optionsClean(options);
   $("meta").textContent = `${t().level} ${p.level} · ${t().courses[p.level] || ""} · ${lang === "cat" ? p.topic_name_ca : p.topic_name_en}`;
   $("problem-id").textContent = `${t().problem}: ${p.id}`;

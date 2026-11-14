@@ -413,3 +413,11 @@ colour: "the black square" stays black, inside a light rim that shows where it i
 grey. This replaces the white card of the fifth round and keeps the reviewer's point (black is
 never shown as white). Checked on `lvl-3_2021_20` (black corner squares, grey triangles) and
 `lvl-5_2022_30` (the hand) in both themes.
+
+### Tenth round: options from the other language's OCR
+
+When this language's OCR options are missing or noisy, the page takes the other language's
+options if they are clean and have no words (numbers, fractions, units: "110", "115,5",
+"3√2 cm"). Over the whole bank, 1688 problem versions lack clean options and 110 of them are
+rescued this way; the rest keep their options cut from the scan, because there is no text to
+show. `lvl-7_2008_3` in Catalan now shows 110 / 121 / 115,5 / 119 / 242 as text.
