@@ -1,0 +1,20 @@
+{
+  "_about": "Problems the team explains by hand for the demo: a description of the figure (the model cannot see it) and a step-by-step solution. Problems are referenced by M3Kang id only; never copy the statement text here. Validate with: python3 laptop/validate_demo_set.py data_curated/demo_set.json",
+  "problems": [
+    {
+      "id": "lvl-0_2016_19",
+      "topic": "counting",
+      "why_in_demo": "Counting with a small figure; the 'try the options' strategy works.",
+      "figure_ca": "Descripció de la figura en una o dues frases.",
+      "figure_en": "The figure described in one or two sentences.",
+      "steps": [
+        {"text_ca": "Primer pas, sense donar la resposta.", "text_en": "First step, without the answer."},
+        {"text_ca": "Segon pas.", "text_en": "Second step."},
+        {"text_ca": "La resposta és X: opció Y.", "text_en": "The answer is X: option Y."}
+      ],
+      "common_mistake_ca": "L'error típic i per què passa.",
+      "common_mistake_en": "The typical mistake and why it happens.",
+      "source": "M3Kang (Kangaroo 2016, level 0)"
+    }
+  ]
+}
