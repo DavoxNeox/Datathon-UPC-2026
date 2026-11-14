@@ -2,8 +2,10 @@
 
 > DRAFT of the final README (Phase 11). Replaces the organizers' setup guide at the root when
 > the team agrees. Every `[[TODO ...]]` marks a figure or a fact that is not measured or decided yet.
-> Figures marked *(estimate)* come from token counts on a laptop (`copilot/board_clock.py`);
-> they must be refreshed with the board's own numbers before publishing.
+> Figures marked *(estimate)* come from token counts on a laptop (`copilot/board_clock.py`), with
+> the constants calibrated on the board on 14 Nov 2026 (11.4 tok/s reading, 5.6 tok/s writing,
+> 0.12 s per embedding): the estimate was within +3.7% (mean) of the board's real time on 50
+> problems. Figures marked *(board)* were measured on the board itself.
 
 A maths copilot for Kangaroo problems that runs entirely on an Arduino UNO Q (4 GB), offline.
 A student answers A to E on a web page served by the board; the board shows a tick or a cross and
@@ -32,11 +34,11 @@ Built for the Datathon FME 2026 (UPC), Qualcomm challenge "Math on the Edge", wi
   code so it cannot leak the answer. Rung 4: the solution, only when asked. Answers given after
   rung 3 or 4 never raise mastery.
 - **Reason, carefully.** `predict.py` answers the organizers' hidden test set. A family solver
-  (ages, consecutive integers, digits, speed and time, ...) extracts the numbers with a
+  (ages, averages, consecutive integers, digit counts) extracts the numbers with a
   grammar-constrained JSON prompt and computes the answer in Python; the value must match
-  exactly one option. When no solver applies, it answers the most common letter instead of asking
-  the model, because we measured that the model's letter is worse than that
-  (section 5).
+  exactly one option, so a solver never answers wrong, but it fires on about one problem in
+  twenty of its family. When no solver applies, it answers the most common letter instead of
+  asking the model, because we measured that the model's letter is worse than that (section 4).
 - **Catalan first, English inside.** The student works in Catalan. Retrieval runs on the English
   version of the same problem, because the embedding model is English-only (section 5.4).
 
@@ -105,7 +107,8 @@ cd Datathon-UPC-2026
 python3 -m unittest discover tests
 ```
 
-You should see `OK` (some retrieval tests skip when `data/index.db` is missing).
+You should see `OK` (some retrieval tests skip when `data/index.db` is missing). On the board
+all 125 tests pass *(board)*.
 
 ### 3.2 Data on the board
 
@@ -166,32 +169,39 @@ organizers' one-letter prompt with the grammar `A-E`.
 | Approach | Problems | Accuracy | Mean time | Worst time |
 | --- | --- | --- | --- | --- |
 | Organizers' baseline (README, board) | 40 eng with options | 22.5% | 8.7 s | 12.7 s |
-| Baseline reproduced | 281 eng val | 21.7% | 9.0 s *(estimate)* | 16.7 s *(estimate)* |
+| Baseline reproduced, laptop | 281 eng val | 21.7% | 9.0 s *(estimate)* | 16.7 s *(estimate)* |
+| Baseline on the board *(board)* | 50 eng val | 30.0% (15/50), 47/50 answers identical to the laptop | 10.3 s real (estimate +3.7%) | 16.0 s |
 | Always D | 281 eng val | 23.1% | 0 s | 0 s |
 | Baseline, same 50 ids | 50 eng / 50 cat val | 30.0% / 24.0% | 9.1 s / 10.6 s *(estimate)* | 16.7 s / 21.6 s *(estimate)* |
 | Bias-corrected letter (train-400 prior, alpha 1) | 281 eng val | 17.8% | same request | same |
-| Family solvers + D elsewhere | [[TODO n]] | [[TODO]] | [[TODO]] | [[TODO]] |
+| Family solvers, D elsewhere (shipped) | 281 eng val | 23.1% (65/281): no solver fired on validation | 0 s when no solver fires; 12.6 to 15.9 s *(estimate)* when one does | 15.9 s *(estimate)* |
 
 On 400 training problems the model's own letter scored 20.8% against 27.2% for always D, and its
 confidence ran the wrong way: the quartile where it was most sure was the least accurate (16.9%).
 That is why `LETTER_MODEL=0`: when no solver applies, the fallback letter is the better bet.
 
-[[TODO solver coverage: how many validation problems a solver takes, its accuracy, its time;
-per family, from `eval.py` with the `family` column]]
+Solver yield on the 911 English training problems with options: ages classified 17, fired 0;
+average 15, 0; consecutive 11, fired 3 (2 right, 1 wrong before the classifier was tightened);
+digit_count 5, fired 1, right. Kangaroo problems are not templated: the family keywords tag a
+heterogeneous bag of puzzles, so parametric solvers add about one point over always D at most.
+The Reason track stays at the always-D floor; the value of the project is the Teach track.
+[[TODO final run on the hidden-test-like setting if anything changes]]
 
 ### 4.2 Teaching
 
 | What | Measured | Result |
 | --- | --- | --- |
 | Rung 1 neighbour, train id | time per query, n=30 | 0.6 ms on the laptop, no embedding (stored vector reused) |
-| Rung 1 neighbour, unseen id | time per query, n=30 | one embedding (0.25 s *(estimate)*) + 14 ms Python |
+| Rung 1 neighbour, unseen id | time per query, n=30 | one embedding (0.12 s on the board) + 14 ms Python on the laptop |
 | Rung 1 neighbour, hand check | 20 validation problems, `level_delta=-1` | easier 20/20, same real topic 15/20 |
 | Hint leak filter | 66 LLM hints | 3 rejected, 1 after the retry |
 | Rung 3 LLM hint | median on the board *(estimate)*, with prefetch | 12.6 s |
-| Trainer convergence | simulated students on the real bank | settles in 3 to 4 steps, about 0.24 s per step *(estimate)* |
+| Trainer convergence | simulated students on the real bank | settles in 3 to 4 steps, about 0.24 s per step *(estimate, old constants)* |
+| App on the board *(board)* | end to end | page served on port 7000, real Catalan problem without its label, answer corrected in both languages, mastery updated, cross frame drawn on the matrix over the Bridge |
+| RAM on the board *(board)* | both servers + relay + app container | 2,609 MB available; the LLM server takes 1,059 MB, the embedding server 75 MB, the container 91 MB |
 | Catalan hints | human judgement [[TODO n]] | poor quality: rung 3 is kept for topics whose judged quality reaches `HINT_QUALITY_MIN` |
 
-[[TODO refresh with board times once the board runs them]]
+[[TODO board times for rung 3 and the trainer step, with the calibrated constants]]
 
 ### 4.3 Topics and the Catalan bridge
 
@@ -256,10 +266,13 @@ sample). Catalan costs about 15% more prompt tokens (10.6 s vs 9.1 s mean *(esti
   labels out of 50, which is noise.
 - **Catalan hints from a 0.8B model.** [[TODO D's figures]]. The ladder prefers curated content
   (strategy cards, solver traces) and keeps the LLM for topics where its hints were judged good.
+- **Family solvers as a scoring strategy.** Never wrong, rarely applicable: 0 of 281 validation
+  problems fired. They stay for the hint ladder, where a solver trace is the best rung 3.
 - **OCR.** 37% of the problems have no readable options, mostly pictures as options; a solver
   cannot check its value there.
-- Next: [[TODO: more solver families from the frequency table; a vision model for the visual
-  topics measured against the 60 s limit; calibrate the board clock]]
+- Next: [[TODO: a vision model for the visual topics measured against the 60 s limit; a
+  classroom trial of the ladder with a teacher; solver traces for more families as hints, not as
+  answers]]
 
 ## 7. The team
 

@@ -2,7 +2,8 @@
 
 > DRAFT for the Project Hub write-up (Phase 11). Sections follow the Hub format. `[[TODO ...]]`
 > marks a missing figure, photo or decision. Figures marked *(estimate)* come from token counts on
-> a laptop and must be replaced by the board's own measurements.
+> a laptop with constants calibrated on the board (within +3.7% of the real time on 50 problems);
+> *(board)* means measured on the board.
 
 **Title:** A Kangaroo maths copilot that teaches, not solves, on the Arduino UNO Q
 
@@ -46,8 +47,8 @@ version: rung 1 is an easier solved neighbour, rung 2 a strategy card, rung 3 on
 question, rung 4 the solution only on request, and answers after rung 3 or 4 never raise
 mastery. The language model that writes rung 3 is given the correct answer and a prompt that
 forbids it; a filter in code (`copilot/leak_filter.py`) rejects any hint that contains the answer's
-value, with a retry under a strict grammar. We measured [[TODO D: 3 of 66 hints rejected, 1 after
-the retry]].
+value, with a retry under a strict grammar. We measured it: 3 of 66 hints were rejected, 1 after the
+retry.
 
 **Short steps, fast feedback, a teacher view.** Oreopoulos and Low (NBER WP 35620, 2026) found
 that Khanmigo, a capable tutor, added no learning in their trial because students barely used
@@ -73,9 +74,12 @@ after two independent checks (mastery 3 needs two distinct problems right), and 
 
 **The small model is not allowed to reason.** We measured it: on 400 training problems the
 model's letter scored 20.8% against 27.2% for always D, and its confidence was anti-correlated
-with being right. So the model classifies the family, copies the numbers into a
+with being right; on the board itself the baseline scored 15/50 = 30% against 34% for always D
+on the same problems. So the model classifies the family, copies the numbers into a
 grammar-constrained JSON object and writes one short sentence; Python computes, curated cards
-explain, the student reasons.
+explain, the student reasons. Even that is modest: Kangaroo problems are not templated, and the
+family solvers fired on none of the 281 validation problems, so the scoring track sits at the
+always-D floor and the value of the board is in the teaching.
 
 **Catalan outside, English inside.** The embedding model is English-only. Searching with the
 Catalan text finds neighbours on the right topic 43% of the time; with the English text of the
@@ -121,14 +125,19 @@ Reasoning, on the validation set (281 English problems unless stated):
 | Approach | Accuracy | Time per problem |
 | --- | --- | --- |
 | Organizers' baseline (board, 40 problems) | 22.5% | 8.7 s |
-| Baseline reproduced | 21.7% | 9.0 s *(estimate)* |
+| Baseline reproduced, laptop | 21.7% | 9.0 s *(estimate)* |
+| Baseline on the board, 50 problems *(board)* | 30.0% (always D 34%), 47/50 answers identical to the laptop | 10.3 s real, 16.0 s worst |
 | Always D | 23.1% | 0 s |
 | Bias-corrected letter | 17.8% | same |
-| Family solvers, D elsewhere | [[TODO]] | [[TODO]] |
+| Family solvers, D elsewhere (shipped) | 23.1% (65/281) = always D | 0 s unless a solver fires (12.6 to 15.9 s *(estimate)*) |
 
 Teaching: rung 1 costs 0.6 ms for a bank problem and one embedding for a new one; the trainer
 settles in 3 to 4 steps on simulated students; the leak filter rejected 3 of 66 hints, 1 after the
-retry; the LLM rung takes 12.6 s median with prefetch *(estimate)*. [[TODO board figures]]
+retry; the LLM rung takes 12.6 s median with prefetch *(estimate)*. The app was verified end to
+end on the board: page on port 7000, a real Catalan problem without its label, the correction in
+both languages, mastery updated and the cross drawn on the matrix over the Bridge; 2,609 MB of
+RAM stay available with both servers, the relay and the app container running *(board)*.
+[[TODO board times for rung 3 and a trainer step]]
 
 Error analysis [[TODO final run]]: on the visual topics (areas, angles, spatial, boards; 54 of the
 100 sample problems) the baseline scored 30% against 37% for always D: the model reads a text
@@ -146,9 +155,10 @@ percentages (25). Catalan and English score within noise of each other on the sa
   problems is not a feature.
 - Retrieval, embeddings and SQLite are free on this board; generation is what costs. Design the
   interaction around what is free.
-- Next: more solver families from the frequency table, a vision model for the visual topics
-  measured against the 60 s limit, calibration of the board clock, and a classroom trial of the
-  ladder with a teacher.
+- Parametric solvers are never wrong and rarely useful on competition problems: keep them as
+  hint material, not as a scoring strategy.
+- Next: a vision model for the visual topics measured against the 60 s limit, and a classroom
+  trial of the ladder with a teacher.
 
 ## References
 
