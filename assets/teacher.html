@@ -4,39 +4,48 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vista del professor</title>
+  <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="style.css">
+  <script src="theme.js"></script>
   <style>
+    main.teacher { max-width: 920px; }
+    main.teacher section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin-bottom: 14px; }
+    main.teacher h2 { font-size: 13px; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .scroll { overflow-x: auto; }
     table.grid { border-collapse: collapse; font-size: 15px; }
     table.grid th, table.grid td { border: 1px solid var(--line); padding: 6px 10px; text-align: center; }
     table.grid th:first-child, table.grid td:first-child { text-align: left; }
-    td.m0 { background: #f3f4f6; color: var(--muted); } td.m1 { background: #fce8e6; } td.m2 { background: #fff4e0; }
-    td.m3 { background: #fdf6cc; } td.m4 { background: #e6f4ea; } td.m5 { background: #c8e6c9; font-weight: 700; }
-    .legend span { display: inline-block; margin-right: 12px; font-size: 13px; }
+    /* mastery 0..5: from "no data" to "one level above", in the page's own tints */
+    td.m0 { background: var(--card-2); color: var(--muted); } td.m1 { background: var(--bad-bg); color: var(--bad); } td.m2 { background: var(--warn-bg); color: var(--warn); }
+    td.m3 { background: var(--accent-soft); } td.m4 { background: var(--ok-bg); } td.m5 { background: var(--ok-bg); color: var(--ok); font-weight: 700; }
+    .legend span { display: inline-block; margin-right: 12px; font-size: 13px; color: var(--muted); }
   </style>
 </head>
 <body>
-<header>
-  <h1 id="title">Vista del professor</h1>
-  <span class="grow"></span>
-  <span class="lang"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
-  <a class="teacher" href="index.html" id="back">Pàgina de l'alumne</a>
+<header class="bar">
+  <div class="brand"><span id="title">Vista del professor</span></div>
+  <div class="tools">
+    <a class="icon" href="index.html" id="back" style="display: inline-flex; align-items: center; text-decoration: none">Pàgina de l'alumne</a>
+    <span class="lang" role="group" aria-label="CA / EN"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
+    <button class="icon" id="theme"><span id="theme-label">◐</span></button>
+  </div>
 </header>
-<main style="grid-template-columns: 1fr">
+<main class="teacher">
   <section>
     <h2 id="h-mastery">Domini per tema i alumne</h2>
     <div class="meta" id="source"></div>
-    <table class="grid" id="mastery"></table>
+    <div class="scroll"><table class="grid" id="mastery"></table></div>
     <p class="legend" id="legend"></p>
   </section>
   <section id="levels-section" hidden>
     <h2 id="h-levels">Encerts per nivell</h2>
-    <table class="grid" id="levels"></table>
+    <div class="scroll"><table class="grid" id="levels"></table></div>
   </section>
   <section id="rung0-section">
     <h2 id="h-rung0">Esglaó 0 · lectura en l'altre idioma</h2>
     <p class="meta" id="rung0-help"></p>
     <p id="rung0-summary"></p>
-    <table class="grid" id="rung0"></table>
+    <div class="scroll"><table class="grid" id="rung0"></table></div>
   </section>
 </main>
 <script>
@@ -51,7 +60,8 @@ const I18N = {
         rung0_none: "Encara cap alumne amb respostes.",
         uses: "Vegades", problems: "Problemes", acc_with: "Encerts després de l'esglaó 0", acc_without: "Encerts sense l'esglaó 0", all: "Tots",
         source: {mastery_map: "Dades: trainer.mastery_map (el trainer encara no publica teacher_report)", teacher_report: "Dades: trainer.teacher_report"},
-        legend: ["0 sense dades", "1 sempre falla", "2 encerta amb pistes", "3 de vegades sense pistes", "4 sempre sense pistes", "5 encerta un nivell per sobre"]},
+        theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"},
+        legend: ["0 sense dades", "1 sempre falla", "2 encerta amb pistes", "3 a vegades sense pistes", "4 sempre sense pistes", "5 encerta un nivell per sobre"]},
   eng: {title: "Teacher view", back: "Student page", mastery: "Mastery by topic and student", levels: "Correct answers by level",
         student: "Student", level: "Level", correct: "Correct", total: "Attempts",
         rung0: "Rung 0 · reading in the other language",
@@ -60,6 +70,7 @@ const I18N = {
         rung0_none: "No student with answers yet.",
         uses: "Uses", problems: "Problems", acc_with: "Correct after rung 0", acc_without: "Correct without rung 0", all: "All",
         source: {mastery_map: "Data: trainer.mastery_map (the trainer does not publish teacher_report yet)", teacher_report: "Data: trainer.teacher_report"},
+        theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"},
         legend: ["0 no data", "1 always fails", "2 correct with hints", "3 sometimes correct without hints", "4 consistently correct without hints", "5 correct one level above"]},
 };
 let lang = new URLSearchParams(location.search).get("lang") === "eng" ? "eng" : "cat", data = null;
@@ -69,6 +80,7 @@ function render() {
   document.documentElement.lang = lang === "cat" ? "ca" : "en"; document.title = t().title;
   $("title").textContent = t().title; $("back").textContent = t().back; $("h-mastery").textContent = t().mastery; $("h-levels").textContent = t().levels;
   $("lang-cat").classList.toggle("on", lang === "cat"); $("lang-eng").classList.toggle("on", lang === "eng");
+  renderTheme();
   $("source").textContent = (t().source[data.source] || data.source) + (data.error ? " · " + data.error : "");
   const students = Object.keys(data.students || {}).sort();
   $("mastery").innerHTML = `<tr><th>${t().student}</th>${data.topics.map(tp => `<th>${esc(lang === "cat" ? tp.name_ca : tp.name_en)}</th>`).join("")}</tr>` +
@@ -86,6 +98,9 @@ function render() {
       rows.map(([s, byLevel]) => `<tr><td>${esc(s)}</td>${levels.map(l => { const c = byLevel[l]; return `<td>${c ? `${c.correct}/${c.total}` : "–"}</td>`; }).join("")}</tr>`).join("");
   }
 }
+const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
+function renderTheme() { const m = Theme.get(); $("theme-label").textContent = THEME_GLYPH[m]; $("theme").title = t().theme[m]; $("theme").setAttribute("aria-label", t().theme[m]); }
+$("theme").onclick = () => { Theme.next(); renderTheme(); };
 function pct(c) { return c.answers ? `${c.correct}/${c.answers} (${Math.round(100 * c.correct / c.answers)}%)` : "–"; }
 function renderRung0(r) {
   $("h-rung0").textContent = t().rung0; $("rung0-help").textContent = t().rung0_help;

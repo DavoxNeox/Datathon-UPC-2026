@@ -4,76 +4,90 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Copilot de mates</title>
+  <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="style.css">
+  <script src="theme.js"></script>
 </head>
 <body>
-<header>
-  <h1 data-i18n="title">Copilot de mates</h1>
-  <span class="who" id="who" hidden></span>
-  <button class="secondary small" id="reset" data-i18n="reset" hidden>Reinicia l'alumne</button>
-  <span class="grow"></span>
-  <span class="lang"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
-  <canvas id="led" class="led" width="260" height="160" title="LED 8x13"></canvas>
-  <a class="teacher" href="teacher.html" data-i18n="teacher">Vista del professor</a>
+<header class="bar">
+  <div class="brand"><span data-i18n="title">Copilot de mates</span><span class="who" id="who" hidden></span></div>
+  <div class="tools">
+    <span class="lang" role="group" aria-label="CA / EN"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
+    <button class="icon" id="theme" aria-live="polite"><span id="theme-label">◐</span></button>
+    <button class="icon" id="more" aria-expanded="false" aria-controls="panel"><span data-i18n="more_panel">Més</span></button>
+  </div>
 </header>
+
+<aside id="panel" class="panel" hidden>
+  <section class="panel-block">
+    <h2 data-i18n="mastery">El teu progrés</h2>
+    <div class="mastery" id="mastery"></div>
+  </section>
+  <section class="panel-block">
+    <h2 data-i18n="board_led">La placa</h2>
+    <canvas id="led" class="led" width="260" height="160" title="LED 8x13"></canvas>
+  </section>
+  <section class="panel-block">
+    <details id="timing">
+      <summary data-i18n="timing">Temps (per al professor)</summary>
+      <div class="meta" id="problem-id"></div>
+      <table id="timeline"></table>
+      <div class="meta" id="load"></div>
+    </details>
+  </section>
+  <section class="panel-block links">
+    <a class="teacher" href="teacher.html" data-i18n="teacher">Vista del professor</a>
+    <button class="secondary small" id="reset" data-i18n="reset" hidden>Canvia d'alumne</button>
+  </section>
+</aside>
 
 <main id="start">
   <section class="start">
-    <h2 data-i18n="welcome">Hola! Com et dius?</h2>
-    <label class="field"><span data-i18n="student">Àlies</span>
+    <h1 data-i18n="welcome">Hola! Com et dius?</h1>
+    <label class="field"><span data-i18n="student">Nom o àlies</span>
       <input id="student" maxlength="32" placeholder="per exemple: Mar" autocomplete="off"></label>
     <label class="field"><span data-i18n="course">Curs</span>
       <select id="level"></select></label>
-    <p class="meta" data-i18n="course_help">Si no tries curs, el copilot el descobreix amb tres o quatre problemes.</p>
+    <p class="meta" data-i18n="course_help">Si no tries cap curs, el copilot l'endevina amb tres o quatre problemes.</p>
     <button class="primary big" id="begin" data-i18n="begin">Comença</button>
   </section>
 </main>
 
 <main id="app" hidden>
-  <div class="col">
-    <section>
-      <div class="meta-row"><div class="meta" id="meta">…</div>
-        <button class="translate" id="translate" title="esglaó 0" hidden></button></div>
-      <img id="img" class="problem" alt="" hidden>
-      <div class="bilingual" id="bilingual">
-        <div class="text" id="text"></div>
-        <div class="other" id="other" hidden>
-          <div class="kind" id="other-kind"></div>
-          <div class="text" id="other-text"></div>
-          <div class="other-options" id="other-options"></div>
-        </div>
-      </div>
-      <div class="letters" id="letters"></div>
-      <div class="verdict" id="verdict"></div>
-      <div class="row">
-        <button class="primary" id="next" data-i18n="next" hidden>Següent problema</button>
-      </div>
-    </section>
+  <div class="meta" id="meta">…</div>
+  <figure class="figure" id="figure" title="" hidden><img id="img" alt=""></figure>
+  <div class="statement" id="statement">
+    <div class="text" id="text"></div>
+    <div class="options-text" id="options-text"></div>
   </div>
-  <div class="col">
-    <section>
-      <h2 data-i18n="help">Ajuda</h2>
-      <div class="row">
-        <button class="primary" id="hint"><span data-i18n="hint">Pista</span><span class="rungs" id="rungs"><span></span><span></span><span></span></span></button>
-        <button class="secondary" id="solution" data-i18n="solution">Solució</button>
-        <button class="secondary manip-btn" id="manip" hidden></button>
-      </div>
-      <div class="status" id="status"></div>
-      <div class="hints" id="hints"></div>
-    </section>
-    <section>
-      <h2 data-i18n="mastery">Domini per tema</h2>
-      <div class="mastery" id="mastery"></div>
-    </section>
+  <div class="text-tools">
+    <button class="chip" id="toggle-text" aria-expanded="false" aria-controls="statement" hidden></button>
+    <button class="chip translate" id="translate" title="esglaó 0" hidden></button>
   </div>
+  <div class="other" id="other" hidden>
+    <div class="kind" id="other-kind"></div>
+    <div class="text" id="other-text"></div>
+    <div class="options-text" id="other-options"></div>
+  </div>
+  <div class="letters" id="letters"></div>
+  <div class="feedback" id="feedback">
+    <div class="verdict" id="verdict"></div>
+    <button class="primary" id="next" data-i18n="next" hidden>Següent problema</button>
+  </div>
+  <section class="help">
+    <div class="row">
+      <button class="secondary" id="hint"><span data-i18n="hint">Pista</span><span class="rungs" id="rungs"><span></span><span></span><span></span></span></button>
+      <button class="link" id="solution" data-i18n="solution">Solució</button>
+      <button class="secondary manip-btn" id="manip" hidden></button>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="hints" id="hints"></div>
+  </section>
 </main>
-<footer>
-  <table id="timeline"></table>
-  <div id="load"></div>
-</footer>
 <dialog id="dialog">
-  <div class="bar"><b id="dialog-title"></b><button class="secondary" id="dialog-close" data-i18n="close">Tanca</button></div>
+  <div class="dialog-bar"><b id="dialog-title"></b><button class="secondary small" id="dialog-close" data-i18n="close">Tanca</button></div>
   <iframe id="dialog-frame" title="manipulative"></iframe>
+  <div class="zoom-box"><img id="zoom" alt="" hidden></div>
 </dialog>
 <script src="app.js"></script>
 </body>
