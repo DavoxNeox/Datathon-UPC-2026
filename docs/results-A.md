@@ -104,7 +104,18 @@ than one token. In the jury's run the server is alone.
 RAM with both servers and the evaluation running: 2758 MB available; `llama-server` 1059 MB
 (LLM) and 75 MB (embeddings).
 
-### The official run on the board
+### The official run on the board, with the middle-value rule (later the same day)
+
+`MIDDLE_VALUE=1` (branch reason-predict, reviewed): when the five options are numeric, answer
+the option whose value is the middle one, else D. The rule is a prior about how Kangaroo
+distractors are built (the correct value usually sits between distractors above and below),
+not reasoning; it never enters the hint ladder. On the board, whole validation set:
+**150/562 = 26.7%** against 23.1% for always D (English 77/281 = 27.4%, Catalan 73/281);
+the rule fired on 223 problems; mean 0.38 s, worst 38.7 s, none over 60 s. On the laptop:
+val 77/281 (bootstrap 95% of the gain over always D: -2 to +26 problems), train 405/1466
+against 366 for always D. A hidden test may hand part of that back.
+
+### The official run on the board, before the rule
 
 `python3 predict.py --input data/val.jsonl --output results/predictions.csv` on the UNO Q, the
 whole validation set (281 English + 281 Catalan problems), nothing else using the servers:
