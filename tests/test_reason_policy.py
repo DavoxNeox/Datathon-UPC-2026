@@ -9,7 +9,7 @@ from copilot import pipeline, votes
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEACH_MODULES = ["hints.py", "webapp.py", "trainer.py", "topics.py", "retrieval.py", "leak_filter.py"]
-REASON_MODULES = {"ladder", "votes", "bias", "pipeline"}
+REASON_MODULES = {"ladder", "votes", "bias", "pipeline", "prior"}
 
 PROBLEMS = [
     {"id": "p1", "text": "How many apples?", "options": {"A": "10", "B": "12", "C": "13", "D": "14", "E": "15"}},
