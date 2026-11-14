@@ -133,3 +133,23 @@ with headless Chrome at 1280x800, forcing the theme with `?theme=`.
 - The server clears `message` after a hint, so the reserved line under the options is empty
   then. Fine as it is; a short neutral message from the server would fill it.
 - The problem id is no longer on the student's screen; it is in the panel under the timings.
+
+## The fourth use: a lesson (branch `ui-lesson`)
+
+With `HINT_MAX_USES=4` the fourth press of "Pista" is not a hint but a short lesson on the
+topic; the server (D) will send it inside `hints` with `kind: "lesson"` and `title_ca/en`,
+`text_ca/en`. The page is ready for it:
+
+- The last of the dots on "Pista" is a small open book (inline SVG, nothing fetched) with the
+  tooltip "Lliçó" / "Lesson"; the dots now go out from the left as hints are used, so the book
+  is the one still lit before the last press. `lesson-dots-4-left.png` (all four lit) and
+  `lesson-dots-1-left.png` (three hints used, only the book lit).
+- A `kind: "lesson"` entry is drawn as its own card under the hints: a `LLIÇÓ` kicker with the
+  book, a 20 px title, the text at 18 px with line height 1.6 and a 68-character measure, on
+  the quieter `--card-2` surface with no accent edge and no laptop/board time. It sits under
+  the help row like the hints, so it never covers the options. `lesson-card-1280-light.png`,
+  `lesson-card-1280-dark.png`; on the phone (390x844, checked in the browser pane) the card
+  is 358 px wide with no horizontal scroll (that capture shows a neighbour problem, so it is not committed). Keys and the 44 px targets are unchanged; the button is 48 px.
+- Until the server serves it, `dev/fixtures/lesson_hint.json` (own text, 99 words in Catalan
+  and 105 in English, on counting in a grid) with the console recipe in `dev/fixtures/README.md`
+  shows the card; the captures above were made that way on the sim with `HINT_MAX_USES=4`.
