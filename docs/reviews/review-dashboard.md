@@ -157,3 +157,26 @@ measured stays above 7:1 in dark and 5:1 in light except the pill of D8. Teacher
 
 Praise: the decision log with evidence, decision and status per question is the clearest page in
 the app for a jury, and 20 of the 25 figures I could trace reproduce to the digit.
+
+## Addendum: dashboard-fixes on main 1173913
+
+Checked the same way: tests (304 OK, 1 skipped), sim web on port 7020, `copilot.simulate` rerun
+with the command the page now cites, browser at 1280x800 and 390x844 (light only: main has no dark
+theme since a99cd93), page scripts for contrast, sizes and labels, console clean.
+
+| finding | state on 1173913 | evidence |
+|---|---|---|
+| D1 unsourced latencies | **closed** | rows are now 0.12, 0.01, 12.6 (median, estimate), 10.3 (real, n=50), 15.9 (max, estimate), 38.7 (real, 562); each is in results-A.md or the README draft; 31.0, "265 -> 50 tokens" and "n=24" are gone from the panel and the decision log; c5 says "10 to 16 s" |
+| D2 trainer table | **closed** | all six rows equal my rerun of `python3 -m copilot.simulate --bank data --steps 60` (retrieval is the default): mastered 3 / 3 / 8 / 5 / 0 / 0, improving 89%, random 3 runs band 0-1. Random "same topic 94%" is the lowest of the three runs (94, 95, 95; pooled 107/113 = 94.7%): say "94-95%" or pool it |
+| D3 hint judgement | **closed** | both rows and the source say "tool draft, n=3, awaiting human judgment"; the leak rows name the 10 sample problems and the 66-problem validation batch; decision log row 5 says "to be redone". `hint_quality.json` still names the tool in `judge`; the team rule on that word is the author's call |
+| D4 lookup by literal | **closed** | `find(r => r.worst)`; setting the worst row to 40.1 and calling `render()` draws the page with "40,1 s" in tile 3 (reproduced) |
+| D5 headline places | noted | a comment above `DATA` lists the six places |
+| D6 labels | **closed** | RAM 2609 MB "measured with servers, relay and app running" in tile, panel and log; leaks "on samples" |
+| D7 390 px labels | **partly open** | reference labels staggered, white RAM label dropped when it does not fit; the four long latency labels are now longer ("(mediana, estimació)") and still cut at the left edge at 390 px ("mb prefetch (mediana, estimació)", "ON d'un solver (màxim, estimació)"); the topics legend was not re-measured at 390 px |
+| D8 contrast and sizes | **partly open** | CA/EN 44 px; "open" pill `#8a5a00` 5.4:1; llm and thin always-D bars `#8a8a8a` 3.1:1; the two "floor" bars (Always D, Random) are `#b0b0b0` at 2.0:1 against the page, still under 3:1 (values printed beside them); the back link stays 27 px tall |
+| D9 SVG names | **closed** | 7 SVGs with `role="img"` and an `aria-label` listing the rows and values |
+| D10 mixed n | unchanged | as before; the fractions are printed |
+
+Verdict: the four IMPORTANT findings are closed and the figures on the page now trace to a document
+or a cited command. Left for the author, all MINOR: shorter latency labels under 640 px, the two
+floor bars one step darker, the back link to 44 px, "94-95%" for the random student.
