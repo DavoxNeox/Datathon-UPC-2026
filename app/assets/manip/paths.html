@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comptador de camins</title>
+<style>
+  body { margin: 0; padding: 14px; font: 16px/1.4 system-ui, sans-serif; color: #1d2433; background: #fff; }
+  h1 { font-size: 18px; margin: 0 0 6px; } p { margin: 4px 0 10px; color: #5c667a; font-size: 14px; }
+  .wrap { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+  table { border-collapse: collapse; } td { width: 44px; height: 44px; border: 1px solid #dfe3ea; text-align: center; font-weight: 600; cursor: pointer; user-select: none; }
+  td.block { background: #1d2433; color: #1d2433; } td.start { background: #e6f4ea; } td.end { background: #e8f0fe; }
+  td.lit { background: #fff4e0; } td.now { outline: 3px solid #1f5fbf; }
+  button { font: inherit; padding: 8px 12px; border: 1px solid #dfe3ea; border-radius: 8px; background: #fff; cursor: pointer; }
+  button.primary { background: #1f5fbf; color: #fff; border-color: #1f5fbf; font-weight: 600; }
+  .controls { display: flex; flex-direction: column; gap: 8px; } .group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .total { font-size: 20px; font-weight: 700; min-height: 1.4em; } .led { font-size: 13px; color: #5c667a; }
+</style>
+</head>
+<body>
+<h1 id="title"></h1>
+<p id="intro"></p>
+<div class="wrap">
+  <table id="grid"></table>
+  <div class="controls">
+    <div class="group"><span id="l-size"></span>
+      <select id="rows"></select> × <select id="cols"></select></div>
+    <div class="group"><button class="primary" id="count"></button><button id="step"></button><button id="clear"></button></div>
+    <div class="total" id="total"></div>
+    <div class="led" id="led"></div>
+  </div>
+</div>
+<script>
+const lang = new URLSearchParams(location.search).get("lang") === "eng" ? "eng" : "cat";
+const T = {
+  cat: {title: "Comptador de camins", intro: "Quants camins van de la casella verda a la blava, anant només cap a la dreta o cap avall? Clica una casella per bloquejar-la. Cada casella rep la suma dels camins que arriben de dalt i de l'esquerra; el resultat també s'encén a la matriu LED.",
+        size: "Mida", count: "Compta", step: "Pas a pas", clear: "Neteja", total: "Camins: ", led: "Enviat a la matriu LED", ledErr: "No s'ha pogut dibuixar a la LED"},
+  eng: {title: "Path counter", intro: "How many paths go from the green cell to the blue one, moving only right or down? Click a cell to block it. Each cell receives the sum of the paths arriving from above and from the left; the result also lights the LED matrix.",
+        size: "Size", count: "Count", step: "Step by step", clear: "Clear", total: "Paths: ", led: "Sent to the LED matrix", ledErr: "Could not draw on the LED"},
+}[lang];
+document.documentElement.lang = lang === "cat" ? "ca" : "en"; document.title = T.title;
+for (const [id, k] of [["title", "title"], ["intro", "intro"], ["l-size", "size"], ["count", "count"], ["step", "step"], ["clear", "clear"]]) document.getElementById(id).textContent = T[k];
+let R = 4, C = 5, blocked = new Set(), counts = null, stepper = null;
+const sel = (id, max, v) => { const s = document.getElementById(id); for (let i = 2; i <= max; i++) { const o = document.createElement("option"); o.textContent = i; s.append(o); } s.value = v; };
+sel("rows", 8, R); sel("cols", 13, C);
+function compute() {
+  const g = Array.from({length: R}, () => Array(C).fill(0));
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+    if (blocked.has(r + "," + c)) { g[r][c] = 0; continue; }
+    if (r === 0 && c === 0) { g[r][c] = 1; continue; }
+    g[r][c] = (r ? g[r - 1][c] : 0) + (c ? g[r][c - 1] : 0);
+  }
+  return g;
+}
+function render(upto) {
+  const table = document.getElementById("grid"); table.innerHTML = "";
+  for (let r = 0; r < R; r++) { const tr = document.createElement("tr");
+    for (let c = 0; c < C; c++) { const td = document.createElement("td"); const key = r + "," + c;
+      td.className = blocked.has(key) ? "block" : (r === 0 && c === 0 ? "start" : (r === R - 1 && c === C - 1 ? "end" : ""));
+      const idx = r * C + c;
+      if (counts && !blocked.has(key) && (upto === undefined || idx <= upto)) { td.textContent = counts[r][c]; td.classList.add("lit"); if (idx === upto) td.classList.add("now"); }
+      td.onclick = () => { if (r === 0 && c === 0 || r === R - 1 && c === C - 1) return; blocked.has(key) ? blocked.delete(key) : blocked.add(key); counts = null; stop(); render(); document.getElementById("total").textContent = ""; };
+      tr.append(td); } table.append(tr); }
+}
+async function sendLed(g) {
+  try { await fetch("/api/led/path/" + encodeURIComponent(g.map(r => r.join(",")).join(";"))); document.getElementById("led").textContent = T.led; }
+  catch (e) { document.getElementById("led").textContent = T.ledErr; }
+}
+function stop() { if (stepper) { clearInterval(stepper); stepper = null; } }
+document.getElementById("count").onclick = () => { stop(); counts = compute(); render(); document.getElementById("total").textContent = T.total + counts[R - 1][C - 1]; sendLed(counts); };
+document.getElementById("step").onclick = () => { stop(); counts = compute(); let i = -1; document.getElementById("total").textContent = "";
+  stepper = setInterval(() => { i++; render(i); const partial = counts.map((row, r) => row.map((v, c) => r * C + c <= i ? v : 0)); if (i % 3 === 0 || i === R * C - 1) sendLed(partial);
+    if (i >= R * C - 1) { stop(); document.getElementById("total").textContent = T.total + counts[R - 1][C - 1]; } }, 350); };
+document.getElementById("clear").onclick = () => { stop(); blocked.clear(); counts = null; render(); document.getElementById("total").textContent = ""; };
+document.getElementById("rows").onchange = e => { R = +e.target.value; blocked.clear(); counts = null; stop(); render(); };
+document.getElementById("cols").onchange = e => { C = +e.target.value; blocked.clear(); counts = null; stop(); render(); };
+render();
+</script>
+</body>
+</html>
