@@ -18,37 +18,43 @@
   </div>
 </header>
 
-<aside id="panel" class="panel" hidden>
-  <section class="panel-block">
-    <div class="who" id="who"></div>
-    <div class="row">
+<!-- the settings: a centred popup over a blurred page; closes with the X, Escape or a click outside -->
+<div id="panel" class="modal" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="who">
+    <div class="dlg-head">
+      <div class="who" id="who"></div>
+      <button class="icon close" id="panel-close" aria-label="Tanca">×</button>
+    </div>
+    <div class="dlg-row">
       <span class="lang" role="group" aria-label="CA / EN"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
       <button class="icon" id="theme" aria-live="polite"><span id="theme-label">◐</span></button>
+      <!-- rung 0: the same statement in the other language, under the text; not a hint, no use spent -->
+      <button class="secondary small translate" id="translate" title="esglaó 0" hidden></button>
     </div>
-    <!-- rung 0: the same statement in the other language, under the text; not a hint, no use spent -->
-    <button class="secondary small translate" id="translate" title="esglaó 0" hidden></button>
-  </section>
-  <section class="panel-block">
-    <h2 data-i18n="mastery">El teu progrés</h2>
-    <div class="mastery" id="mastery"></div>
-  </section>
-  <section class="panel-block">
-    <h2 data-i18n="board_led">La placa</h2>
-    <canvas id="led" class="led" width="260" height="160" title="LED 8x13"></canvas>
-  </section>
-  <section class="panel-block">
-    <details id="timing">
-      <summary data-i18n="timing">Temps (per al professor)</summary>
-      <div class="meta" id="problem-id"></div>
-      <table id="timeline"></table>
-      <div class="meta" id="load"></div>
-    </details>
-  </section>
-  <section class="panel-block links">
-    <a class="teacher" href="teacher.html" data-i18n="teacher">Vista del professor</a>
-    <button class="secondary small" id="reset" data-i18n="reset" hidden>Canvia d'alumne</button>
-  </section>
-</aside>
+    <section class="dlg-block">
+      <h2 data-i18n="mastery">El teu progrés</h2>
+      <div class="mastery two" id="mastery"></div>
+    </section>
+    <div class="dlg-cols">
+      <section class="dlg-block">
+        <h2 data-i18n="board_led">La placa</h2>
+        <canvas id="led" class="led" width="260" height="160" title="LED 8x13"></canvas>
+      </section>
+      <section class="dlg-block">
+        <details id="timing">
+          <summary data-i18n="timing">Temps (per al professor)</summary>
+          <div class="meta" id="problem-id"></div>
+          <table id="timeline"></table>
+          <div class="meta" id="load"></div>
+        </details>
+      </section>
+    </div>
+    <div class="dlg-foot">
+      <a class="teacher" href="teacher.html" data-i18n="teacher">Vista del professor</a>
+      <button class="secondary small" id="reset" data-i18n="reset" hidden>Canvia d'alumne</button>
+    </div>
+  </div>
+</div>
 
 <main id="start">
   <section class="start">

@@ -21,8 +21,6 @@ a { color: var(--accent); }
 .progress .track { height: 26px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .progress .fill { height: 100%; width: 0; border-radius: 999px; background: var(--accent); transition: width .4s ease; position: relative; }
 .progress .fill::after { content: ""; position: absolute; left: 12px; right: 12px; top: 6px; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, .35); }
-.panel .who { font-size: 18px; font-weight: 800; margin-bottom: 10px; }
-.panel .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .lang { display: inline-flex; border: 2px solid var(--control); border-radius: 12px; overflow: hidden; background: var(--card); }
 .lang button { min-width: 44px; min-height: 44px; padding: 0 10px; border: 0; background: transparent; font-size: 13px; font-weight: 800; letter-spacing: .06em; color: var(--muted); cursor: pointer; }
 .lang button.on { background: var(--accent-soft); color: var(--accent); }
@@ -30,16 +28,24 @@ a { color: var(--accent); }
 .icon:hover, .lang button:hover { color: var(--ink); }
 .icon[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 
-/* The drawer: the whole map, LED, timings, teacher, reset */
-.panel { position: fixed; left: 16px; top: 50%; transform: translateY(-50%); z-index: 30; width: 330px; max-height: 84vh; overflow: auto;
-         display: grid; grid-template-columns: 1fr; gap: 10px; padding: 12px; background: var(--bg); border: 2px solid var(--control); border-radius: 18px; box-shadow: 0 16px 40px rgba(0, 0, 0, .35); }
-.panel-block { background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 14px 18px; }
-.panel-block h2, .panel summary { font-size: 12px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 800; }
-.panel summary { cursor: pointer; margin: 0; }
-.panel-block.links { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; font-size: 15px; }
-.panel-block.links a { color: var(--muted); font-weight: 700; }
+/* The settings popup: a translucent card centred over the blurred page */
+.modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.dialog { width: min(700px, 100%); max-height: 90vh; overflow: auto; padding: 16px 20px 18px; background: var(--glass); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 2px solid var(--control); border-radius: 20px; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.dlg-head .who { font-size: 20px; font-weight: 800; }
+.icon.close { font-size: 24px; font-weight: 400; line-height: 1; padding: 0; width: 44px; }
+.dlg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+.dlg-row .secondary.translate { min-height: 44px; text-transform: none; letter-spacing: 0; font-size: 14px; }
+.dlg-row .translate.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); box-shadow: 0 4px 0 var(--accent); }
+.dlg-block { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 12px 16px; }
+.dlg-block h2, .dlg-block summary { font-size: 12px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 800; }
+.dlg-block summary { cursor: pointer; margin: 0; }
+.dlg-cols { display: grid; grid-template-columns: auto 1fr; gap: 10px; margin-top: 10px; align-items: start; }
+.dlg-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 20px; margin-top: 12px; font-size: 15px; }
+.dlg-foot a { color: var(--muted); font-weight: 700; }
 canvas.led { display: block; background: #121212; border-radius: 10px; border: 3px solid #2a2a2a; width: 195px; height: 120px; }
 .mastery { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; font-size: 14px; font-weight: 700; align-items: center; }
+.mastery.two { grid-template-columns: auto 1fr auto 1fr; column-gap: 14px; }
 .mastery .segs { display: flex; gap: 4px; }
 .mastery .segs span { flex: 1; max-width: 36px; height: 12px; border-radius: 999px; background: var(--line); }
 .mastery .segs span.on { background: var(--accent); }
@@ -95,8 +101,6 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
 .other .kind { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; }
 .other .other-text { font-size: 19px; font-weight: 600; color: var(--muted); margin-top: 4px; white-space: pre-wrap; }
 .options-text { color: var(--muted); font-size: 16px; font-weight: 600; margin-top: 6px; white-space: pre-wrap; }
-.panel .secondary.translate { margin-top: 10px; min-height: 44px; text-transform: none; letter-spacing: 0; font-size: 14px; }
-.panel .translate.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); box-shadow: 0 4px 0 var(--accent); }
 .scan-tools { display: flex; justify-content: flex-end; margin: 0; }
 .scan-tools .link { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding: 4px 2px; }
 .figure.whole { float: none; max-width: none; margin: 8px 0 0; cursor: default; display: flex; justify-content: center; }
@@ -186,7 +190,8 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
   body { font-size: 17px; }
   .bar { padding: 12px 16px 6px 76px; }
   .menu-btn { top: 10px; left: 12px; }
-  .panel { left: 12px; right: 12px; width: auto; top: 70px; transform: none; max-height: calc(100vh - 90px); }
+  .dlg-cols { grid-template-columns: 1fr; }
+  .mastery.two { grid-template-columns: auto 1fr; }
   .progress .label { font-size: 12px; margin-bottom: 4px; }
   .progress .track { height: 20px; }
   .text { font-size: 20px; }

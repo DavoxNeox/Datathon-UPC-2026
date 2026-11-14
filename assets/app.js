@@ -578,26 +578,16 @@ async function poll() {
   try { render(await api("/api/state")); } catch (e) { $("status").textContent = "…"; }
 }
 
-// The sidebar floats and hides by itself: with a mouse, it closes a moment after the cursor is neither on
-// it nor on the menu button (also right after opening, if the cursor never comes); on touch screens it
-// stays until a tap outside or Escape.
-const FINE = matchMedia("(hover: hover) and (pointer: fine)").matches;   // a real mouse, not a phone's emulation
-let panelLeave = null;
-const focusInside = () => [$("panel"), $("more")].some(el => el.contains(document.activeElement));
-const armClose = (ms) => { clearTimeout(panelLeave); if (FINE && !focusInside()) panelLeave = setTimeout(() => { if (!focusInside()) setPanel(false); }, ms); };
-function setPanel(open, byKeyboard) {
+// The settings popup: opened from the menu icon, closed with its X, Escape or a click on the scrim.
+// Focus moves into the card and comes back to the icon, so it works the same from the keyboard.
+function setPanel(open) {
+  if (open === !$("panel").hidden) return;
   $("panel").hidden = !open; $("more").setAttribute("aria-expanded", String(open));
-  if (!open) clearTimeout(panelLeave);
-  else if (!byKeyboard) armClose(4000);   // opened with the mouse and never visited: it goes by itself after a while
+  if (open) $("panel-close").focus(); else if (document.activeElement && $("panel").contains(document.activeElement)) $("more").focus();
 }
-$("more").onclick = e => setPanel($("panel").hidden, e.detail === 0);
-for (const el of [$("panel"), $("more")]) {
-  el.addEventListener("mouseenter", () => clearTimeout(panelLeave));
-  el.addEventListener("mouseleave", () => { if (!$("panel").hidden) armClose(400); });
-  el.addEventListener("focusin", () => clearTimeout(panelLeave));
-  el.addEventListener("focusout", e => { if (!$("panel").hidden && !(e.relatedTarget && [$("panel"), $("more")].some(x => x.contains(e.relatedTarget)))) armClose(400); });
-}
-document.addEventListener("pointerdown", e => { if (!$("panel").hidden && !e.target.closest("#panel, #more")) setPanel(false); });
+$("more").onclick = () => setPanel($("panel").hidden);
+$("panel-close").onclick = () => setPanel(false);
+$("panel").addEventListener("pointerdown", e => { if (e.target === $("panel")) setPanel(false); });
 $("letters").addEventListener("click", async e => { const b = e.target.closest("button[data-l]"); if (b && !b.disabled) render(await api("/api/answer/" + b.dataset.l)); });
 const pressed = b => { b.disabled = true; $("status").textContent = t().thinking; };
 $("translate").onclick = async () => render(await api("/api/translate/" + (state && state.translation ? "hide" : "show")));

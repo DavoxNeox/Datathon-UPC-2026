@@ -382,3 +382,14 @@ Reviewer's three important points and the user's next requests, in one branch:
   error, so the button is never dead. The server change is requested.
 - **Pieces have names**: when the OCR read an option well its text is the piece's `alt` and
   the button's `aria-label` ("C: 15") even when the picture is shown; otherwise "opció C".
+
+### Seventh round: the settings as a popup
+
+The sidebar became a centred popup over the page: a translucent card (`--glass`, 84 % of the
+page colour with an 18 px blur behind it) on a scrim that blurs the page by 6 px. One row
+holds CA/EN, the theme and "Llegeix-lo en anglès"; the eight topics sit in two columns; the
+LED matrix and the teacher's timings share a row; the teacher link and "Canvia d'alumne"
+close the card. It opens from the menu icon, and closes with its X, Escape or a click on the
+scrim; focus moves to the X on open and back to the icon on close, so it behaves the same
+from the keyboard. There is no close-by-itself any more (a centred card would lose the
+cursor all the time), which also settles the keyboard problem of the previous round.
