@@ -344,12 +344,14 @@ class Session:
         return self.state()
 
     def hint(self):
-        """Climb one rung (1, 2, then 3 again and again) in a thread; the page polls /api/state."""
+        """Climb one rung (1, 2, then 3 again and again) in a thread; the page polls /api/state.
+
+        Hints stay available after the answer, right or wrong, while uses are left: mastery was
+        recorded when the student answered, so later hints never touch the trainer.
+        """
         with self.lock:
             if not self.problem or self.busy:
                 return {"error": "busy" if self.busy else "no problem"}
-            if self.answer:
-                return {"error": "already answered"}
             if self.hint_uses >= HINT_MAX_USES:
                 # The ladder is capped: three hints per problem, then the student answers or asks
                 # for the solution on purpose. Rung 0 (the other language) does not count.
@@ -360,11 +362,13 @@ class Session:
             self.busy = True
             if HINT_LESSON_ON_LAST and self.hint_uses == HINT_MAX_USES:
                 # the fourth hint: a short lesson on this kind of problem, not another step
-                self.message = {"ca": "Preparant una petita lliçó…", "en": "Preparing a short lesson…"}
+                if not self.answer:  # after the answer the verdict stays on screen
+                    self.message = {"ca": "Preparant una petita lliçó…", "en": "Preparing a short lesson…"}
                 threading.Thread(target=self._compute_hint, args=("lesson",), daemon=True).start()
                 return {"ok": True, "busy": True, "rung": "lesson"}
             rung = min(3, self.rung + 1)
-            self.message = {"ca": "Preparant una pista…", "en": "Thinking of a hint…"}
+            if not self.answer:
+                self.message = {"ca": "Preparant una pista…", "en": "Thinking of a hint…"}
         threading.Thread(target=self._compute_hint, args=(rung,), daemon=True).start()
         return {"ok": True, "busy": True, "rung": rung}
 
