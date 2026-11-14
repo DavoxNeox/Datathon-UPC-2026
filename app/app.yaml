@@ -1,0 +1,5 @@
+name: Math copilot
+icon: 🧮
+description: A Kangaroo maths copilot that teaches with a hint ladder; answers A to E on a web page, mastery on the LED matrix
+bricks:
+  - arduino:web_ui

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vista del professor</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    table.grid { border-collapse: collapse; font-size: 15px; }
+    table.grid th, table.grid td { border: 1px solid var(--line); padding: 6px 10px; text-align: center; }
+    table.grid th:first-child, table.grid td:first-child { text-align: left; }
+    td.m0 { background: #f3f4f6; color: var(--muted); } td.m1 { background: #fce8e6; } td.m2 { background: #fff4e0; }
+    td.m3 { background: #fdf6cc; } td.m4 { background: #e6f4ea; } td.m5 { background: #c8e6c9; font-weight: 700; }
+    .legend span { display: inline-block; margin-right: 12px; font-size: 13px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1 id="title">Vista del professor</h1>
+  <span class="grow"></span>
+  <span class="lang"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
+  <a class="teacher" href="index.html" id="back">Pàgina de l'alumne</a>
+</header>
+<main style="grid-template-columns: 1fr">
+  <section>
+    <h2 id="h-mastery">Domini per tema i alumne</h2>
+    <div class="meta" id="source"></div>
+    <table class="grid" id="mastery"></table>
+    <p class="legend" id="legend"></p>
+  </section>
+  <section id="levels-section" hidden>
+    <h2 id="h-levels">Encerts per nivell</h2>
+    <table class="grid" id="levels"></table>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const I18N = {
+  cat: {title: "Vista del professor", back: "Pàgina de l'alumne", mastery: "Domini per tema i alumne", levels: "Encerts per nivell",
+        student: "Alumne", level: "Nivell", correct: "Encerts", total: "Intents", source: {mastery_map: "Dades: trainer.mastery_map (el trainer encara no publica teacher_report)", teacher_report: "Dades: trainer.teacher_report"},
+        legend: ["0 sense dades", "1 sempre falla", "2 encerta amb pistes", "3 de vegades sense pistes", "4 sempre sense pistes", "5 encerta un nivell per sobre"]},
+  eng: {title: "Teacher view", back: "Student page", mastery: "Mastery by topic and student", levels: "Correct answers by level",
+        student: "Student", level: "Level", correct: "Correct", total: "Attempts", source: {mastery_map: "Data: trainer.mastery_map (the trainer does not publish teacher_report yet)", teacher_report: "Data: trainer.teacher_report"},
+        legend: ["0 no data", "1 always fails", "2 correct with hints", "3 sometimes correct without hints", "4 consistently correct without hints", "5 correct one level above"]},
+};
+let lang = new URLSearchParams(location.search).get("lang") === "eng" ? "eng" : "cat", data = null;
+const t = () => I18N[lang];
+function render() {
+  if (!data) return;
+  document.documentElement.lang = lang === "cat" ? "ca" : "en"; document.title = t().title;
+  $("title").textContent = t().title; $("back").textContent = t().back; $("h-mastery").textContent = t().mastery; $("h-levels").textContent = t().levels;
+  $("lang-cat").classList.toggle("on", lang === "cat"); $("lang-eng").classList.toggle("on", lang === "eng");
+  $("source").textContent = (t().source[data.source] || data.source) + (data.error ? " · " + data.error : "");
+  const students = Object.keys(data.students || {}).sort();
+  $("mastery").innerHTML = `<tr><th>${t().student}</th>${data.topics.map(tp => `<th>${esc(lang === "cat" ? tp.name_ca : tp.name_en)}</th>`).join("")}</tr>` +
+    students.map(s => `<tr><td>${esc(s)}</td>${data.topics.map(tp => { const m = data.students[s][tp.key] ?? 0; return `<td class="m${m}">${m}</td>`; }).join("")}</tr>`).join("");
+  $("legend").innerHTML = t().legend.map(l => `<span>${esc(l)}</span>`).join("");
+  const lv = data.by_level;
+  $("levels-section").hidden = !lv;
+  if (lv) {
+    // by_level: {student: {level: {"correct": n, "total": n}}} or {level: {"correct", "total"}}
+    const nested = Object.values(lv).some(v => v && typeof v === "object" && Object.values(v).some(x => x && typeof x === "object" && "total" in x));
+    const rows = nested ? Object.entries(lv) : [["*", lv]];
+    const levels = [...new Set(rows.flatMap(([, byLevel]) => Object.keys(byLevel)))].sort((a, b) => a - b);
+    $("levels").innerHTML = `<tr><th>${t().student}</th>${levels.map(l => `<th>${t().level} ${esc(l)}</th>`).join("")}</tr>` +
+      rows.map(([s, byLevel]) => `<tr><td>${esc(s)}</td>${levels.map(l => { const c = byLevel[l]; return `<td>${c ? `${c.correct}/${c.total}` : "–"}</td>`; }).join("")}</tr>`).join("");
+  }
+}
+async function load() { data = await (await fetch("/api/teacher")).json(); render(); }
+$("lang-cat").onclick = () => { lang = "cat"; render(); }; $("lang-eng").onclick = () => { lang = "eng"; render(); };
+load(); setInterval(load, 3000);
+</script>
+</body>
+</html>

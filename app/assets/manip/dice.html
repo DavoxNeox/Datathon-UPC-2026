@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El dau</title>
+<style>
+  body { margin: 0; padding: 14px; font: 16px/1.4 system-ui, sans-serif; color: #1d2433; background: #fff; }
+  h1 { font-size: 18px; margin: 0 0 6px; } p { margin: 4px 0 10px; color: #5c667a; font-size: 14px; }
+  .wrap { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
+  .scene { width: 220px; height: 220px; perspective: 600px; }
+  .cube { width: 120px; height: 120px; position: relative; margin: 50px; transform-style: preserve-3d; transition: transform .5s; }
+  .face { position: absolute; width: 120px; height: 120px; background: #fffdf7; border: 2px solid #1d2433; border-radius: 12px; display: grid; grid-template-columns: repeat(3, 1fr); padding: 14px; box-sizing: border-box; }
+  .face i { display: block; width: 18px; height: 18px; border-radius: 50%; background: #1d2433; margin: auto; visibility: hidden; }
+  .face i.on { visibility: visible; }
+  .f1 { transform: rotateY(0deg) translateZ(60px); } .f6 { transform: rotateY(180deg) translateZ(60px); }
+  .f2 { transform: rotateY(90deg) translateZ(60px); } .f5 { transform: rotateY(-90deg) translateZ(60px); }
+  .f3 { transform: rotateX(90deg) translateZ(60px); } .f4 { transform: rotateX(-90deg) translateZ(60px); }
+  button { font: inherit; padding: 8px 12px; border: 1px solid #dfe3ea; border-radius: 8px; background: #fff; cursor: pointer; }
+  button.primary { background: #1f5fbf; color: #fff; border-color: #1f5fbf; font-weight: 600; }
+  .controls { display: flex; flex-direction: column; gap: 8px; } .group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .info { font-size: 15px; } .info b { font-size: 18px; }
+  .quiz { margin-top: 12px; padding: 10px; border: 1px solid #dfe3ea; border-radius: 8px; } .quiz .opts { display: flex; gap: 8px; margin-top: 6px; }
+  .verdict { font-weight: 600; min-height: 1.4em; }
+</style>
+</head>
+<body>
+<h1 id="title"></h1>
+<p id="intro"></p>
+<div class="wrap">
+  <div class="scene"><div class="cube" id="cube"></div></div>
+  <div class="controls">
+    <div class="group"><button id="up">⬆</button><button id="down">⬇</button><button id="left">⬅</button><button id="right">➡</button><button id="spin">⟳</button></div>
+    <div class="info" id="info"></div>
+    <button class="primary" id="quiz-btn"></button>
+    <div class="quiz" id="quiz" hidden><div id="q-text"></div><div class="opts" id="q-opts"></div><div class="verdict" id="q-verdict"></div></div>
+  </div>
+</div>
+<script>
+const lang = new URLSearchParams(location.search).get("lang") === "eng" ? "eng" : "cat";
+const T = {
+  cat: {title: "El dau", intro: "En un dau, les cares oposades sumen 7: 1 i 6, 2 i 5, 3 i 4. Gira'l amb les fletxes i mira quines cares es veuen alhora.",
+        front: "Davant", top: "A dalt", right: "Dreta", hidden: "Amagades (oposades)", quiz: "Posa'm a prova", q: "Quin nombre hi ha a la cara oposada al ", ok: "Exacte: sumen 7!", bad: "No: les cares oposades sumen 7."},
+  eng: {title: "The die", intro: "On a die, opposite faces add up to 7: 1 and 6, 2 and 5, 3 and 4. Turn it with the arrows and see which faces are visible at the same time.",
+        front: "Front", top: "Top", right: "Right", hidden: "Hidden (opposite)", quiz: "Test me", q: "Which number is on the face opposite to ", ok: "Exactly: they add up to 7!", bad: "No: opposite faces add up to 7."},
+}[lang];
+document.documentElement.lang = lang === "cat" ? "ca" : "en"; document.title = T.title;
+document.getElementById("title").textContent = T.title; document.getElementById("intro").textContent = T.intro; document.getElementById("quiz-btn").textContent = T.quiz;
+const PIPS = {1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]};
+const cube = document.getElementById("cube");
+for (const n of [1, 2, 3, 4, 5, 6]) { const f = document.createElement("div"); f.className = "face f" + n; for (let i = 0; i < 9; i++) { const d = document.createElement("i"); if (PIPS[n].includes(i)) d.className = "on"; f.append(d); } cube.append(f); }
+// orientation as the numbers on front, top, right; each quarter turn permutes them
+let o = {front: 1, top: 3, right: 2}, rx = 0, ry = 0;
+const opp = n => 7 - n;
+function turn(dir) {
+  if (dir === "up") { o = {front: o.top, top: opp(o.front), right: o.right}; rx -= 90; }
+  if (dir === "down") { o = {front: opp(o.top), top: o.front, right: o.right}; rx += 90; }
+  if (dir === "left") { o = {front: o.right, top: o.top, right: opp(o.front)}; ry -= 90; }
+  if (dir === "right") { o = {front: opp(o.right), top: o.top, right: o.front}; ry += 90; }
+  if (dir === "spin") { o = {front: o.front, top: o.right, right: opp(o.top)}; }
+  render();
+}
+function render() {
+  cube.style.transform = `rotateX(${-20 + rx}deg) rotateY(${30 + ry}deg)`;
+  // the CSS cube shows fixed faces; relabel them to the logical orientation
+  const map = {1: o.front, 6: opp(o.front), 3: o.top, 4: opp(o.top), 2: o.right, 5: opp(o.right)};
+  for (const n of [1, 2, 3, 4, 5, 6]) { const f = cube.querySelector(".f" + n); [...f.children].forEach((d, i) => d.className = PIPS[map[n]].includes(i) ? "on" : ""); }
+  document.getElementById("info").innerHTML = `${T.front}: <b>${o.front}</b> · ${T.top}: <b>${o.top}</b> · ${T.right}: <b>${o.right}</b><br>${T.hidden}: ${opp(o.front)}, ${opp(o.top)}, ${opp(o.right)}`;
+}
+for (const d of ["up", "down", "left", "right", "spin"]) document.getElementById(d).onclick = () => turn(d);
+document.getElementById("quiz-btn").onclick = () => {
+  const quiz = document.getElementById("quiz"); quiz.hidden = false; const n = 1 + Math.floor(Math.random() * 6);
+  document.getElementById("q-text").textContent = T.q + n + "?"; document.getElementById("q-verdict").textContent = "";
+  const opts = document.getElementById("q-opts"); opts.innerHTML = "";
+  for (const k of [1, 2, 3, 4, 5, 6].filter(x => x !== n)) { const b = document.createElement("button"); b.textContent = k; b.onclick = () => { const ok = k === opp(n); document.getElementById("q-verdict").textContent = ok ? T.ok : T.bad; document.getElementById("q-verdict").style.color = ok ? "#1b7f3b" : "#b3261e"; }; opts.append(b); }
+};
+render();
+</script>
+</body>
+</html>
