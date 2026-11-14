@@ -482,7 +482,10 @@ shipped policy, and compared problem by problem (paired bootstrap, 10 000 resamp
 The stage is skipped when a problem has no five options (114 of 281, 112 of 297) or when the
 budget is gone after a solver read the text (5 and 6).
 
-**Result, everything on.** Validation **76/281 = 27.0%** against 77 for the shipped policy
+**Result, everything on** (every total of this experiment carries a ±1: the server's cache
+restore can change a token of the working between a cold and a warm run, and the reviewer's
+reproduction landed within one problem of each figure). Validation **76/281 = 27.0%** against
+77 for the shipped policy
 (gain -1, 95% [-11, +9], P(gain <= 0) = 0.61). Training sample **82/297 = 27.6%** against 75
 (gain +7, 95% [-5, +20], P = 0.15). The model answered 66 validation problems (18 right, the
 shipped policy was right on 19 of them) and 84 training problems (28 right against 21). Of
@@ -537,6 +540,9 @@ run of this style on each set (no further tuning):
 | validation Catalan, 281 | 73 | **80** | +6 [-7, +18] 0.20 | 102 (32 / 26) | +6 [-3, +15] 0.11, 59 answered (18 / 12) |
 | the three pooled, 859 | 225 | 243 | +18 [-4, +41] 0.063 | 310 (99 / 81) | +18 [+3, +34] 0.013 |
 
+Every total above is ±1 (cache non-determinism, see the first result); the reviewer's rerun
+reproduced each of them within one problem.
+
 (Gains are "think's letter where it answered, the shipped policy elsewhere", paired per
 problem; the run's own totals differ by one where a solver skip changed the fallback.) The
 sign is the same on all three sets, the size is 1 to 3 points, no single set reaches P < 0.05,
@@ -572,7 +578,7 @@ checkout, never inside it), against the shared servers, with `THINK_LEVELS=2,3,4
 THINK_TEXT_ONLY=0`, the steps instruction and `THINK_BUDGET_SECONDS=45`: the 50-problem sample
 of `eval.py --limit 50 --languages eng` (its always-D floor is 17/50 = 34%).
 
-**Accuracy: 16/50 = 32.0%**, the same 16 as the laptop with the same policy on the same 50;
+**Accuracy: 16/50 = 32.0%** (±1, as everywhere a working is involved), the same 16 as the laptop with the same policy on the same 50;
 48 of 50 answers identical (the two differences are workings that changed a token between
 machines: the model's working is deterministic on one server, not bit-stable across two). 12
 think requests, 5 answered (3 right), 6 cut at the cap (fell to the middle value or D), 1
