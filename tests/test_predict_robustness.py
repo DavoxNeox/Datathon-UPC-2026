@@ -84,3 +84,59 @@ class PredictRobustness(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PredictResumes(unittest.TestCase):
+    """A partial output is continued, not overwritten; --fresh starts over."""
+
+    def run_predict(self, inp, out, *extra):
+        env = dict(os.environ, RUNTIME="sim", LETTER_MODEL="0", SOLVERS="0", PYTHONPATH=ROOT)
+        return subprocess.run([sys.executable, PREDICT, "--input", inp, "--output", out, *extra],
+                              capture_output=True, text=True, env=env, cwd=ROOT, timeout=300)
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.inp = os.path.join(self.tmp, "exam.jsonl")
+        self.out = os.path.join(self.tmp, "predictions.csv")
+        with open(self.inp, "w") as f:
+            for i in range(1, 6):
+                f.write(json.dumps({"id": f"q{i}", "text": "Made-up question.",
+                                    "options": {"A": "1", "B": "2", "C": "3", "D": "4", "E": "5"}}) + "\n")
+
+    def read(self):
+        with open(self.out, newline="") as f:
+            return list(csv.DictReader(f))
+
+    def test_resume_appends_only_the_missing_rows(self):
+        with open(self.out, "w", newline="") as f:
+            f.write("id,language,answer,seconds,status\nq1,,A,0.0,ok\nq2,,B,0.0,ok\n")
+        proc = self.run_predict(self.inp, self.out)
+        self.assertEqual(proc.returncode, 0, proc.stderr[-1000:])
+        self.assertIn("resuming: 2 rows", proc.stderr)
+        rows = self.read()
+        self.assertEqual([r["id"] for r in rows], ["q1", "q2", "q3", "q4", "q5"])
+        self.assertEqual(rows[0]["answer"], "A")   # the kept row is untouched
+        self.assertEqual(rows[1]["answer"], "B")
+
+    def test_fresh_starts_over(self):
+        with open(self.out, "w", newline="") as f:
+            f.write("id,language,answer,seconds,status\nq1,,A,0.0,ok\n")
+        proc = self.run_predict(self.inp, self.out, "--fresh")
+        self.assertEqual(proc.returncode, 0, proc.stderr[-1000:])
+        rows = self.read()
+        self.assertEqual(len(rows), 5)
+        self.assertNotEqual(rows[0]["answer"], "A")   # q1 answered again by the policy (C, the middle value)
+
+    def test_foreign_file_is_replaced(self):
+        with open(self.out, "w") as f:
+            f.write("not,a,predictions,file\n")
+        proc = self.run_predict(self.inp, self.out)
+        self.assertEqual(proc.returncode, 0, proc.stderr[-1000:])
+        self.assertEqual(len(self.read()), 5)
+
+    def test_complete_file_adds_nothing(self):
+        self.run_predict(self.inp, self.out)
+        before = self.read()
+        proc = self.run_predict(self.inp, self.out)
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(self.read(), before)

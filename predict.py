@@ -14,6 +14,10 @@ Every input line gets exactly one output row, whatever it contains: a line that 
 not a JSON object, a problem without an id, or a problem that makes the pipeline
 raise still gets a row (the fallback letter, status "error:<reason>"), and the run
 goes on with the next line. An exam is scored on the rows that exist.
+
+The run resumes: when --output already exists, the rows it holds are kept and only the
+input lines without a row are answered, appended in input order. A board reset in the
+middle of a long exam costs the problem in flight, not the file. --fresh starts over.
 """
 import argparse
 import csv
@@ -71,12 +75,28 @@ def answer_one(problem, index, k):
         return FALLBACK, time.time() - t0, "error:%s" % type(e).__name__, 0.0
 
 
+def rows_already_written(path):
+    """The ids with a row in an existing output, or None when there is no usable output yet."""
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, newline="") as f:
+            reader = csv.reader(f)
+            header = next(reader, None)
+            if header != ["id", "language", "answer", "seconds", "status"]:
+                return None
+            return {row[0] for row in reader if row}
+    except (OSError, csv.Error):
+        return None
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--input", required=True)
     p.add_argument("--output", required=True)
     p.add_argument("--rag", type=int, default=0, metavar="K", help="add K similar solved problems")
     p.add_argument("--index", default="data/index.db")
+    p.add_argument("--fresh", action="store_true", help="ignore an existing --output and start over")
     args = p.parse_args()
 
     index = None
@@ -87,11 +107,19 @@ def main():
         index = Index(args.index)
 
     rows = list(read_problems(args.input))
-    with open(args.output, "w", newline="") as out:
+    done = None if args.fresh else rows_already_written(args.output)
+    if done:
+        print(f"resuming: {len(done)} rows already in {args.output}", file=sys.stderr)
+    with open(args.output, "a" if done is not None else "w", newline="") as out:
         writer = csv.writer(out)
-        writer.writerow(["id", "language", "answer", "seconds", "status"])
+        if done is None:
+            done = set()
+            writer.writerow(["id", "language", "answer", "seconds", "status"])
         for n, (line_number, problem, parse_error) in enumerate(rows, 1):
             pid = row_id(problem, line_number)
+            if pid in done:
+                continue
+            done.add(pid)
             language = str(problem.get("language", "") or "") if problem else ""
             if parse_error:
                 answer, seconds, status, board = FALLBACK, 0.0, parse_error, 0.0
