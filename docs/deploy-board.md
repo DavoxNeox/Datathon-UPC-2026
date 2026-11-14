@@ -113,9 +113,8 @@ arduino-app-cli app logs /home/arduino/ArduinoApps/math-copilot --all
 The `web_ui` brick serves the page on port 7000. From the laptop over USB:
 `adb forward tcp:7000 tcp:7000`, then <http://127.0.0.1:7000> (teacher view at `/teacher`).
 Only one App Lab app runs at a time, and the sketch compiles on first start (about a minute).
-**Still to verify on the board:** the RAM with everything running: `free -m` should keep a few
-hundred MB available next to the two servers (1059 MB + 75 MB measured) and the App Lab
-containers.
+Measured on our board with both servers, the relay and the app running: 2609 MB available,
+the app container at 91 MB, the servers at 1059 MB and 75 MB.
 
 ## 5. Demo mode
 

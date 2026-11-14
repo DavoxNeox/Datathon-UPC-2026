@@ -104,6 +104,23 @@ than one token. In the jury's run the server is alone.
 RAM with both servers and the evaluation running: 2758 MB available; `llama-server` 1059 MB
 (LLM) and 75 MB (embeddings).
 
+### The App Lab app on the board (same day)
+
+Verified end to end: the repository root is the app, linked into `~/ArduinoApps/math-copilot`;
+the sketch compiles and flashes; the Python container imports `copilot`, reaches both servers
+through the `math-relay` service on `docker0` (`/health` ok from inside the container), and the
+`web_ui` brick serves the student page on port 7000 (HTTP 200 from the laptop over
+`adb forward`). `/api/state` returns a real Catalan problem with its topic and no label.
+Answering a problem returns the correction in Catalan and English, updates mastery, and sends
+a cross frame (22 LEDs) to the matrix over the Bridge, with no errors in the app log.
+
+RAM with both servers, the relay and the app container: 2609 MB available; the container uses
+91 MB. Nothing listens on the Wi-Fi interface except App Lab's own port 7000 for the page.
+
+Pitfalls met on the way, all in `docs/deploy-board.md`: the container sees only the app folder;
+`127.0.0.1` inside it is the container; `adb shell` sets a `TMPDIR` that breaks the sketch build;
+`/proc/device-tree` is absent in the container; `app start` does not restart a running app.
+
 ## Known measurement artifact
 
 Several sessions share one `llama-server` with `--parallel 1 --cache-ram 0`: the system prompt
