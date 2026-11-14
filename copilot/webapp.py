@@ -216,6 +216,7 @@ class Session:
         self.message = {"ca": "Tria una resposta o demana una pista.", "en": "Choose an answer, or ask for a hint."}
         hints.prefetch(self.problem["id"], self.lang)
         self._show_mastery()
+        led.show_hints_left(HINT_MAX_USES, HINT_MAX_USES)   # the matrix: blocks for the hints still available
         self._record("next", started)
 
     # ------------------------------------------------------------ handlers
@@ -320,7 +321,7 @@ class Session:
             self.answer = {"letter": letter, **result}
             self.rung0.answer(self.student, self.rung0_uses > 0, result["correct"])
             self.mastery = trainer.mastery_map(self.student)
-            led.show_result(result["correct"])
+            led.show_answer(letter, result["correct"])
             if result["correct"]:
                 self.message = {"ca": "Molt bé, correcte!", "en": "Correct!"}
             else:
@@ -388,6 +389,7 @@ class Session:
                 return {"error": "no hints left", "hints_left": 0}
             self.hint_uses += 1
             self.busy = True
+            led.pulse(True)
             if HINT_LESSON_ON_LAST and self.hint_uses == HINT_MAX_USES:
                 # the fourth hint: a short lesson on this kind of problem, not another step
                 if not self.answer:  # after the answer the verdict stays on screen
@@ -406,6 +408,7 @@ class Session:
             if not self.problem or self.busy:
                 return {"error": "busy" if self.busy else "no problem"}
             self.busy = True
+            led.pulse(True)
         threading.Thread(target=self._compute_hint, args=(4,), daemon=True).start()
         return {"ok": True, "busy": True, "rung": 4}
 
@@ -454,6 +457,9 @@ class Session:
                 self.rung = max(self.rung, rung)
                 self.message = {"ca": "", "en": ""}
             self.busy = False
+            led.pulse(False)
+            if self.problem and self.problem["id"] == problem_id and not self.answer:
+                led.show_hints_left(max(0, HINT_MAX_USES - self.hint_uses), HINT_MAX_USES)
             self._record(f"{label}:{result.get('kind')}", started, result.get("estimated_board_seconds", 0.0))
 
     def image(self):
