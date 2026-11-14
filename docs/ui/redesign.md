@@ -485,3 +485,37 @@ by level 0 to 7: 142, 106, 146, 123, 339, 296, 305, 290.
   black fills take the page's ink, grey patches keep their smoothed mean with no lift, colours
   keep their hue with no lightening. The cuts are tinted once per scan (no retint on a theme
   change). The measurements of the thirteenth round's light column stand.
+
+### Fifteenth round (branch `ui-fixes-10`): the answers as text, read again from the scans
+
+The user kept finding problems whose answers are plain text on the scan but reached the page
+as pieces cut from it (`lvl-3_2024_29`: "A) 110°" to "E) 135°"). The cause is upstream of the
+page: `laptop/prepare_m3kang.py` reads the options with RapidOCR and writes `options: {}` when
+it cannot build a clean A..E sequence, and on these scans it could not for a reason the page
+cannot fix: a label of the figure on the options' row ("110°", far to the right) was glued to
+option E, or a first digit was read twice ("A) 1" then "10"), or a fullwidth colon ("7：3")
+slipped in. Over the bank, 1806 of 3494 versions had clean options, 1182 had none in either
+language and the rest were noisy or mixed.
+
+- **`laptop/reocr_options.py`** reads those scans again (laptop only, RapidOCR from
+  `laptop/requirements.txt`) with a parser that keeps only the boxes near each marker (before
+  the next marker, at most 1.5 marker spacings to the right, on the marker's row), lets a box
+  that overlaps the marker's and repeats its value replace it, maps the CJK characters the
+  Chinese model gives a π (元 兀 斤) and fullwidth punctuation, and accepts a set only when the
+  page would (the `CLEAN`/`NOISY` test of `app.js`) and nothing betrays a lost fraction: no
+  value repeated, no value without a digit among values with digits, no value ending in an
+  operator. Result on this bank: of the 1731 versions without clean options, **528 now have
+  them** (394 had none, 134 were noisy); the others stay as pictures, which many of them are.
+  A random sample of 20 was checked against the scans; the only wrong ones were lost
+  fractions, which the three rejection rules now catch.
+- **`data/options_ocr.jsonl`** holds the result (`{"key": "lvl-3_2024_29|cat", "options": {...}}`).
+  It is M3Kang text and stays out of git like the rest of `data/`; it must be copied to the
+  board next to `train.jsonl`. The command, from the repository root: `python laptop/reocr_options.py`
+  (`--reparse` re-runs the parser from the cached boxes in seconds).
+- **The server overlays it on the page only.** `copilot/webapp.py` reads the file once and, in
+  `_public_problem`, replaces the shown problem's `options` (and the other language's
+  `options_eng`/`options_cat`) when the file has the key. The problem itself, what the
+  predictor, the hints, the votes and the trainer see, keeps the bank's options, so nothing
+  measured changes. No file, no overlay. Two tests in `tests/test_webapp.py`.
+- Checked in the browser: `lvl-3_2024_29` shows 110° / 115° / 125° / 130° / 135° as text buttons
+  in one row, the figure alone on the right; `lvl-0_2015_1` (pictures) is unchanged.

@@ -31,7 +31,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from prepare_m3kang import LETTERS, is_marker, reading_order  # noqa: E402
+from prepare_m3kang import LETTERS, is_marker  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -41,8 +41,15 @@ CLEAN_EXTRA = set(" .,:;%°€$'\"/+-=<>!?…×√·—–{}∞≤≥÷*′″�
 NOISY = re.compile(r"\d\s+\d|[^\W\d_]\d\s*$|[²³]\d")
 
 
+# fullwidth punctuation to ASCII; the CJK characters the (Chinese) OCR model gives a π
+FULLWIDTH = str.maketrans("：，．（）；％元兀斤", ":,.();%πππ")
+EDGE_OPERATOR = re.compile(r"^[+×÷=/·)]|[+\-−×÷=/·(]$")
+
+
 def tidy(value):
-    value = re.sub(r"V(?=\s?\d)", "√", str(value))
+    value = str(value).translate(FULLWIDTH)
+    value = re.sub(r"\s[—–]\s", " - ", value)   # a dash between two terms is a minus
+    value = re.sub(r"V(?=\s?\d)", "√", value)
     value = re.sub(r"^(.*\d.*?)\s+[A-E]$", r"\1", value)
     return value.strip()
 
@@ -53,13 +60,45 @@ def is_clean_value(value):
 
 
 def options_clean(options):
-    return len(options) >= 2 and all(is_clean_value(v) for v in options.values())
+    """The page's test, plus what a lost fraction leaves behind: a value repeated (its numerator
+    read for two options), a value without a digit among values with digits (the unit alone),
+    a value ending or starting with an operator (the fraction after "6 +" is gone)."""
+    values = [v.strip() for v in options.values()]
+    if len(options) < 2 or not all(is_clean_value(v) for v in values):
+        return False
+    if len(set(values)) < len(values):
+        return False
+    digits = [bool(re.search(r"\d", v)) for v in values]
+    if any(digits) and not all(digits):
+        return False
+    return not any(EDGE_OPERATOR.search(v) for v in values)
+
+
+def reading_order(boxes):
+    """prepare_m3kang.reading_order with the box's right edge kept: rows top to bottom, then left to right."""
+    items = []
+    for box, text, _score in boxes:
+        ys = [pt[1] for pt in box]
+        xs = [pt[0] for pt in box]
+        items.append({"x": min(xs), "x2": max(xs), "y": (min(ys) + max(ys)) / 2, "h": max(ys) - min(ys), "text": text})
+    items.sort(key=lambda it: it["y"])
+    rows, current = [], []
+    for it in items:
+        if current and abs(it["y"] - current[-1]["y"]) > 0.6 * max(it["h"], current[-1]["h"]):
+            rows.append(current)
+            current = []
+        current.append(it)
+    if current:
+        rows.append(current)
+    return [it for row in rows for it in sorted(row, key=lambda it: it["x"])]
 
 
 def parse_options_near(boxes):
     """{"A": ..., "E": ...} from OCR boxes, or {}. Like prepare_m3kang.parse_options, but a box
     only continues an option when it sits near it: before the next marker, and no further to the
-    right than one marker spacing. A figure label on the options' row is left out."""
+    right than one marker spacing. A figure label on the options' row is left out. A box that
+    overlaps the marker's box and repeats its value ("A) 1" then "10") replaces it: the OCR read
+    the first digit twice."""
     items = reading_order(boxes)
     starts = [i for i, it in enumerate(items) if is_marker(it["text"], "A", strict=True) is not None]
     for start in reversed(starts):
@@ -79,12 +118,17 @@ def parse_options_near(boxes):
         for n, (i, letter, rest) in enumerate(markers):
             end = markers[n + 1][0] if n + 1 < len(markers) else len(items)
             x0, y0, h0 = items[i]["x"], items[i]["y"], items[i]["h"]
-            value = rest
+            value, right = rest, items[i]["x2"]
             for j in range(i + 1, end):
                 it = items[j]
                 if it["x"] > x0 + 1.5 * spacing or abs(it["y"] - y0) > max(h0, it["h"]):
                     break
-                value = (value + " " + it["text"]).strip()
+                text = it["text"].strip()
+                if it["x"] < right and value and text.startswith(value):
+                    value = text
+                else:
+                    value = (value + " " + text).strip()
+                right = max(right, it["x2"])
             options[letter] = value.lstrip(")）] ").strip()
         if all(options.values()):
             return options
