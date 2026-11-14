@@ -12,13 +12,13 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))
+ROOT = os.path.dirname(HERE)  # python/ sits at the repository root, which App Lab mounts as /app
 sys.path.insert(0, ROOT)
 
 from copilot import webapp  # noqa: E402
 from copilot.hal import web  # noqa: E402
 
-ASSETS = os.path.join(os.path.dirname(HERE), "assets")
+ASSETS = os.path.join(ROOT, "assets")
 
 webapp.start()
 web.serve(webapp.routes(), ASSETS)
