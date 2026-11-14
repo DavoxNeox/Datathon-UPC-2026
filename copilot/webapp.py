@@ -488,13 +488,6 @@ class Session:
         students = sorted(self.students | {self.student})
         out = {"topics": topics.TOPICS, "students": {}, "by_level": None, "source": "mastery_map",
                "rung0": self.rung0.report()}
-        log = getattr(trainer, "answer_log", None)
-        if callable(log):
-            # every answer, so the page can diagnose a student (trend, hints, time, letter bias)
-            try:
-                out["log"] = log()
-            except Exception as error:
-                out["log_error"] = f"answer_log: {type(error).__name__}: {error}"
         if callable(report):
             try:
                 data = report()
@@ -505,6 +498,17 @@ class Session:
         for s in students:
             out["students"][s] = trainer.mastery_map(s)
         return out
+
+    def teacher_log(self):
+        """Every answer, so the page can diagnose a student (trend, hints, time, letter bias).
+        Served apart from the report: the page polls the report every 3 s and this on demand."""
+        log = getattr(trainer, "answer_log", None)
+        if not callable(log):
+            return {}
+        try:
+            return {"log": log()}
+        except Exception as error:
+            return {"log_error": f"answer_log: {type(error).__name__}: {error}"}
 
     def estimate(self, prompt_tokens, output_tokens):
         """Board seconds for a request of this size (the page shows it next to measured times)."""
@@ -563,6 +567,7 @@ def routes(session=SESSION):
         ("GET", "/api/led", session.led_frame),
         ("GET", "/api/led/path/{grid}", session.led_path),
         ("GET", "/api/teacher", session.teacher),
+        ("GET", "/api/teacher/log", session.teacher_log),
         ("GET", "/api/estimate/{prompt_tokens}/{output_tokens}", session.estimate),
     ]
 

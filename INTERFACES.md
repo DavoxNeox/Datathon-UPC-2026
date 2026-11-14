@@ -188,6 +188,18 @@ reset_student(student_id: str) -> None     # forgets every answer and mastery of
 Web (D): a start screen with the pseudonym, an optional level selector (0..7, shown with the
 school-year labels in Catalan) and a "Reinicia" button that calls `reset_student`.
 
+Added for the teacher's view (14 Nov 2026, branch `ui-teacher`), read-only:
+
+```python
+answer_log(student_id: str | None = None) -> dict
+    # {"answers": [{"student_id", "problem_id", "topic", "level", "letter", "label", "correct": bool,
+    #               "hint_rung": 0..4, "review": bool, "created_at": float}],   # in order
+    #  "students": {student_id: {"created_at", "base_level", "start_level", "diagnostic_done",
+    #                            "topics": {topic: {"mastery", "level", "updated_at"}}}}}
+    # Served by the web app at /api/teacher/log (apart from /api/teacher, which stays light);
+    # the page computes the statistics and the diagnosis in the browser.
+```
+
 ### `copilot/solvers/__init__.py` (A)
 
 ```python
