@@ -17,3 +17,7 @@ __pycache__/
 
 # Per-person Claude Code settings; the .claude/skills symlink is shared
 .claude/settings.local.json
+
+# Laptop servers started by dev/start_servers.sh
+dev/logs/
+dev/run/
