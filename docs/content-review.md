@@ -8,43 +8,57 @@ Branch `team/content-curation-a0bddb`. Files touched: `data_curated/demo_set.jso
 `data_curated/strategies.json`, `tests/test_content.py` (new), this document. No code in
 `copilot/` or `assets/` was edited: sections 3 and 4 are proposals for the controller or D.
 
-## 1. `data_curated/demo_set.json` (12 problems, all `status: draft`)
+## 1. `data_curated/demo_set.json` (18 problems, all `status: draft`)
 
-The branch `demo-pitch` had not published `docs/demo/demo-problems.md` on origin when this was
-written, so the set was chosen here with demo criteria: levels 0 to 3, every topic covered,
-options readable by the OCR, half text-only and half with a figure, and a first instinct that
-is wrong but one of the options (so the error signatures and the hint ladder have something to
-say). Every image was opened and every answer re-derived and compared with the label.
+Two groups. The **script problems** are the six ids of `docs/demo/demo-problems.md` (the two
+chains played on stage and the reserve chain), listed in `demo_core` and `demo_reserve`; D's
+rung 3 will read their steps one at a time (never the last one), so every step is written to
+stand alone as a hint. The **alternates** (`alternates`) were chosen before the script was
+published, with demo criteria (levels 0 to 3, every topic, readable options, half with a
+figure); they stay as spare material for rung 3 and for a plan B.
 
-| id | level | topic | figure | answer (checked) | why |
+Licence rule applied to every text: problems by id, figures in our words, and **no value of a
+distractor option anywhere**; the correct value appears only in the last step (which is never
+shown as a hint). `tests/test_content.py` enforces it (`test_option_values_stay_out_of_the_texts`)
+together with the leak filter on every text before the last step.
+
+| id | level | topic | figure | answer (checked) | role |
 | --- | --- | --- | --- | --- | --- |
-| lvl-0_2016_8 | 0 | counting | no | C | **core.** Worst case ("to be sure"): instinct answers the count of the colour. |
-| lvl-0_2019_22 | 0 | arithmetic | no | D | **core.** Two sentences, bar drawing; the trap (number of sheep) is option A. |
-| lvl-0_2016_16 | 0 | areas | yes | A | **core.** Perimeter does not change when corners are cut; strategy card 5 applies. |
-| lvl-2_2016_2 | 2 | spatial | yes | D | **core.** Two dice, hidden faces; uses the `dice` manipulative. |
-| lvl-0_2015_17 | 0 | digits | yes | D | reserve. Cross of five squares, parity argument. |
-| lvl-2_2023_12 | 2 | logic | no | B | reserve. Two errors become one distance between two guesses. |
-| lvl-0_2016_6 | 0 | boards | no | D | fence-post pattern, drawable live. |
-| lvl-1_2016_8 | 1 | counting | yes | E | rectangles in four strips, count by size. |
-| lvl-2_2017_21 | 2 | angles | no | D | clock hands at right angles; the end points are the trap. |
-| lvl-0_2015_14 | 0 | spatial | yes | C | 27-cube chessboard; the figure decides the corner colour. |
-| lvl-3_2016_5 | 3 | arithmetic | no | B | doubling lilies; "double the days" is option A. |
-| lvl-1_2024_8 | 1 | areas | yes | D | two rectangles, three squares; overlap trap is option A. |
-| lvl-1_2022_13 | 1 | logic | no | D | impossible total of points; a six-row table. |
+| lvl-1_2024_2 | 1 | boards | yes | C | script, chain B 1st: rows + columns − crossings on an 8×5 grid. |
+| lvl-3_2019_18 | 3 | spatial | yes | E | script, chain B 2nd: two folds, two cuts, a 3×3 of pieces. |
+| lvl-2_2020_4 | 2 | arithmetic | no | A | script, chain A 1st: batches, eggs, boxes; round up. |
+| lvl-4_2010_12 | 4 | digits | no | E | script, chain A 2nd: undo divide/add/multiply backwards. |
+| lvl-3_2021_20 | 3 | areas | yes | E | script, reserve 1st: eight grey triangles of half a cm². |
+| lvl-5_2022_30 | 5 | counting | yes | B | script, reserve 2nd: three stacked rings have a forced order. |
+| lvl-0_2016_8 | 0 | counting | no | C | alternate: worst case ("to be sure"). |
+| lvl-0_2019_22 | 0 | arithmetic | no | D | alternate: two sentences, bar drawing. |
+| lvl-0_2016_16 | 0 | areas | yes | A | alternate: cutting corners keeps the perimeter. |
+| lvl-2_2016_2 | 2 | spatial | yes | D | alternate: two dice, hidden faces; `dice` manipulative. |
+| lvl-0_2015_17 | 0 | digits | yes | D | alternate: cross of five squares, parity. |
+| lvl-2_2023_12 | 2 | logic | no | B | alternate: two errors, one distance. |
+| lvl-0_2016_6 | 0 | boards | no | D | alternate: fence-post pattern. |
+| lvl-1_2016_8 | 1 | counting | yes | E | alternate: rectangles in four strips. |
+| lvl-2_2017_21 | 2 | angles | no | D | alternate: clock hands at right angles. |
+| lvl-0_2015_14 | 0 | spatial | yes | C | alternate: 27-cube chessboard. |
+| lvl-3_2016_5 | 3 | arithmetic | no | B | alternate: doubling lilies. |
+| lvl-1_2024_8 | 1 | areas | yes | D | alternate: two rectangles, three squares. |
+| lvl-1_2022_13 | 1 | logic | no | D | alternate: impossible total of points. |
 
-Checks run: `python3 laptop/validate_demo_set.py data_curated/demo_set.json` (0 problems) and
-`python3 -m unittest tests.test_content` (the leak filter accepts every text before the last
-step, and no field shares 12 consecutive words with a statement).
+Every image was opened and every answer re-derived and compared with the label. Checks:
+`python3 laptop/validate_demo_set.py data_curated/demo_set.json` (0 problems) and
+`python3 -m unittest tests.test_content` (green).
 
-What the team must review:
+Second checks asked by the reviewer (both entries stay `draft`, with a `review_note` field):
 
-- The Catalan of every step read aloud: it is what the jury hears.
-- lvl-2_2016_2: the picture shows a 3 on the top **and** on the right face of the second die
-  (not a standard die). The description says what is drawn; the solution only needs the visible
-  dots (1 + 2 + 3 + 6 + 3 = 15, hidden 42 − 15 = 27), so the answer matches the label.
-- lvl-2_2017_21: the seven times are approximate minutes; fine for a step, check the rounding.
-- If `demo-pitch` lands with other ids, add them with the same template; the file keeps
-  `demo_core` and `demo_reserve` lists so the app or the pitch can read the choice.
+- lvl-2_2016_2: on the enlarged picture the right die shows **4 on top, 6 in front, 2 on the
+  right** (a standard die after all; the first description said 3/6/3 and was wrong). Visible
+  dots 1 + 2 + 4 + 6 + 2 = 15, hidden 42 − 15 = 27 = label D. Description and last step corrected.
+- lvl-2_2017_21: the angle between the hands t minutes after 8:00 is |240 − 5.5·t| degrees; it
+  is 90° or 270° at t = 27.3, 60, 92.7, 125.5, 158.2, 190.9 and 223.6, and the next (256.4) is
+  after noon: seven times, label D. The last step no longer lists rounded clock times.
+
+What the team must review: the Catalan of every step read aloud (the script problems first),
+and whether a step shown alone as a rung-3 hint reads well without the previous ones.
 
 ## 2. `data_curated/strategies.json`: before / after
 

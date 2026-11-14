@@ -1,9 +1,215 @@
 {
-  "_about": "Problems the team explains by hand for the demo: a description of the figure (the model cannot see it) and a step-by-step solution. Problems are referenced by M3Kang id only; never copy the statement text here. Validate with: python3 laptop/validate_demo_set.py data_curated/demo_set.json. Every entry is a draft until a person has checked it against the image and the label (field `status`).",
+  "_about": "Problems the team explains by hand for the demo: a description of the figure (the model cannot see it) and a step-by-step solution that rung 3 may show step by step (never the last step). Problems are referenced by M3Kang id only; never copy the statement text here, and never write the values of the distractor options: the correct value may appear only in the last step. Validate with: python3 laptop/validate_demo_set.py data_curated/demo_set.json and python3 -m unittest tests.test_content. Every entry is a draft until a person has checked it against the image and the label (field `status`).",
   "status": "draft",
-  "demo_core": ["lvl-0_2016_8", "lvl-0_2019_22", "lvl-0_2016_16", "lvl-2_2016_2"],
-  "demo_reserve": ["lvl-0_2015_17", "lvl-2_2023_12"],
+  "demo_core": [
+    "lvl-1_2024_2",
+    "lvl-3_2019_18",
+    "lvl-2_2020_4",
+    "lvl-4_2010_12"
+  ],
+  "demo_reserve": [
+    "lvl-3_2021_20",
+    "lvl-5_2022_30"
+  ],
   "problems": [
+    {
+      "id": "lvl-1_2024_2",
+      "topic": "boards",
+      "status": "draft",
+      "why_in_demo": "Script, chain B, first problem (pseudonym Mariona1, sixth year of primary). Counting on a grid with the picture; rows plus columns minus the overlap. Rung 1 shows an easier sibling with a smaller grid.",
+      "figure_ca": "Una graella rectangular de caselles quadrades buides: vuit columnes i cinc files, totes iguals, sense cap casella pintada encara.",
+      "figure_en": "A rectangular grid of empty square cells: eight columns and five rows, all alike, with no cell painted yet.",
+      "steps": [
+        {
+          "text_ca": "Compta les caselles de la graella: quantes columnes hi ha i quantes files? Comprova que el producte coincideix amb el total de l'enunciat.",
+          "text_en": "Count the grid: how many columns and how many rows? Check that their product matches the total in the statement."
+        },
+        {
+          "text_ca": "Pinta dues files: quantes caselles són? I després tres columnes: quantes més?",
+          "text_en": "Paint two rows: how many cells is that? Then three columns: how many more?"
+        },
+        {
+          "text_ca": "Compte: on una fila pintada creua una columna pintada, la casella l'has comptada dues vegades. Quantes caselles de creuament hi ha?",
+          "text_en": "Careful: where a painted row crosses a painted column, you have counted that cell twice. How many crossing cells are there?"
+        },
+        {
+          "text_ca": "Pintades = files + columnes − creuaments. Resta les pintades del total de la graella.",
+          "text_en": "Painted = rows + columns − crossings. Subtract the painted cells from the whole grid."
+        },
+        {
+          "text_ca": "16 + 15 − 6 = 25 caselles pintades; 40 − 25 = 15 sense pintar, opció C.",
+          "text_en": "16 + 15 − 6 = 25 painted cells; 40 − 25 = 15 unpainted, option C."
+        }
+      ],
+      "common_mistake_ca": "Sumar files i columnes sense restar les caselles on es creuen, que queden comptades dues vegades, i obtenir massa poques caselles sense pintar; o respondre les pintades en lloc de les que queden.",
+      "common_mistake_en": "Adding rows and columns without subtracting the crossing cells, which get counted twice, and getting too few unpainted cells; or answering the painted ones instead of the ones left.",
+      "source": "M3Kang (Kangaroo 2024, level 1)"
+    },
+    {
+      "id": "lvl-3_2019_18",
+      "topic": "spatial",
+      "status": "draft",
+      "why_in_demo": "Script, chain B, second problem (answered wrong on purpose on stage). A sheet folded twice and cut twice; the picture explains and the rotate manipulative is offered at rung 2.",
+      "figure_ca": "Tres dibuixos amb fletxes. Primer, un full quadrat amb una línia de punts vertical al mig i una fletxa que el plega per la meitat. Segon, el rectangle que en resulta, amb una línia de punts horitzontal i una fletxa que el torna a plegar. Tercer, el quadradet plegat amb dues tisores: un tall vertical i un tall horitzontal que es creuen al mig.",
+      "figure_en": "Three drawings with arrows. First, a square sheet with a vertical dotted line in the middle and an arrow folding it in half. Second, the resulting rectangle with a horizontal dotted line and an arrow folding it again. Third, the small folded square with two scissors: a vertical cut and a horizontal cut crossing in the middle.",
+      "steps": [
+        {
+          "text_ca": "Després de dos plecs, quantes capes de paper hi ha al quadradet? Cada plec duplica les capes.",
+          "text_en": "After two folds, how many layers of paper are in the small square? Each fold doubles the layers."
+        },
+        {
+          "text_ca": "Un tall travessa totes les capes alhora. Imagina només el tall vertical: en desplegar, on apareixen els talls al full gran?",
+          "text_en": "A cut goes through every layer at once. Imagine only the vertical cut: when you unfold, where do the cuts appear on the big sheet?"
+        },
+        {
+          "text_ca": "Un tall pel mig del quadradet plegat es converteix, en desplegar, en dos talls paral·lels al full sencer. Passa el mateix amb el tall horitzontal.",
+          "text_en": "A cut through the middle of the folded square becomes, when unfolded, two parallel cuts on the whole sheet. The same happens with the horizontal cut."
+        },
+        {
+          "text_ca": "Dibuixa el full gran amb aquests talls: dues línies verticals i dues d'horitzontals. En quantes peces queda dividit?",
+          "text_en": "Draw the big sheet with those cuts: two vertical lines and two horizontal ones. Into how many pieces is it divided?"
+        },
+        {
+          "text_ca": "Dues línies verticals i dues d'horitzontals fan una graella de 3 per 3: 9 trossos, opció E.",
+          "text_en": "Two vertical lines and two horizontal ones make a 3 by 3 grid: 9 pieces, option E."
+        }
+      ],
+      "common_mistake_ca": "Pensar que cada tall en el quadradet plegat fa només un tall al full gran (i obtenir quatre trossos), o multiplicar capes per talls sense dibuixar el full desplegat.",
+      "common_mistake_en": "Thinking each cut on the folded square makes only one cut on the big sheet (giving four pieces), or multiplying layers by cuts without drawing the unfolded sheet.",
+      "source": "M3Kang (Kangaroo 2019, level 3)"
+    },
+    {
+      "id": "lvl-2_2020_4",
+      "topic": "arithmetic",
+      "status": "draft",
+      "why_in_demo": "Script, chain A, first problem (pseudonym Guillem, first year of ESO). Text only: a recipe, eggs per batch, boxes of eggs; divide, then round up.",
+      "figure_ca": "No hi ha figura: una recepta de magdalenes, una quantitat d'ous per cada tanda de magdalenes, i caixes d'ous d'una mida fixa. Es pregunta el mínim de caixes.",
+      "figure_en": "No figure: a muffin recipe, a number of eggs per batch of muffins, and egg boxes of a fixed size. The question asks for the minimum number of boxes.",
+      "steps": [
+        {
+          "text_ca": "Escriu les tres dades: quantes magdalenes vol fer, quants ous calen per tanda i quants ous porta cada caixa.",
+          "text_en": "Write the three facts: how many muffins he wants, how many eggs per batch, and how many eggs a box holds."
+        },
+        {
+          "text_ca": "Quantes tandes de sis magdalenes necessita per arribar al total? Divideix.",
+          "text_en": "How many batches of six muffins does he need to reach the total? Divide."
+        },
+        {
+          "text_ca": "Cada tanda demana els ous que diu l'enunciat: multiplica per saber el total d'ous.",
+          "text_en": "Each batch needs the eggs the statement gives: multiply to get the total number of eggs."
+        },
+        {
+          "text_ca": "Ara reparteix aquests ous en caixes. Si no és exacte, cal una caixa més: no es venen ous solts.",
+          "text_en": "Now put those eggs into boxes. If it is not exact, one more box is needed: eggs are not sold loose."
+        },
+        {
+          "text_ca": "Els ous que calen omplen una caixa i una part d'una altra: 2 caixes, opció A.",
+          "text_en": "The eggs needed fill one box and part of another: 2 boxes, option A."
+        }
+      ],
+      "common_mistake_ca": "Respondre el nombre d'ous o el nombre de tandes en lloc del nombre de caixes, o arrodonir cap avall quan la divisió no és exacta.",
+      "common_mistake_en": "Answering the number of eggs or the number of batches instead of the number of boxes, or rounding down when the division is not exact.",
+      "source": "M3Kang (Kangaroo 2020, level 2)"
+    },
+    {
+      "id": "lvl-4_2010_12",
+      "topic": "digits",
+      "status": "draft",
+      "why_in_demo": "Script, chain A, second problem (answered wrong on purpose or solved with rung 4). Think of a number: divide, add, multiply; working backwards with the inverse operations.",
+      "figure_ca": "No hi ha figura: algú pensa un nombre i hi fa tres operacions seguides (una divisió, una suma i una multiplicació); sabem el resultat final i es demana el nombre inicial.",
+      "figure_en": "No figure: someone thinks of a number and applies three operations in a row (a division, an addition and a multiplication); we know the final result and are asked for the starting number.",
+      "steps": [
+        {
+          "text_ca": "Escriu les tres operacions en ordre, amb una fletxa de l'una a la següent, i el resultat al final.",
+          "text_en": "Write the three operations in order, with an arrow from each to the next, and the result at the end."
+        },
+        {
+          "text_ca": "Per tornar enrere, desfés l'última operació: si l'última va ser multiplicar, ara divideix el resultat.",
+          "text_en": "To go back, undo the last operation: if the last one was a multiplication, now divide the result."
+        },
+        {
+          "text_ca": "Desfés la segona: si va sumar, ara resta la mateixa quantitat.",
+          "text_en": "Undo the second: if it was an addition, now subtract the same amount."
+        },
+        {
+          "text_ca": "Desfés la primera: si va dividir, ara multiplica. Comprova el nombre que et surt fent les tres operacions cap endavant.",
+          "text_en": "Undo the first: if it was a division, now multiply. Check the number you get by running the three operations forwards."
+        },
+        {
+          "text_ca": "Desfent les tres operacions s'arriba a 728, opció E. Comprova-ho fent-les cap endavant: has d'obtenir el resultat de l'enunciat.",
+          "text_en": "Undoing the three operations gives 728, option E. Check it by running them forwards: you must get the result in the statement."
+        }
+      ],
+      "common_mistake_ca": "Aturar-se després de desfer només la primera operació (aquest valor intermedi és una de les opcions), o desfer les operacions en l'ordre en què es van fer en lloc de l'ordre invers.",
+      "common_mistake_en": "Stopping after undoing only the first operation (that intermediate value is one of the options), or undoing the operations in the order they were done instead of in reverse.",
+      "source": "M3Kang (Kangaroo 2010, level 4)"
+    },
+    {
+      "id": "lvl-3_2021_20",
+      "topic": "areas",
+      "status": "draft",
+      "why_in_demo": "Script, reserve chain R, first problem (pseudonym Pau, second year of ESO). Grey triangles inside a square with black corner squares; cut the figure into pieces you know. The OCR of its options is noisy, the picture shows them correctly.",
+      "figure_ca": "Un quadrat gran amb un quadradet negre a cada cantonada. Des del centre del quadrat gran surten línies cap als costats dels quadradets negres, i formen vuit triangles grisos, dos per cantonada: cada triangle gris té com a base un costat interior d'un quadradet negre i el vèrtex oposat al centre. La resta del quadrat és blanca.",
+      "figure_en": "A large square with a small black square in every corner. Lines run from the centre of the large square to the sides of the black squares and form eight grey triangles, two per corner: each grey triangle has an inner side of a black square as its base and its opposite vertex at the centre. The rest of the square is white.",
+      "steps": [
+        {
+          "text_ca": "Troba el costat del quadrat gran i el costat d'un quadradet negre a partir de les àrees de l'enunciat.",
+          "text_en": "Find the side of the large square and the side of a small black square from the areas in the statement."
+        },
+        {
+          "text_ca": "Compta els triangles grisos: quants n'hi ha? Són tots iguals?",
+          "text_en": "Count the grey triangles: how many are there? Are they all the same?"
+        },
+        {
+          "text_ca": "Mira un sol triangle gris: la base és un costat d'un quadradet negre. L'altura és la distància d'aquesta base fins al centre del quadrat gran. Quant fa?",
+          "text_en": "Look at one grey triangle: its base is a side of a black square. Its height is the distance from that base to the centre of the large square. How long is it?"
+        },
+        {
+          "text_ca": "Calcula l'àrea d'un triangle gris (base per altura, dividit per dos) i multiplica-la pel nombre de triangles.",
+          "text_en": "Work out the area of one grey triangle (base times height, halved) and multiply by the number of triangles."
+        },
+        {
+          "text_ca": "Vuit triangles de base 1 cm i altura 1 cm, mig cm² cadascun: 4 cm², opció E.",
+          "text_en": "Eight triangles with base 1 cm and height 1 cm, half a cm² each: 4 cm², option E."
+        }
+      ],
+      "common_mistake_ca": "Prendre com a altura del triangle la meitat del costat gran (fins al centre des del costat exterior) en lloc de la distància des del quadradet negre, i doblar l'àrea; o comptar només la meitat dels triangles.",
+      "common_mistake_en": "Taking the triangle's height as half the large side (from the outer edge to the centre) instead of the distance from the black square, and doubling the area; or counting only half of the triangles.",
+      "source": "M3Kang (Kangaroo 2021, level 3)"
+    },
+    {
+      "id": "lvl-5_2022_30",
+      "topic": "counting",
+      "status": "draft",
+      "why_in_demo": "Script, reserve chain R, second problem. Five rings taken off one by one: the rings stacked on one finger have a forced order, the others are free.",
+      "figure_ca": "Una mà oberta vista del dors. Al dit del mig hi ha tres anells, l'un sobre l'altre. Al dit índex i al dit anular hi ha un anell a cadascun, a la mateixa altura que l'anell més baix del dit del mig.",
+      "figure_en": "An open hand seen from the back. The middle finger wears three rings, one above the other. The index finger and the ring finger wear one ring each, level with the lowest ring of the middle finger.",
+      "steps": [
+        {
+          "text_ca": "Quins anells es poden treure en qualsevol moment i quins no? Els del mateix dit només surten de dalt a baix.",
+          "text_en": "Which rings can come off at any time and which cannot? Rings on the same finger only come off from top to bottom."
+        },
+        {
+          "text_ca": "Els anells es treuen en cinc moments seguits. Tria en quins tres moments es treuen els del dit del mig: l'ordre entre ells ja està decidit.",
+          "text_en": "The rings come off in five successive moments. Choose which three moments are for the middle-finger rings: their order among themselves is already decided."
+        },
+        {
+          "text_ca": "De quantes maneres pots triar tres moments entre cinc? Escriu-les ordenadament o fes-ho amb combinacions.",
+          "text_en": "In how many ways can you choose three moments out of five? List them in order or use combinations."
+        },
+        {
+          "text_ca": "En els dos moments que queden van els altres dos anells, en qualsevol ordre: multiplica.",
+          "text_en": "The two remaining moments are for the other two rings, in either order: multiply."
+        },
+        {
+          "text_ca": "10 maneres de triar els moments del dit del mig i 2 ordres per als altres: 20 maneres, opció B.",
+          "text_en": "10 ways to choose the middle-finger moments and 2 orders for the others: 20 ways, option B."
+        }
+      ],
+      "common_mistake_ca": "Tractar els cinc anells com si fossin lliures (5! = 120, que no és cap opció) o creure que els dos anells dels altres dits també tenen un ordre fixat i quedar-se amb la meitat.",
+      "common_mistake_en": "Treating all five rings as free (5! = 120, not an option) or believing the two rings on the other fingers also have a fixed order and ending with half.",
+      "source": "M3Kang (Kangaroo 2022, level 5)"
+    },
     {
       "id": "lvl-0_2016_8",
       "topic": "counting",
@@ -12,19 +218,29 @@
       "figure_ca": "No hi ha figura: una bossa amb boles de tres colors, i ens pregunten quantes n'hem de treure a cegues per estar segurs d'agafar-ne una d'un color concret.",
       "figure_en": "No figure: a bag with balls of three colours, and we are asked how many we must draw blindfolded to be certain of getting one of a given colour.",
       "steps": [
-        {"text_ca": "La pregunta diu \"per estar segurs\": no val tenir sort. Imagina que la sort et va en contra.",
-         "text_en": "The question says \"to be sure\": luck does not count. Imagine that luck is against you."},
-        {"text_ca": "Quin és el pitjor que pot passar? Que vagis traient boles i cap no sigui negra.",
-         "text_en": "What is the worst that can happen? You keep drawing balls and none of them is black."},
-        {"text_ca": "Compta quantes boles no negres hi ha: pots treure-les totes sense veure'n cap de negra.",
-         "text_en": "Count how many balls are not black: you could draw all of them without seeing a black one."},
-        {"text_ca": "Després d'aquestes, la següent bola només pot ser negra. Suma-hi aquesta última.",
-         "text_en": "After those, the next ball can only be black. Add that last one."},
-        {"text_ca": "Les no negres són 18 i la següent és segura: 19 boles, opció C.",
-         "text_en": "There are 18 non-black balls and the next one is certain: 19 balls, option C."}
+        {
+          "text_ca": "La pregunta diu \"per estar segurs\": no val tenir sort. Imagina que la sort et va en contra.",
+          "text_en": "The question says \"to be sure\": luck does not count. Imagine that luck is against you."
+        },
+        {
+          "text_ca": "Quin és el pitjor que pot passar? Que vagis traient boles i cap no sigui negra.",
+          "text_en": "What is the worst that can happen? You keep drawing balls and none of them is black."
+        },
+        {
+          "text_ca": "Compta quantes boles no negres hi ha: pots treure-les totes sense veure'n cap de negra.",
+          "text_en": "Count how many balls are not black: you could draw all of them without seeing a black one."
+        },
+        {
+          "text_ca": "Després d'aquestes, la següent bola només pot ser negra. Suma-hi aquesta última.",
+          "text_en": "After those, the next ball can only be black. Add that last one."
+        },
+        {
+          "text_ca": "Les no negres són 18 i la següent és segura: 19 boles, opció C.",
+          "text_en": "There are 18 non-black balls and the next one is certain: 19 balls, option C."
+        }
       ],
-      "common_mistake_ca": "Respondre 11 o 12, el nombre de boles negres, perquè es confon \"quantes n'hi ha\" amb \"quantes n'he de treure\". Una altra errada és comptar les 29 boles totals.",
-      "common_mistake_en": "Answering 11 or 12, the number of black balls, because \"how many there are\" gets mixed up with \"how many I must draw\". Another slip is counting all 29 balls.",
+      "common_mistake_ca": "Respondre el nombre de boles negres, perquè es confon \"quantes n'hi ha\" amb \"quantes n'he de treure\". Una altra errada és comptar totes les boles de la bossa.",
+      "common_mistake_en": "Answering the number of black balls, because \"how many there are\" gets mixed up with \"how many I must draw\". Another slip is counting every ball in the bag.",
       "source": "M3Kang (Kangaroo 2016, level 0)"
     },
     {
@@ -35,19 +251,29 @@
       "figure_ca": "No hi ha figura: una granja amb dos tipus d'animals, i dues frases que relacionen les dues quantitats (una diferència i una meitat).",
       "figure_en": "No figure: a farm with two kinds of animals, and two sentences that relate the two amounts (a difference and a half).",
       "steps": [
-        {"text_ca": "Llegeix les dues pistes: una parla d'una diferència i l'altra diu que una quantitat és la meitat de l'altra.",
-         "text_en": "Read the two clues: one talks about a difference and the other says one amount is half of the other."},
-        {"text_ca": "Dibuixa una barra per a les vaques i una barra el doble de llarga per a les ovelles.",
-         "text_en": "Draw a bar for the cows and a bar twice as long for the sheep."},
-        {"text_ca": "El tros que sobra de la barra llarga és la diferència que diu l'enunciat. Per tant, aquest tros val tant com la barra de les vaques.",
-         "text_en": "The extra piece of the long bar is the difference the statement gives. So that piece is worth exactly one cow bar."},
-        {"text_ca": "Ja saps quantes vaques hi ha i quantes ovelles. La pregunta demana el total: suma-les.",
-         "text_en": "Now you know how many cows and how many sheep there are. The question asks for the total: add them."},
-        {"text_ca": "8 vaques i 16 ovelles: 24 animals, opció D.",
-         "text_en": "8 cows and 16 sheep: 24 animals, option D."}
+        {
+          "text_ca": "Llegeix les dues pistes: una parla d'una diferència i l'altra diu que una quantitat és la meitat de l'altra.",
+          "text_en": "Read the two clues: one talks about a difference and the other says one amount is half of the other."
+        },
+        {
+          "text_ca": "Dibuixa una barra per a les vaques i una barra el doble de llarga per a les ovelles.",
+          "text_en": "Draw a bar for the cows and a bar twice as long for the sheep."
+        },
+        {
+          "text_ca": "El tros que sobra de la barra llarga és la diferència que diu l'enunciat. Per tant, aquest tros val tant com la barra de les vaques.",
+          "text_en": "The extra piece of the long bar is the difference the statement gives. So that piece is worth exactly one cow bar."
+        },
+        {
+          "text_ca": "Ja saps quantes vaques hi ha i quantes ovelles. La pregunta demana el total: suma-les.",
+          "text_en": "Now you know how many cows and how many sheep there are. The question asks for the total: add them."
+        },
+        {
+          "text_ca": "8 vaques i el doble d'ovelles: 24 animals, opció D.",
+          "text_en": "8 cows and twice as many sheep: 24 animals, option D."
+        }
       ],
-      "common_mistake_ca": "Quedar-se amb el nombre d'ovelles (16, opció A) i oblidar que es demana el total d'animals.",
-      "common_mistake_en": "Stopping at the number of sheep (16, option A) and forgetting that the total of animals is asked.",
+      "common_mistake_ca": "Quedar-se amb el nombre d'ovelles i oblidar que es demana el total d'animals: aquest nombre és una de les opcions.",
+      "common_mistake_en": "Stopping at the number of sheep and forgetting that the total of animals is asked: that number is one of the options.",
       "source": "M3Kang (Kangaroo 2019, level 0)"
     },
     {
@@ -58,19 +284,29 @@
       "figure_ca": "Un rectangle horitzontal al qual s'ha retallat un quadradet a cada una de les quatre cantonades. Els quadradets retallats es veuen en línia de punts; la figura que queda té forma de creu ampla, amb dotze costats.",
       "figure_en": "A horizontal rectangle with a small square cut out of each of its four corners. The removed squares are drawn with dotted lines; the remaining shape looks like a wide cross with twelve sides.",
       "steps": [
-        {"text_ca": "Fixa't en una sola cantonada retallada: el contorn ara fa un pas cap endins i un altre cap enfora.",
-         "text_en": "Look at just one cut corner: the outline now takes one step inwards and another step outwards."},
-        {"text_ca": "Imagina que empenys aquests dos trossos petits cap a la cantonada original. La longitud del contorn canvia?",
-         "text_en": "Imagine pushing those two short pieces back out to the original corner. Does the length of the outline change?"},
-        {"text_ca": "Cada tros que s'ha tret cap endins té un tros igual que l'acompanya: el perímetre de la figura retallada és el mateix que el del rectangle sencer.",
-         "text_en": "Every piece moved inwards comes with an equal piece beside it: the perimeter of the cut shape is the same as that of the whole rectangle."},
-        {"text_ca": "Calcula el perímetre del rectangle original amb els seus dos costats.",
-         "text_en": "Work out the perimeter of the original rectangle from its two sides."},
-        {"text_ca": "15 + 9 + 15 + 9 = 48 cm: opció A.",
-         "text_en": "15 + 9 + 15 + 9 = 48 cm: option A."}
+        {
+          "text_ca": "Fixa't en una sola cantonada retallada: el contorn ara fa un pas cap endins i un altre cap enfora.",
+          "text_en": "Look at just one cut corner: the outline now takes one step inwards and another step outwards."
+        },
+        {
+          "text_ca": "Imagina que empenys aquests dos trossos petits cap a la cantonada original. La longitud del contorn canvia?",
+          "text_en": "Imagine pushing those two short pieces back out to the original corner. Does the length of the outline change?"
+        },
+        {
+          "text_ca": "Cada tros que s'ha tret cap endins té un tros igual que l'acompanya: el perímetre de la figura retallada és el mateix que el del rectangle sencer.",
+          "text_en": "Every piece moved inwards comes with an equal piece beside it: the perimeter of the cut shape is the same as that of the whole rectangle."
+        },
+        {
+          "text_ca": "Calcula el perímetre del rectangle original amb els seus dos costats.",
+          "text_en": "Work out the perimeter of the original rectangle from its two sides."
+        },
+        {
+          "text_ca": "15 + 9 + 15 + 9 = 48 cm: opció A.",
+          "text_en": "15 + 9 + 15 + 9 = 48 cm: option A."
+        }
       ],
-      "common_mistake_ca": "Restar al perímetre els costats dels quadradets (donant 40 o 32 cm) perquè sembla que \"traient tros\" el contorn s'ha d'escurçar; o confondre perímetre amb àrea i restar àrees.",
-      "common_mistake_en": "Subtracting the sides of the small squares from the perimeter (getting 40 or 32 cm) because removing material feels like it must shorten the outline; or mixing perimeter with area and subtracting areas.",
+      "common_mistake_ca": "Restar al perímetre els costats dels quadradets retallats, perquè sembla que \"traient tros\" el contorn s'ha d'escurçar; o confondre perímetre amb àrea i restar àrees.",
+      "common_mistake_en": "Subtracting the sides of the cut-out squares from the perimeter, because removing material feels like it must shorten the outline; or mixing perimeter with area and subtracting areas.",
       "source": "M3Kang (Kangaroo 2016, level 0)"
     },
     {
@@ -78,23 +314,34 @@
       "topic": "spatial",
       "status": "draft",
       "why_in_demo": "Figure, level 2, uses the die manipulative; the 'total minus what you see' idea is quick to show and the hidden faces where the dice touch are the trap.",
-      "figure_ca": "Dos daus de jugar, l'un al costat de l'altre i tocant-se per una cara. Del dau de l'esquerra veiem la cara de dalt amb un punt i la cara del davant amb dos punts. Del dau de la dreta veiem la cara de dalt amb tres punts, la del davant amb sis punts i la del costat dret amb tres punts.",
-      "figure_en": "Two playing dice side by side, touching along one face. On the left die we see the top face with one dot and the front face with two dots. On the right die we see the top face with three dots, the front face with six dots and the right-hand face with three dots.",
+      "figure_ca": "Dos daus de jugar, l'un al costat de l'altre i tocant-se per una cara. Del dau de l'esquerra veiem la cara de dalt amb un punt i la cara del davant amb dos punts. Del dau de la dreta veiem la cara de dalt amb quatre punts, la del davant amb sis punts i la del costat dret amb dos punts.",
+      "figure_en": "Two playing dice side by side, touching along one face. On the left die we see the top face with one dot and the front face with two dots. On the right die we see the top face with four dots, the front face with six dots and the right-hand face with two dots.",
       "steps": [
-        {"text_ca": "Quants punts té un dau sencer, sumant les sis cares? Calcula-ho un cop i te'n recordaràs sempre.",
-         "text_en": "How many dots does a whole die have, adding its six faces? Work it out once and you will remember it for ever."},
-        {"text_ca": "Ara tens dos daus: quants punts hi ha en total entre tots dos?",
-         "text_en": "Now you have two dice: how many dots are there in total on both?"},
-        {"text_ca": "Suma els punts de les cares que sí que es veuen a la figura. Compte: la cara per on es toquen els daus no es veu, i la de sota tampoc.",
-         "text_en": "Add the dots on the faces you can actually see in the picture. Careful: the faces where the dice touch are hidden, and so are the bottoms."},
-        {"text_ca": "Resta el que veus del total dels dos daus.",
-         "text_en": "Subtract what you see from the total of the two dice."},
-        {"text_ca": "Es veuen 1 + 2 + 3 + 6 + 3 = 15 punts; 42 − 15 = 27 punts amagats, opció D.",
-         "text_en": "You can see 1 + 2 + 3 + 6 + 3 = 15 dots; 42 − 15 = 27 hidden dots, option D."}
+        {
+          "text_ca": "Quants punts té un dau sencer, sumant les sis cares? Calcula-ho un cop i te'n recordaràs sempre.",
+          "text_en": "How many dots does a whole die have, adding its six faces? Work it out once and you will remember it for ever."
+        },
+        {
+          "text_ca": "Ara tens dos daus: quants punts hi ha en total entre tots dos?",
+          "text_en": "Now you have two dice: how many dots are there in total on both?"
+        },
+        {
+          "text_ca": "Suma els punts de les cares que sí que es veuen a la figura. Compte: la cara per on es toquen els daus no es veu, i la de sota tampoc.",
+          "text_en": "Add the dots on the faces you can actually see in the picture. Careful: the faces where the dice touch are hidden, and so are the bottoms."
+        },
+        {
+          "text_ca": "Resta el que veus del total dels dos daus.",
+          "text_en": "Subtract what you see from the total of the two dice."
+        },
+        {
+          "text_ca": "Es veuen 1 + 2 + 4 + 6 + 2 = 15 punts; 42 − 15 = 27 punts amagats, opció D.",
+          "text_en": "You can see 1 + 2 + 4 + 6 + 2 = 15 dots; 42 − 15 = 27 hidden dots, option D."
+        }
       ],
       "common_mistake_ca": "Comptar només les cares de sota i les del darrere amb la regla \"les oposades sumen set\" i oblidar les dues cares per on es toquen els daus; o sumar malament els punts de la figura.",
       "common_mistake_en": "Counting only the bottom and back faces with the 'opposite faces add up to seven' rule and forgetting the two faces where the dice touch; or misreading the dots in the picture.",
-      "source": "M3Kang (Kangaroo 2016, level 2)"
+      "source": "M3Kang (Kangaroo 2016, level 2)",
+      "review_note": "Second check on the enlarged image (14 Nov 2026): right die shows 4 on top, 6 in front, 2 on the right side (a standard die: 4 and 3, 6 and 1, 2 and 5 opposite). Visible 15, hidden 27 = label D. Status stays draft until a person confirms."
     },
     {
       "id": "lvl-0_2015_17",
@@ -104,16 +351,26 @@
       "figure_ca": "Cinc quadrats buits que formen una creu: tres en fila horitzontal i tres en columna vertical, que comparteixen el quadrat del mig.",
       "figure_en": "Five empty squares forming a cross: three in a horizontal row and three in a vertical column, sharing the middle square.",
       "steps": [
-        {"text_ca": "Suma els cinc nombres que s'han de col·locar. Aquest total no canvia, els posis on els posis.",
-         "text_en": "Add the five numbers you have to place. That total never changes, wherever you put them."},
-        {"text_ca": "La fila i la columna comparteixen el quadrat del mig. Si sumes la fila i la columna, quin nombre has comptat dues vegades?",
-         "text_en": "The row and the column share the middle square. If you add the row and the column, which number have you counted twice?"},
-        {"text_ca": "La fila i la columna sumen el mateix, així que fila més columna és un nombre parell. Aquest parell és el total dels cinc nombres més el del mig.",
-         "text_en": "The row and the column add up to the same, so row plus column is an even number. That even number is the total of the five numbers plus the middle one."},
-        {"text_ca": "El total dels cinc nombres és parell. Perquè la suma segueixi sent parella, el del mig també ha de ser parell. Quants nombres parells tens?",
-         "text_en": "The total of the five numbers is even. For the sum to stay even, the middle number must be even too. How many even numbers do you have?"},
-        {"text_ca": "Només n'hi ha un de parell: el 8 va al mig, opció D. Comprova-ho: 3 + 8 + 9 = 5 + 8 + 7.",
-         "text_en": "Only one of them is even: 8 goes in the middle, option D. Check: 3 + 8 + 9 = 5 + 8 + 7."}
+        {
+          "text_ca": "Suma els cinc nombres que s'han de col·locar. Aquest total no canvia, els posis on els posis.",
+          "text_en": "Add the five numbers you have to place. That total never changes, wherever you put them."
+        },
+        {
+          "text_ca": "La fila i la columna comparteixen el quadrat del mig. Si sumes la fila i la columna, quin nombre has comptat dues vegades?",
+          "text_en": "The row and the column share the middle square. If you add the row and the column, which number have you counted twice?"
+        },
+        {
+          "text_ca": "La fila i la columna sumen el mateix, així que fila més columna és un nombre parell. Aquest parell és el total dels cinc nombres més el del mig.",
+          "text_en": "The row and the column add up to the same, so row plus column is an even number. That even number is the total of the five numbers plus the middle one."
+        },
+        {
+          "text_ca": "El total dels cinc nombres és parell. Perquè la suma segueixi sent parella, el del mig també ha de ser parell. Quants nombres parells tens?",
+          "text_en": "The total of the five numbers is even. For the sum to stay even, the middle number must be even too. How many even numbers do you have?"
+        },
+        {
+          "text_ca": "Només n'hi ha un de parell: el 8 va al mig, opció D. Comprova-ho: posa els altres quatre per parelles que sumin igual, una a la fila i una a la columna.",
+          "text_en": "Only one of them is even: 8 goes in the middle, option D. Check it: place the other four in two pairs with equal sums, one pair in the row and one in the column."
+        }
       ],
       "common_mistake_ca": "Posar al mig el nombre més gran o el més petit perquè \"sembla especial\", sense comprovar que la fila i la columna sumin igual.",
       "common_mistake_en": "Putting the largest or the smallest number in the middle because it 'looks special', without checking that the row and the column add up to the same.",
@@ -127,19 +384,29 @@
       "figure_ca": "No hi ha figura: cinc amigues diuen cinc nombres diferents, i el cuidador explica de quant s'han equivocat dues d'elles, una per excés i una per defecte.",
       "figure_en": "No figure: five friends say five different numbers, and the keeper tells by how much two of them were wrong, one too high and one too low.",
       "steps": [
-        {"text_ca": "Una s'ha passat i una altra s'ha quedat curta. Quina distància hi ha, doncs, entre el nombre de l'una i el de l'altra? Suma els dos errors.",
-         "text_en": "One went over and another fell short. So how far apart are their two numbers? Add the two errors."},
-        {"text_ca": "Busca a la llista dues xifres separades exactament per aquesta distància. Només hi ha una parella que ho compleixi.",
-         "text_en": "Look in the list for two numbers exactly that far apart. Only one pair works."},
-        {"text_ca": "De la parella, la gran és la que s'ha passat. Treu-li l'error per excés i obtens el nombre real de cangurs.",
-         "text_en": "In that pair, the larger number is the one that went over. Take its error away and you get the real number of kangaroos."},
-        {"text_ca": "Comprova-ho amb la petita: sumant-li el seu error també has d'arribar al mateix nombre.",
-         "text_en": "Check with the smaller one: adding its error must give the same number."},
-        {"text_ca": "La parella és 2 i 8; hi ha 4 cangurs, opció B.",
-         "text_en": "The pair is 2 and 8; there are 4 kangaroos, option B."}
+        {
+          "text_ca": "Una s'ha passat i una altra s'ha quedat curta. Quina distància hi ha, doncs, entre el nombre de l'una i el de l'altra? Suma els dos errors.",
+          "text_en": "One went over and another fell short. So how far apart are their two numbers? Add the two errors."
+        },
+        {
+          "text_ca": "Busca a la llista dues xifres separades exactament per aquesta distància. Només hi ha una parella que ho compleixi.",
+          "text_en": "Look in the list for two numbers exactly that far apart. Only one pair works."
+        },
+        {
+          "text_ca": "De la parella, la gran és la que s'ha passat. Treu-li l'error per excés i obtens el nombre real de cangurs.",
+          "text_en": "In that pair, the larger number is the one that went over. Take its error away and you get the real number of kangaroos."
+        },
+        {
+          "text_ca": "Comprova-ho amb la petita: sumant-li el seu error també has d'arribar al mateix nombre.",
+          "text_en": "Check with the smaller one: adding its error must give the same number."
+        },
+        {
+          "text_ca": "La parella separada per sis és la que comença pel 2: 2 més el seu error dona 4 cangurs, opció B.",
+          "text_en": "The pair six apart is the one starting at 2: 2 plus its error gives 4 kangaroos, option B."
+        }
       ],
-      "common_mistake_ca": "Triar un nombre que surt a la llista (com el 8) pensant que un dels nombres dits ja és la solució, o restar els errors en lloc de sumar-los.",
-      "common_mistake_en": "Picking a number from the list (like 8) in the belief that one of the guesses is already the solution, or subtracting the two errors instead of adding them.",
+      "common_mistake_ca": "Triar un nombre que surt a la llista pensant que un dels nombres dits ja és la solució, o restar els errors en lloc de sumar-los.",
+      "common_mistake_en": "Picking a number from the list in the belief that one of the guesses is already the solution, or subtracting the two errors instead of adding them.",
       "source": "M3Kang (Kangaroo 2023, level 2)"
     },
     {
@@ -150,19 +417,29 @@
       "figure_ca": "No hi ha figura: fitxes triangulars en fila, després fitxes quadrades entre elles i, finalment, fitxes rodones entre cada quadrat i cada triangle.",
       "figure_en": "No figure: triangular tiles in a row, then square tiles between them and, finally, round tiles between every square and every triangle.",
       "steps": [
-        {"text_ca": "Dibuixa-ho: sis triangles en fila. Quants buits hi ha entre ells? Sempre un menys que les fitxes.",
-         "text_en": "Draw it: six triangles in a row. How many gaps are there between them? Always one fewer than the tiles."},
-        {"text_ca": "Posa un quadrat a cada buit i compta els quadrats.",
-         "text_en": "Put a square in every gap and count the squares."},
-        {"text_ca": "Cada quadrat toca un triangle per l'esquerra i un per la dreta: va una fitxa rodona a cada costat del quadrat.",
-         "text_en": "Each square touches a triangle on its left and one on its right: a round tile goes on each side of the square."},
-        {"text_ca": "Les rodones són, doncs, el doble dels quadrats.",
-         "text_en": "So the round tiles are twice the squares."},
-        {"text_ca": "5 quadrats i el doble de rodones: 10 fitxes rodones, opció D.",
-         "text_en": "5 squares and twice as many round tiles: 10 round tiles, option D."}
+        {
+          "text_ca": "Dibuixa-ho: sis triangles en fila. Quants buits hi ha entre ells? Sempre un menys que les fitxes.",
+          "text_en": "Draw it: six triangles in a row. How many gaps are there between them? Always one fewer than the tiles."
+        },
+        {
+          "text_ca": "Posa un quadrat a cada buit i compta els quadrats.",
+          "text_en": "Put a square in every gap and count the squares."
+        },
+        {
+          "text_ca": "Cada quadrat toca un triangle per l'esquerra i un per la dreta: va una fitxa rodona a cada costat del quadrat.",
+          "text_en": "Each square touches a triangle on its left and one on its right: a round tile goes on each side of the square."
+        },
+        {
+          "text_ca": "Les rodones són, doncs, el doble dels quadrats.",
+          "text_en": "So the round tiles are twice the squares."
+        },
+        {
+          "text_ca": "5 quadrats i el doble de rodones: 10 fitxes rodones, opció D.",
+          "text_en": "5 squares and twice as many round tiles: 10 round tiles, option D."
+        }
       ],
-      "common_mistake_ca": "Comptar tants quadrats com triangles (6 en lloc de 5), l'error de \"les tanques i els pals\", i acabar amb 12; o posar només una rodona per quadrat.",
-      "common_mistake_en": "Counting as many squares as triangles (6 instead of 5), the fence-posts error, and ending with 12; or placing only one round tile per square.",
+      "common_mistake_ca": "Comptar tants quadrats com triangles (l'error de \"les tanques i els pals\") i acabar amb dues rodones de més; o posar només una rodona per quadrat.",
+      "common_mistake_en": "Counting as many squares as triangles (the fence-post error) and ending with two round tiles too many; or placing only one round tile per square.",
       "source": "M3Kang (Kangaroo 2016, level 0)"
     },
     {
@@ -173,19 +450,29 @@
       "figure_ca": "Un rectangle alt i estret dividit per tres línies verticals en quatre franges iguals, com quatre llibres drets de la mateixa mida.",
       "figure_en": "A tall, narrow rectangle split by three vertical lines into four equal strips, like four upright books of the same size.",
       "steps": [
-        {"text_ca": "Hi ha rectangles de mides diferents: d'una franja, de dues franges juntes, de tres i de quatre. Compta'ls per mides.",
-         "text_en": "There are rectangles of different sizes: one strip, two strips together, three and four. Count them by size."},
-        {"text_ca": "Quants rectangles d'una sola franja hi ha? I de dues franges veïnes?",
-         "text_en": "How many single-strip rectangles are there? And two neighbouring strips?"},
-        {"text_ca": "Segueix amb els de tres franges i el de quatre (el rectangle gran, que també compta!).",
-         "text_en": "Carry on with three strips and four strips (the big rectangle counts too!)."},
-        {"text_ca": "Suma els quatre recomptes.",
-         "text_en": "Add the four counts."},
-        {"text_ca": "4 + 3 + 2 + 1 = 10 rectangles, opció E.",
-         "text_en": "4 + 3 + 2 + 1 = 10 rectangles, option E."}
+        {
+          "text_ca": "Hi ha rectangles de mides diferents: d'una franja, de dues franges juntes, de tres i de quatre. Compta'ls per mides.",
+          "text_en": "There are rectangles of different sizes: one strip, two strips together, three and four. Count them by size."
+        },
+        {
+          "text_ca": "Quants rectangles d'una sola franja hi ha? I de dues franges veïnes?",
+          "text_en": "How many single-strip rectangles are there? And two neighbouring strips?"
+        },
+        {
+          "text_ca": "Segueix amb els de tres franges i el de quatre (el rectangle gran, que també compta!).",
+          "text_en": "Carry on with three strips and four strips (the big rectangle counts too!)."
+        },
+        {
+          "text_ca": "Suma els quatre recomptes.",
+          "text_en": "Add the four counts."
+        },
+        {
+          "text_ca": "Quatre d'una franja, tres de dues, dues de tres i una de quatre: 10 rectangles, opció E.",
+          "text_en": "Four of one strip, three of two, two of three and one of four: 10 rectangles, option E."
+        }
       ],
-      "common_mistake_ca": "Comptar només les franges soltes (4) o oblidar el rectangle gran o els de tres franges (9).",
-      "common_mistake_en": "Counting only the single strips (4), or forgetting the big rectangle or the three-strip ones (9).",
+      "common_mistake_ca": "Comptar només les franges soltes, o oblidar el rectangle gran o els de tres franges.",
+      "common_mistake_en": "Counting only the single strips, or forgetting the big rectangle or the three-strip ones.",
       "source": "M3Kang (Kangaroo 2016, level 1)"
     },
     {
@@ -196,20 +483,31 @@
       "figure_ca": "No hi ha figura: un rellotge d'agulles, i es pregunta quantes vegades les dues agulles formen un angle recte durant unes hores del matí.",
       "figure_en": "No figure: an analogue clock, and the question is how many times its two hands make a right angle during a few hours of a morning.",
       "steps": [
-        {"text_ca": "Comença per una sola hora: entre les 9 i les 10, quantes vegades les agulles fan un angle recte? Dibuixa-les a les 9 en punt i deixa-les avançar.",
-         "text_en": "Start with a single hour: between 9 and 10, how many times are the hands at a right angle? Draw them at 9 o'clock and let them move."},
-        {"text_ca": "En una volta sencera de l'agulla gran, les agulles passen per un angle recte dues vegades (una a cada banda).",
-         "text_en": "In one full turn of the minute hand, the hands pass through a right angle twice (once on each side)."},
-        {"text_ca": "Ara mira els extrems: a les 9 en punt ja hi ha un angle recte. Compta'l només una vegada. I a les 12 en punt les agulles estan juntes, no en angle recte.",
-         "text_en": "Now check the ends: at 9 o'clock there is already a right angle. Count it only once. At 12 o'clock the hands are together, not at a right angle."},
-        {"text_ca": "Recorre les hores de les 8 a les 12 amb aquesta regla i ves marcant cada angle recte; el que cau just a les 9 no el comptis dues vegades.",
-         "text_en": "Go through the hours from 8 to 12 with this rule, ticking each right angle; the one exactly at 9 must not be counted twice."},
-        {"text_ca": "Hi ha 7 angles rectes: cap a les 8:27, les 9:00, les 9:33, les 10:05, les 10:38, les 11:11 i les 11:44. Opció D.",
-         "text_en": "There are 7 right angles: at about 8:27, 9:00, 9:33, 10:05, 10:38, 11:11 and 11:44. Option D."}
+        {
+          "text_ca": "Comença per una sola hora: entre les 9 i les 10, quantes vegades les agulles fan un angle recte? Dibuixa-les a les 9 en punt i deixa-les avançar.",
+          "text_en": "Start with a single hour: between 9 and 10, how many times are the hands at a right angle? Draw them at 9 o'clock and let them move."
+        },
+        {
+          "text_ca": "En una volta sencera de l'agulla gran, les agulles passen per un angle recte dues vegades (una a cada banda).",
+          "text_en": "In one full turn of the minute hand, the hands pass through a right angle twice (once on each side)."
+        },
+        {
+          "text_ca": "Ara mira els extrems: a les 9 en punt ja hi ha un angle recte. Compta'l només una vegada. I a les 12 en punt les agulles estan juntes, no en angle recte.",
+          "text_en": "Now check the ends: at 9 o'clock there is already a right angle. Count it only once. At 12 o'clock the hands are together, not at a right angle."
+        },
+        {
+          "text_ca": "Recorre tot el matí que demana l'enunciat amb aquesta regla i ves marcant cada angle recte; el que cau just a les 9 no el comptis dues vegades.",
+          "text_en": "Go through the whole morning the statement asks about with this rule, ticking each right angle; the one exactly at 9 must not be counted twice."
+        },
+        {
+          "text_ca": "Hi ha 7 angles rectes: el primer poc abans de dos quarts de nou i després un cada 32 minuts i mig, aproximadament. Opció D.",
+          "text_en": "There are 7 right angles: the first a little before half past eight and then one every 32 and a half minutes, roughly. Option D."
+        }
       ],
-      "common_mistake_ca": "Multiplicar \"dues per hora\" per quatre hores i respondre 8, sense veure que a les 9 en punt l'angle recte és el mateix per a les dues hores que es toquen i que l'agulla petita també es mou.",
-      "common_mistake_en": "Multiplying 'twice an hour' by four hours and answering 8, without noticing that the right angle exactly at 9 belongs to both neighbouring hours and that the hour hand moves too.",
-      "source": "M3Kang (Kangaroo 2017, level 2)"
+      "common_mistake_ca": "Multiplicar \"dues per hora\" pel nombre d'hores, sense veure que a les 9 en punt l'angle recte és el mateix per a les dues hores que es toquen i que l'agulla petita també es mou.",
+      "common_mistake_en": "Multiplying 'twice an hour' by the number of hours, without noticing that the right angle exactly at 9 belongs to both neighbouring hours and that the hour hand moves too.",
+      "source": "M3Kang (Kangaroo 2017, level 2)",
+      "review_note": "Second check (14 Nov 2026): angle = |240 − 5.5·t| degrees, t minutes after 8:00; it equals 90 or 270 at t = 27.3, 60, 92.7, 125.5, 158.2, 190.9, 223.6 (the next, 256.4, is after 12:00): seven times, label D. Status stays draft until a person confirms."
     },
     {
       "id": "lvl-0_2015_14",
@@ -219,19 +517,29 @@
       "figure_ca": "Un cub gran format per 27 cubs petits (tres per costat), vist de biaix. Els cubs petits estan pintats de gris fosc i blanc alternats com un tauler d'escacs; a les vuit cantonades del cub gran hi ha cubs foscos.",
       "figure_en": "A big cube made of 27 small cubes (three along each edge), seen at an angle. The small cubes are dark grey and white, alternating like a chessboard; the eight corners of the big cube are dark.",
       "steps": [
-        {"text_ca": "Mira la figura: de quin color són les cantonades del cub gran? Això decideix tot el patró.",
-         "text_en": "Look at the picture: what colour are the corners of the big cube? That decides the whole pattern."},
-        {"text_ca": "Compta per capes. A la capa de dalt, quants cubs blancs hi ha? Hi veus un tauler de 3 per 3 amb les cantonades fosques.",
-         "text_en": "Count layer by layer. On the top layer, how many white cubes are there? You see a 3 by 3 board with dark corners."},
-        {"text_ca": "La capa del mig és la contrària: on a dalt hi ha fosc, al mig hi ha blanc. Compta-hi els blancs, inclòs el cub central que no es veu.",
-         "text_en": "The middle layer is the opposite: where the top has dark, the middle has white. Count its white cubes, including the hidden centre cube."},
-        {"text_ca": "La capa de baix és igual que la de dalt. Suma les tres capes.",
-         "text_en": "The bottom layer is like the top one. Add the three layers."},
-        {"text_ca": "4 + 5 + 4 = 13 cubs blancs, opció C.",
-         "text_en": "4 + 5 + 4 = 13 white cubes, option C."}
+        {
+          "text_ca": "Mira la figura: de quin color són les cantonades del cub gran? Això decideix tot el patró.",
+          "text_en": "Look at the picture: what colour are the corners of the big cube? That decides the whole pattern."
+        },
+        {
+          "text_ca": "Compta per capes. A la capa de dalt, quants cubs blancs hi ha? Hi veus un tauler de 3 per 3 amb les cantonades fosques.",
+          "text_en": "Count layer by layer. On the top layer, how many white cubes are there? You see a 3 by 3 board with dark corners."
+        },
+        {
+          "text_ca": "La capa del mig és la contrària: on a dalt hi ha fosc, al mig hi ha blanc. Compta-hi els blancs, inclòs el cub central que no es veu.",
+          "text_en": "The middle layer is the opposite: where the top has dark, the middle has white. Count its white cubes, including the hidden centre cube."
+        },
+        {
+          "text_ca": "La capa de baix és igual que la de dalt. Suma les tres capes.",
+          "text_en": "The bottom layer is like the top one. Add the three layers."
+        },
+        {
+          "text_ca": "4 + 5 + 4 = 13 cubs blancs, opció C.",
+          "text_en": "4 + 5 + 4 = 13 white cubes, option C."
+        }
       ],
-      "common_mistake_ca": "Respondre 14 perquè \"la meitat de 27 arrodonint cap amunt\", sense mirar que les cantonades són fosques; o oblidar el cub del centre, que no es veu.",
-      "common_mistake_en": "Answering 14 as 'half of 27 rounded up', without checking that the corners are dark; or forgetting the centre cube, which cannot be seen.",
+      "common_mistake_ca": "Respondre \"la meitat de 27 arrodonint cap amunt\", sense mirar que les cantonades són fosques; o oblidar el cub del centre, que no es veu.",
+      "common_mistake_en": "Answering 'half of 27 rounded up', without checking that the corners are dark; or forgetting the centre cube, which cannot be seen.",
       "source": "M3Kang (Kangaroo 2015, level 0)"
     },
     {
@@ -242,19 +550,29 @@
       "figure_ca": "No hi ha figura: unes plantes aquàtiques dupliquen cada dia la superfície que cobreixen d'un llac; sabem quants dies triguen a cobrir-ne la meitat.",
       "figure_en": "No figure: water plants double the area of a lake they cover every day; we know how many days they take to cover half of it.",
       "steps": [
-        {"text_ca": "Fixa't en la paraula clau: cada dia la superfície coberta es duplica.",
-         "text_en": "Focus on the key word: every day the covered area doubles."},
-        {"text_ca": "Pensa cap endavant des del dia que el llac és mig cobert: què passarà l'endemà?",
-         "text_en": "Think forward from the day the lake is half covered: what happens the next day?"},
-        {"text_ca": "Si la meitat es duplica, quina part del llac queda coberta?",
-         "text_en": "If half doubles, what part of the lake is covered?"},
-        {"text_ca": "Per tant, només cal un dia més que els que ja saps.",
-         "text_en": "So only one more day is needed beyond the ones you already know."},
-        {"text_ca": "Deu dies per a la meitat i un més per al tot: 11 dies, opció B.",
-         "text_en": "Ten days for half and one more for all of it: 11 days, option B."}
+        {
+          "text_ca": "Fixa't en la paraula clau: cada dia la superfície coberta es duplica.",
+          "text_en": "Focus on the key word: every day the covered area doubles."
+        },
+        {
+          "text_ca": "Pensa cap endavant des del dia que el llac és mig cobert: què passarà l'endemà?",
+          "text_en": "Think forward from the day the lake is half covered: what happens the next day?"
+        },
+        {
+          "text_ca": "Si la meitat es duplica, quina part del llac queda coberta?",
+          "text_en": "If half doubles, what part of the lake is covered?"
+        },
+        {
+          "text_ca": "Per tant, només cal un dia més que els que ja saps.",
+          "text_en": "So only one more day is needed beyond the ones you already know."
+        },
+        {
+          "text_ca": "Deu dies per a la meitat i un més per al tot: 11 dies, opció B.",
+          "text_en": "Ten days for half and one more for all of it: 11 days, option B."
+        }
       ],
-      "common_mistake_ca": "Doblar els dies (20, opció A) perquè \"el doble de llac, el doble de dies\": és pensar en proporció quan el creixement és doblant cada dia.",
-      "common_mistake_en": "Doubling the days (20, option A) because 'twice the lake, twice the days': thinking proportionally when the growth doubles every day.",
+      "common_mistake_ca": "Doblar els dies perquè \"el doble de llac, el doble de dies\": és pensar en proporció quan el creixement és doblant cada dia.",
+      "common_mistake_en": "Doubling the days because 'twice the lake, twice the days': thinking proportionally when the growth doubles every day.",
       "source": "M3Kang (Kangaroo 2016, level 3)"
     },
     {
@@ -265,19 +583,29 @@
       "figure_ca": "A dalt, dos rectangles grisos iguals, l'un al costat de l'altre, amb una fletxa que indica que el de la dreta llisca cap a l'esquerra. A sota, el resultat: un rectangle més curt dividit en tres quadrats iguals, amb la zona on els dos es trepitgen marcada amb una línia de punts.",
       "figure_en": "At the top, two identical grey rectangles side by side, with an arrow showing the right one sliding left. Below, the result: a shorter rectangle split into three equal squares, with the overlap marked by a dotted line.",
       "steps": [
-        {"text_ca": "Mira el dibuix de sota: el rectangle nou són tres quadrats iguals. Quants d'aquests quadrats fa cada rectangle original?",
-         "text_en": "Look at the lower drawing: the new rectangle is three equal squares. How many of those squares does each original rectangle make?"},
-        {"text_ca": "Cada rectangle original és el doble d'un quadrat. Si saps l'àrea del rectangle, quina és l'àrea d'un quadrat?",
-         "text_en": "Each original rectangle is twice one square. If you know the rectangle's area, what is the area of one square?"},
-        {"text_ca": "El rectangle nou té tres d'aquests quadrats: multiplica.",
-         "text_en": "The new rectangle has three of those squares: multiply."},
-        {"text_ca": "Comprova-ho d'una altra manera: dos rectangles sencers menys el tros que es trepitja (un quadrat) ha de donar el mateix.",
-         "text_en": "Check another way: two whole rectangles minus the overlapping piece (one square) must give the same."},
-        {"text_ca": "Un quadrat fa 9 cm² i el rectangle nou en té tres: 27 cm², opció D.",
-         "text_en": "One square is 9 cm² and the new rectangle has three: 27 cm², option D."}
+        {
+          "text_ca": "Mira el dibuix de sota: el rectangle nou són tres quadrats iguals. Quants d'aquests quadrats fa cada rectangle original?",
+          "text_en": "Look at the lower drawing: the new rectangle is three equal squares. How many of those squares does each original rectangle make?"
+        },
+        {
+          "text_ca": "Cada rectangle original és el doble d'un quadrat. Si saps l'àrea del rectangle, quina és l'àrea d'un quadrat?",
+          "text_en": "Each original rectangle is twice one square. If you know the rectangle's area, what is the area of one square?"
+        },
+        {
+          "text_ca": "El rectangle nou té tres d'aquests quadrats: multiplica.",
+          "text_en": "The new rectangle has three of those squares: multiply."
+        },
+        {
+          "text_ca": "Comprova-ho d'una altra manera: dos rectangles sencers menys el tros que es trepitja (un quadrat) ha de donar el mateix.",
+          "text_en": "Check another way: two whole rectangles minus the overlapping piece (one square) must give the same."
+        },
+        {
+          "text_ca": "Un quadrat fa 9 cm² i el rectangle nou en té tres: 27 cm², opció D.",
+          "text_en": "One square is 9 cm² and the new rectangle has three: 27 cm², option D."
+        }
       ],
-      "common_mistake_ca": "Sumar les dues àrees sense restar la part comuna (36 cm², opció A), o creure que els dos rectangles es trepitgen a mitges i respondre 24.",
-      "common_mistake_en": "Adding the two areas without subtracting the overlap (36 cm², option A), or assuming the rectangles overlap by half and answering 24.",
+      "common_mistake_ca": "Sumar les dues àrees sense restar la part comuna, o creure que els dos rectangles es trepitgen a mitges.",
+      "common_mistake_en": "Adding the two areas without subtracting the overlap, or assuming the rectangles overlap by half.",
       "source": "M3Kang (Kangaroo 2024, level 1)"
     },
     {
@@ -288,20 +616,38 @@
       "figure_ca": "No hi ha figura: tres equips, cada un juga un partit contra cada un dels altres dos; es puntua amb tres punts per victòria, un per empat i cap per derrota.",
       "figure_en": "No figure: three teams, each plays one match against each of the other two; three points for a win, one for a draw and none for a loss.",
       "steps": [
-        {"text_ca": "Quants partits juga cada equip? Només dos. Per tant, els punts d'un equip surten de dos resultats.",
-         "text_en": "How many matches does each team play? Just two. So a team's points come from two results."},
-        {"text_ca": "Un resultat val 3, 1 o 0 punts. Fes una taula amb totes les parelles de resultats possibles.",
-         "text_en": "One result is worth 3, 1 or 0 points. Make a table of every possible pair of results."},
-        {"text_ca": "Suma cada parella: quins totals hi surten? Escriu-los tots, sense repetir-ne cap.",
-         "text_en": "Add each pair: which totals appear? Write them all down, without repeats."},
-        {"text_ca": "Compara la teva llista amb les opcions de resposta: quina no surt a la llista?",
-         "text_en": "Compare your list with the answer options: which one is missing from your list?"},
-        {"text_ca": "Els totals possibles són 0, 1, 2, 3, 4 i 6: cap equip pot tenir 5 punts, opció D.",
-         "text_en": "The possible totals are 0, 1, 2, 3, 4 and 6: no team can have 5 points, option D."}
+        {
+          "text_ca": "Quants partits juga cada equip? Només dos. Per tant, els punts d'un equip surten de dos resultats.",
+          "text_en": "How many matches does each team play? Just two. So a team's points come from two results."
+        },
+        {
+          "text_ca": "Un resultat val tres punts, un punt o cap. Fes una taula amb totes les parelles de resultats possibles.",
+          "text_en": "One result is worth three points, one point or none. Make a table of every possible pair of results."
+        },
+        {
+          "text_ca": "Suma cada parella: quins totals hi surten? Escriu-los tots, sense repetir-ne cap.",
+          "text_en": "Add each pair: which totals appear? Write them all down, without repeats."
+        },
+        {
+          "text_ca": "Compara la teva llista amb les opcions de resposta: quina no surt a la llista?",
+          "text_en": "Compare your list with the answer options: which one is missing from your list?"
+        },
+        {
+          "text_ca": "Surten sis totals diferents i el 5 no hi és: cap equip pot tenir 5 punts, opció D.",
+          "text_en": "Six different totals come out and 5 is not among them: no team can have 5 points, option D."
+        }
       ],
-      "common_mistake_ca": "Pensar en tres partits per equip (com si juguessin contra tothom dues vegades) o oblidar que un equip pot empatar els dos partits (2 punts).",
-      "common_mistake_en": "Thinking each team plays three matches (as if everyone played twice) or forgetting that a team can draw both matches (2 points).",
+      "common_mistake_ca": "Pensar en tres partits per equip (com si juguessin contra tothom dues vegades) o oblidar que un equip pot empatar els dos partits.",
+      "common_mistake_en": "Thinking each team plays three matches (as if everyone played twice) or forgetting that a team can draw both matches.",
       "source": "M3Kang (Kangaroo 2022, level 1)"
     }
+  ],
+  "alternates": [
+    "lvl-0_2016_8",
+    "lvl-0_2019_22",
+    "lvl-0_2016_16",
+    "lvl-2_2016_2",
+    "lvl-0_2015_17",
+    "lvl-2_2023_12"
   ]
 }

@@ -25,8 +25,8 @@ MAX_STRATEGY_WORDS_EN = 18   # English needs a few more function words
 COPY_WINDOW = 12             # this many consecutive words equal to a statement = a copy
 LETTERS = "ABCDE"
 MANIPULATIVES = {"rotate", "paths", "dice"}
-# "48cm", "27 cm²", "80 cm2" -> "48", "27", "80": the OCR glues a unit (with its own digit) to the value
-_UNIT = re.compile(r"\s*(?:cm|dm|mm|km|m|kg|g|l|ml)[23²³]?\s*$", re.I)
+# "48cm", "27 cm²", "80 cm2", "4cm²2" -> "48", "27", "80", "4": the OCR glues a unit (and stray digits) to the value
+_UNIT = re.compile(r"\s*(?:cm|dm|mm|km|m|kg|g|l|ml)[23²³]?\d?\s*$", re.I)
 
 
 def _load_json(path):
@@ -159,6 +159,25 @@ class DemoSetTest(unittest.TestCase):
             last = item["steps"][-1]
             self.assertRegex(last["text_ca"] + " " + last["text_en"], rf"(?i)\b(opció|option)\s*{label}\b",
                              f"{item['id']}: the last step should name option {label}")
+
+    def test_option_values_stay_out_of_the_texts(self):
+        """Licence rule: no distractor value anywhere; the correct value only in the last step."""
+        if not self.known:
+            self.skipTest("data/val.jsonl and data/train.jsonl not linked")
+        for item in self.problems:
+            rows = self.known.get(item["id"], {})
+            row = rows.get("eng") or next(iter(rows.values()))
+            options = _clean_options(row.get("options") or rows.get("cat", {}).get("options"))
+            label = row["label"]
+            values = {letter: re.sub(r"\s+", "", v) for letter, v in options.items() if re.fullmatch(r"[\d\s./,]+", v or "")}
+            texts = _demo_texts(item, include_last_step=True)
+            last_fields = {f"step {len(item['steps'])} ca", f"step {len(item['steps'])} en"}
+            for field, text in texts:
+                for letter, value in values.items():
+                    if letter == label and field in last_fields:
+                        continue
+                    pattern = r"(?<![\d.,/])" + re.escape(value) + r"(?![\d.,/]|\s*[×x·])"
+                    self.assertIsNone(re.search(pattern, text), (item["id"], field, f"option {letter} = {value}", text))
 
     def test_no_field_copies_the_statement(self):
         if not self.known:
