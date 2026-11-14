@@ -247,6 +247,18 @@ class LessonsTest(unittest.TestCase):
                 n = len(lesson[key].split())
                 self.assertTrue(low <= n <= high, (lesson["key"], lesson.get("family"), key, n))
 
+    def test_lessons_are_concepts_not_strategies(self):
+        """A lesson explains an idea: it never opens with a strategy verb and never lists steps."""
+        imperatives = r"^(prova|fes|dibuixa|escriu|ordena|comença|compta|pensa|busca|mira|try|make|draw|write|order|start|count|think|look)\b"
+        for lesson in self.lessons:
+            tag = (lesson["key"], lesson.get("family"))
+            for key in ("text_ca", "text_en"):
+                text = lesson[key]
+                self.assertIsNone(re.match(imperatives, text.strip(), re.I), (tag, key, text[:40]))
+                self.assertIsNone(re.search(r"\b(pas|step) 1\b", text, re.I), (tag, key))
+                self.assertIsNone(re.search(r"\bprimer\b.*\bdespr[eé]s\b", text, re.I | re.S), (tag, key))
+                self.assertIsNone(re.search(r"\bfirst\b.*\bthen\b", text, re.I | re.S), (tag, key))
+
     def test_lessons_never_hold_a_demo_answer(self):
         """No lesson contains the correct value of any script problem (digits or number words)."""
         known = _problems()
