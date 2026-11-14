@@ -46,9 +46,11 @@ RULES = [
                   r"|\bsudoku\b|\brows? and (?:each )?columns?\b|\bcolumns?\b|\btokens?\b|\bcounters?\b|\bcheckered\b"),
     ("boards", 2, r"\brows?\b|\btable\b|\bsquares? of the\b|\bneighbou?ring\b|\badjacent\b|\bempty squares?\b|\bfilled?\b"
                   r"|\bpattern\b|\barrange(?:d|ment)?\b|\bcorner\b|\bswap"),
-    ("counting", 3, r"\bhow many (?:different )?(?:ways|paths|routes|possibilities|arrangements|combinations)\b"
-                    r"|\bin how many ways\b|\bnumber of (?:different )?(?:ways|paths|routes)\b|\bprobability\b"
-                    r"|\bat least how many\b|\bminimum number of\b|\bmaximum number of\b|\bsmallest number of\b"
+    # The question form decides: "in how many ways" is counting whatever the story is about
+    ("counting", 5, r"\bhow many (?:different |possible )?(?:ways|paths|routes|possibilities|arrangements|combinations"
+                    r"|orders|calendars|codes)\b|\bin how many ways\b|\bnumber of (?:different )?(?:ways|paths|routes)\b"
+                    r"|\bprobability\b|\bhow many (?:squares|triangles|rectangles|segments|lines) can\b"),
+    ("counting", 3, r"\bat least how many\b|\bminimum number of\b|\bmaximum number of\b|\bsmallest number of\b"
                     r"|\blargest number of\b|\bhandshake|\bshake hands\b|\broutes?\b"),
     ("counting", 2, r"\bhow many (?:different|possible)\b|\bchoose\b|\bchosen\b|\bselect|\bdifferent (?:orders?|ways)\b"
                     r"|\bpossible\b|\bat most\b|\bat least\b|\bguarantee|\bbe sure\b|\bcertain(?:ly)? that\b"
