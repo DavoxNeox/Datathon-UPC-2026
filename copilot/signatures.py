@@ -18,14 +18,19 @@ Order of the signatures, most specific first (the first match wins; a tie betwee
 signatures is documented in tests/test_signatures.py):
 
     1. sum_vs_product / product_vs_sum   two statement numbers explain both values
-    2. digits_swapped                    same digits, another order
-    3. sign                              chosen == -correct
-    4. times_10 / div_10                 a factor of 10, 100 or 1000
-    5. double / half                     a factor of 2 (never for the pair 1 <-> 2: off by one)
-    6. plus_one / minus_one              |difference| == 1
-    7. missing_add / missing_subtract    |difference| == a number of the statement (>= 2)
-    8. statement_number                  the chosen value is written in the statement
+    2. statement_number                  the chosen value is written in the statement (and the correct one is not)
+    3. digits_swapped                    same digits, another order
+    4. sign                              chosen == -correct
+    5. times_10 / div_10                 a factor of 10, 100 or 1000
+    6. double / half                     a factor of 2 (never for the pair 1 <-> 2: off by one)
+    7. plus_one / minus_one              |difference| == 1
+    8. missing_add / missing_subtract    |difference| == a number of the statement (>= 2)
     9. none                              nothing fits
+
+A datum copied from the statement ranks above the arithmetic relations because Kangaroo
+plants it on purpose (the perimeter when the area is asked, the radius, an average): in
+the manual judgement (docs/error-signatures.md) it explained the slip where the factor of
+ten or the off-by-one that also fitted did not.
 
 Every text goes through copilot.leak_filter before it is returned: a text that happens to
 contain the correct value (the Catalan "dues" when the answer is 2, a statement number
@@ -115,7 +120,15 @@ def _candidates(correct, chosen, numbers):
                     "text_en": f"You multiplied {fmt(a)} and {fmt(b)} where they had to be added.",
                 }, {"a": fmt(a), "b": fmt(b)}))
 
-    # 2. Same digits in another order (integers of two or more digits)
+    # 2. The chosen option is a number copied from the statement (Kangaroo's favourite distractor).
+    #    Uninformative when the correct value is written in the statement too (e.g. "place 3, 5, 7, 8, 9").
+    if chosen in numbers and correct not in numbers:
+        out.append(("statement_number", {
+            "text_ca": "La teva resposta surt escrita a l'enunciat, no és el resultat: encara falta fer-hi alguna operació.",
+            "text_en": "Your answer appears in the statement itself, so it is not the result: an operation is still missing.",
+        }, {}))
+
+    # 3. Same digits in another order (integers of two or more digits)
     dc, dw = _digits(correct), _digits(chosen)
     if dc and dw and len(dc) >= 2 and dc != dw and sorted(dc) == sorted(dw) \
             and (correct >= 0) == (chosen >= 0):
@@ -126,14 +139,14 @@ def _candidates(correct, chosen, numbers):
                        "Write the number again carefully.",
         }, {}))
 
-    # 3. Sign
+    # 4. Sign
     if correct != 0 and chosen == -correct:
         out.append(("sign", {
             "text_ca": "Has canviat el signe: revisa què es resta de què.",
             "text_en": "You changed the sign: check what is subtracted from what.",
         }, {}))
 
-    # 4. A power of ten
+    # 5. A power of ten
     if correct != 0:
         for p in _POWERS_OF_TEN:
             if chosen == correct * p:
@@ -151,7 +164,7 @@ def _candidates(correct, chosen, numbers):
                                "Check the units.",
                 }, {"factor": p}))
 
-    # 5. Double / half (1 <-> 2 is off by one, not a doubling)
+    # 6. Double / half (1 <-> 2 is off by one, not a doubling)
     if correct != 0 and chosen == 2 * correct and not (correct == 1 and chosen == 2):
         out.append(("double", {
             "text_ca": "Has comptat cada cas per duplicat: el teu resultat és el doble del que toca. "
@@ -167,7 +180,7 @@ def _candidates(correct, chosen, numbers):
                        "There are cases you did not count.",
         }, {}))
 
-    # 6. Off by one
+    # 7. Off by one
     if diff == 1:
         out.append(("plus_one", {
             "text_ca": "Et sobra el primer o el darrer: revisa els extrems del recompte.",
@@ -179,7 +192,7 @@ def _candidates(correct, chosen, numbers):
             "text_en": "You left an end point out: there is one more than you counted.",
         }, {}))
 
-    # 7. The difference is a number of the statement
+    # 8. The difference is a number of the statement
     for x in numbers:
         if x >= 2 and abs(diff) == x:
             if diff < 0:
@@ -198,12 +211,6 @@ def _candidates(correct, chosen, numbers):
                 }, {"x": fmt(x)}))
             break
 
-    # 8. The chosen option is a number copied from the statement
-    if chosen in numbers:
-        out.append(("statement_number", {
-            "text_ca": "La teva resposta surt escrita a l'enunciat, no és el resultat: encara falta fer-hi alguna operació.",
-            "text_en": "Your answer appears in the statement itself, so it is not the result: an operation is still missing.",
-        }, {}))
     return out
 
 
@@ -247,6 +254,5 @@ def diagnose(problem, chosen_letter):
             "evidence": evidence}
 
 
-SIGNATURE_KEYS = ["sum_vs_product", "product_vs_sum", "digits_swapped", "sign", "times_10", "div_10",
-                  "double", "half", "plus_one", "minus_one", "missing_add", "missing_subtract",
-                  "statement_number", "none"]
+SIGNATURE_KEYS = ["sum_vs_product", "product_vs_sum", "statement_number", "digits_swapped", "sign", "times_10",
+                  "div_10", "double", "half", "plus_one", "minus_one", "missing_add", "missing_subtract", "none"]

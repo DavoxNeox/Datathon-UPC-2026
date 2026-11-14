@@ -133,7 +133,21 @@ def main():
     ap.add_argument("--sample", type=int, default=0, help="also draw N signed distractors for a manual judgement")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--sample-out", default=os.path.join(ROOT, "results", "signatures_sample.tsv"))
+    ap.add_argument("--pairs", nargs="*", metavar="ID:LETTER",
+                    help="only diagnose these (problem id, chosen letter) pairs and print a Markdown table")
     args = ap.parse_args()
+
+    if args.pairs:
+        problems = load_problems(args.inputs, args.lang)
+        print("| id | level | topic | chosen | signature | candidates |\n| --- | ---: | --- | --- | --- | --- |")
+        for pair in args.pairs:
+            pid, letter = pair.rsplit(":", 1)
+            p = problems.get(pid)
+            d = diagnose(p, letter) if p else None
+            sig = d["signature"] if d else "(none: not numeric or unknown id)"
+            cands = ", ".join(d["evidence"]["candidates"]) if d else ""
+            print(f"| {pid} | {p['level'] if p else '-'} | {get_topic(pid)} | {letter} | {sig} | {cands} |")
+        return
 
     problems = load_problems(args.inputs, args.lang)
     items = diagnose_all(problems)

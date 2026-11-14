@@ -172,8 +172,8 @@ class EachSignatureTest(unittest.TestCase):
         self.assertEqual(diagnose(p, "A")["signature"], "missing_add")        # 4 = 12 - 8
         self.assertEqual(diagnose(p, "A")["evidence"]["x"], "8")
         d = diagnose(p, "D")                                                  # 20 = 12 + 8, and 20 is in the text
-        self.assertEqual(d["signature"], "missing_subtract")
-        self.assertEqual(d["evidence"]["candidates"], ["missing_subtract", "statement_number"])
+        self.assertEqual(d["signature"], "statement_number")
+        self.assertEqual(d["evidence"]["candidates"], ["statement_number", "missing_subtract"])
         self.assertEqual(diagnose(p, "B")["signature"], "half")               # 6 = 12 / 2
         self.assertEqual(diagnose(p, "E")["signature"], "none")               # 28: 16 away, not in the text
 
@@ -216,19 +216,32 @@ class TiesTest(unittest.TestCase):
     def test_double_beats_statement_difference(self):
         text = "8 friends share 4 cakes..."
         p = problem({"A": "2", "B": "4", "C": "8", "D": "12", "E": "16"}, "B", text)
-        d = diagnose(p, "C")                            # 8 = 2 x 4, also 4 + 4, and 8 is in the text
+        d = diagnose(p, "C")                            # 8 = 2 x 4, also 4 + 4; 8 is in the text but so is 4
         self.assertEqual(d["signature"], "double")
-        self.assertEqual(d["evidence"]["candidates"], ["double", "missing_subtract", "statement_number"])
+        self.assertEqual(d["evidence"]["candidates"], ["double", "missing_subtract"],
+                         "statement_number is silent when the correct value is in the statement too")
 
-    def test_off_by_one_beats_statement_number(self):
+    def test_statement_number_beats_the_arithmetic_relations(self):
         text = "Pages 4 to 9 of the book."
         p = problem({"A": "4", "B": "5", "C": "6", "D": "7", "E": "9"}, "C", text)
-        d = diagnose(p, "B")                            # 5 = 6 - 1; 5 is not in the text
-        self.assertEqual(d["signature"], "minus_one")
-        d = diagnose(p, "D")                            # 7 = 6 + 1
-        self.assertEqual(d["signature"], "plus_one")
-        d = diagnose(p, "E")                            # 9: a number of the statement, 3 away from 6 (3 not in text)
+        self.assertEqual(diagnose(p, "B")["signature"], "minus_one")          # 5 = 6 - 1; 5 is not in the text
+        self.assertEqual(diagnose(p, "D")["signature"], "plus_one")           # 7 = 6 + 1
+        self.assertEqual(diagnose(p, "E")["signature"], "statement_number")   # 9: copied from the statement
+        self.assertEqual(diagnose(p, "A")["signature"], "statement_number")   # 4: copied from the statement
+        text = "A sphere of radius 3..."
+        p = problem({"A": "30", "B": "24", "C": "12", "D": "6", "E": "3"}, "A", text)
+        d = diagnose(p, "E")                            # 3 = 30 / 10, but 3 is the radius of the statement
         self.assertEqual(d["signature"], "statement_number")
+        self.assertEqual(d["evidence"]["candidates"], ["statement_number", "div_10"])
+        text = "Edge pieces: 24 black ones."
+        p = problem({"A": "24", "B": "49", "C": "16", "D": "20", "E": "25"}, "E", text)
+        self.assertEqual(diagnose(p, "A")["evidence"]["candidates"], ["statement_number", "minus_one"])
+
+    def test_statement_number_is_silent_when_every_option_is_a_datum(self):
+        text = "Write 3, 5, 7, 8 and 9 in the squares. Which goes in the centre?"
+        p = problem({"A": "3", "B": "5", "C": "7", "D": "8", "E": "9"}, "D", text)
+        self.assertEqual(diagnose(p, "C")["evidence"]["candidates"], ["minus_one"])
+        self.assertNotIn("statement_number", diagnose(p, "A")["evidence"]["candidates"])   # 3 = 8 - 5: missing_add
 
 
 class NeverLeaksTest(unittest.TestCase):
