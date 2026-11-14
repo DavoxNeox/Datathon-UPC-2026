@@ -101,6 +101,9 @@ DIAGNOSTIC_MIN = 3
 REVIEW_RATE = 0.2
 NEIGHBOUR_K = 8
 STUDENT_LANGS = ("cat", "eng")   # shown in Catalan; English is the fallback
+# DIFFICULTY_ADJUST=1 in config.env: the adaptive rule reads a problem's level as the class's
+# empirical level (copilot/difficulty.py, "Empirical difficulty" in INTERFACES.md). Off = M3Kang level.
+DIFFICULTY_ADJUST = str(CONFIG.get("DIFFICULTY_ADJUST", "0")).strip() == "1"
 
 DEFAULT_DB = os.path.join(ROOT, "data", "students.db")
 DEFAULT_BANK = (os.path.join(ROOT, "data", "train.jsonl"), os.path.join(ROOT, "data", "val.jsonl"))
@@ -196,6 +199,14 @@ def _rng(student_id, step):
 
 def _clamp_level(level):
     return max(0, min(7, int(level)))
+
+
+def _level_of(problem_id, level):
+    """The M3Kang level, or with DIFFICULTY_ADJUST the level adjusted to this class's answers."""
+    if not DIFFICULTY_ADJUST:
+        return level
+    from . import difficulty
+    return difficulty.adjusted_level({"id": problem_id, "level": level}, difficulty.estimate(db_path()))
 
 
 def _topic_of(problem):
@@ -406,14 +417,16 @@ def _choose_adaptive(student, rng, seen, last):
     """Correct -> neighbour one level up (any topic); wrong -> same topic, one level down."""
     delta = 1 if last["correct"] else -1
     same_topic = not last["correct"]
-    level = _clamp_level(last["level"] + delta)
-    hits = _neighbors(last["problem_id"], level_delta=delta, same_topic=same_topic)
+    level = _clamp_level(round(_level_of(last["problem_id"], last["level"])) + delta)
+    hits = _neighbors(last["problem_id"], level_delta=level - last["level"] if DIFFICULTY_ADJUST else delta,
+                      same_topic=same_topic)
     # A neighbour at a level the rule did not ask for (the wanted level ran out of
     # candidates) is skipped: a wrong answer never sends the student up, a right one never down
     for p in hits:
         if p["id"] in seen or p["id"] == last["problem_id"]:
             continue
-        if (delta < 0 and p.get("level", level) > level) or (delta > 0 and p.get("level", level) < level):
+        p_level = _level_of(p["id"], p.get("level", level))
+        if (delta < 0 and p_level > level) or (delta > 0 and p_level < level):
             continue
         return p["id"], p
     topic = last["topic"] if same_topic else None
