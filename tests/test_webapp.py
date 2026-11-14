@@ -306,6 +306,21 @@ class LessonOnLastPressTest(unittest.TestCase):
         self.assertNotIn("lesson", [h["kind"] for h in self.s.state()["hints"]])
 
 
+class VerdictStaysTest(unittest.TestCase):
+    def test_the_verdict_survives_the_solution(self):
+        s = webapp.Session()
+        quiet(s.start, "verdict-test", "auto")
+        quiet(s.answer_letter, "A")
+        verdict = s.state()["message"]["ca"]
+        self.assertTrue(verdict)
+        with mock.patch.object(webapp.threading, "Thread"):
+            quiet(s.solution)
+        quiet(s._compute_hint, 4)
+        self.assertEqual(s.state()["hints"][-1]["kind"], "solution")
+        self.assertEqual(s.state()["message"]["ca"], verdict)
+        s._timer.cancel()
+
+
 class TeacherReportTest(unittest.TestCase):
     def test_trainer_list_shape_is_normalised_for_the_page(self):
         data = {"topics": [], "students": [

@@ -81,6 +81,7 @@ _strategies = None
 _quality = None
 _demo_set = None        # {id: [steps]} from DEMO_SET_FILE, loaded once
 _lessons = None         # [lesson dicts] from LESSONS_FILE, loaded once
+_lesson_overrides = {}  # {problem id: family or topic key} from the same file
 _families = None        # {id: family key} from FAMILIES_FILE, loaded once
 
 
@@ -220,19 +221,22 @@ def family_of(problem_id):
 
 
 def _lesson_list():
-    global _lessons
+    global _lessons, _lesson_overrides
     if _lessons is None:
         data = _load_json(LESSONS_FILE, {})
         rows = data.get("lessons", []) if isinstance(data, dict) else data
         _lessons = [r for r in (rows or []) if isinstance(r, dict) and (r.get("text_ca") or r.get("text_en"))]
+        overrides = data.get("overrides") if isinstance(data, dict) else None
+        _lesson_overrides = {k: v for k, v in overrides.items() if isinstance(v, str)} if isinstance(overrides, dict) else {}
     return _lessons
 
 
 def get_lesson(problem_id, lang="cat"):
     """The fourth hint: a short lesson on how to think about this kind of problem, no formula and
     no solving. From data_curated/lessons.json: the lesson of the problem's solver family when
-    there is one, else the lesson of its topic. Every text goes through the leak filter against
-    this problem. None when the file is missing or nothing fits (the page then shows a strategy).
+    there is one, else the lesson of its topic. An "overrides" object in the same file
+    ({problem id: family or topic key}) wins over both. Every text goes through the leak filter
+    against this problem. None when the file is missing or nothing fits (the page then shows a strategy).
     """
     lessons = _lesson_list()
     if not lessons:
@@ -240,11 +244,14 @@ def get_lesson(problem_id, lang="cat"):
     problem = problem_for(problem_id, lang) or {"id": problem_id}
     topic = _topic_of(problem)
     family = family_of(problem_id)
+    forced = _lesson_overrides.get(problem_id)
+    by_override = [r for r in lessons if forced and r.get("family") == forced]
+    by_override += [r for r in lessons if forced and r.get("key") == forced and r not in by_override]
     by_family = [r for r in lessons if family and r.get("family") == family]
     by_topic = [r for r in lessons if r.get("key") == topic and not r.get("family")]
     any_topic = [r for r in lessons if r.get("key") == topic and r not in by_topic]
     label, options = problem.get("label"), problem.get("options") or {}
-    for row in by_family + by_topic + any_topic:
+    for row in by_override + by_family + by_topic + any_topic:
         texts = [row.get("title_ca", ""), row.get("title_en", ""), row.get("text_ca", ""), row.get("text_en", "")]
         if label and any(leak_reason(t, label, options) for t in texts if t):
             continue
@@ -347,15 +354,19 @@ def _step_text(step, i, n, lang_key):
 def _rung3(problem, state, lang):
     # (0) the team's hand-written steps for the demo problems, one per request, never the last
     steps = demo_steps(problem["id"])
-    if steps and len(steps) >= 2 and state["demo_step"] < len(steps) - 1:
-        i = state["demo_step"]
-        state["demo_step"] = i + 1
-        shown = len(steps) - 1
-        return {"kind": "demo_steps", "step": i + 1, "steps_total": shown,
-                "text_ca": _step_text(steps[i], i + 1, shown, "text_ca"),
-                "text_en": _step_text(steps[i], i + 1, shown, "text_en")}
-    solved = _solved(problem, state)
     label, options = problem.get("label"), problem.get("options") or {}
+    if steps and len(steps) >= 2:
+        shown = len(steps) - 1
+        while state["demo_step"] < shown:
+            i = state["demo_step"]
+            state["demo_step"] = i + 1
+            text_ca = _step_text(steps[i], i + 1, shown, "text_ca")
+            text_en = _step_text(steps[i], i + 1, shown, "text_en")
+            # hand-written, but checked at run time too: a step that names the answer is skipped
+            if leak_reason(text_ca, label, options) or leak_reason(text_en, label, options):
+                continue
+            return {"kind": "demo_steps", "step": i + 1, "steps_total": shown, "text_ca": text_ca, "text_en": text_en}
+    solved = _solved(problem, state)
     if solved and len(solved.get("trace") or []) >= 2:
         trace = solved["trace"]
         shown = len(trace) - 1  # the last step states the answer and is never a hint

@@ -261,6 +261,15 @@ class DemoSetTest(unittest.TestCase):
         self.assertEqual(hints.get_hint("sample-4", 3, "cat")["kind"], "strategy")
         self.assertIn("Són 9 cromos", hints.get_hint("sample-4", 4, "cat")["text_ca"])
 
+    def test_a_step_that_names_the_answer_is_skipped_at_run_time(self):
+        leaking = {"text_ca": "Li queden 9 cromos, pensa-hi.", "text_en": "He keeps 9 cards, think."}  # sample-4: C = 9
+        self.use_file({"problems": [{"id": "sample-4", "steps": [self.STEPS[0], leaking, self.STEPS[2], self.STEPS[3]]}]})
+        got = [hints.get_hint("sample-4", 3, "cat") for _ in range(3)]
+        self.assertEqual([h["kind"] for h in got], ["demo_steps", "demo_steps", "strategy"])
+        self.assertEqual([h["step"] for h in got[:2]], [1, 3])
+        for h in got:
+            self.assertNotIn("9 cromos", h["text_ca"] + h["text_en"])
+
     def test_other_problems_are_not_affected(self):
         self.use_file({"problems": [{"id": "sample-4", "steps": self.STEPS}]})
         hints.reset("sample-1")
@@ -289,7 +298,7 @@ class LessonTest(unittest.TestCase):
         if content is None:
             os.unlink(tmp.name)
         self.addCleanup(lambda: os.path.exists(tmp.name) and os.unlink(tmp.name))
-        for name, value in (("LESSONS_FILE", tmp.name), ("_lessons", None), ("_families", families or {})):
+        for name, value in (("LESSONS_FILE", tmp.name), ("_lessons", None), ("_lesson_overrides", {}), ("_families", families or {})):
             patch = mock.patch.object(hints, name, value)
             patch.start()
             self.addCleanup(patch.stop)
@@ -326,6 +335,19 @@ class LessonTest(unittest.TestCase):
         self.assertEqual(lesson["title_en"], "Word problems")
         self.use_lessons({"lessons": [leaking]}, {"sample-4": "sharing"})
         self.assertIsNone(hints.get_lesson("sample-4", "cat"))
+
+    def test_overrides_win_over_family_and_topic(self):
+        lessons = dict(self.LESSONS, overrides={"sample-4": "areas"})
+        self.use_lessons(lessons, {"sample-4": "sharing"})
+        self.assertEqual(hints.get_lesson("sample-4", "cat")["key"], "areas")       # topic key override
+        lessons = dict(self.LESSONS, overrides={"sample-3": "sharing"})
+        self.use_lessons(lessons, {})
+        self.assertEqual(hints.get_lesson("sample-3", "cat")["family"], "sharing")  # family override
+        lessons = dict(self.LESSONS, overrides={"sample-4": "no-such-lesson"})
+        self.use_lessons(lessons, {"sample-4": "sharing"})
+        self.assertEqual(hints.get_lesson("sample-4", "cat")["family"], "sharing")  # unknown override: ignored
+        for name, value in (("_lessons", None), ("_lesson_overrides", {})):
+            setattr(hints, name, value)
 
     def test_families_file_is_read_once_and_tolerated(self):
         with mock.patch.object(hints, "FAMILIES_FILE", "/nonexistent/families.json"), mock.patch.object(hints, "_families", None):

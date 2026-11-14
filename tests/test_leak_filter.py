@@ -82,6 +82,22 @@ class ValueLeakTest(unittest.TestCase):
         self.check("Pensa en x = 4.", "C", {"C": "x = 4"})
 
 
+class GluedUnitsTest(unittest.TestCase):
+    """OCR often glues the unit to the value ("27cm2", "4cm²2"): the digits of the unit are not numbers."""
+
+    def test_unit_digits_are_not_numbers(self):
+        self.assertIsNone(leak_reason("Hi ha 2 peces iguals.", "C", {"C": "27cm2"}))
+        self.assertIsNone(leak_reason("Compta 3 costats.", "C", {"C": "4cm²2"}))   # stray digit after the unit
+        self.assertIsNone(leak_reason("Pensa en 2 i en 3.", "B", {"B": "165 cm²"}))
+
+    def test_the_value_itself_still_leaks_with_or_without_its_unit(self):
+        for hint in ["Fa 27 en total.", "Fa 27cm2.", "Mesura 27 cm².", "Són 27cm de costat."]:
+            self.assertIsNotNone(leak_reason(hint, "C", {"C": "27cm2"}), hint)
+        self.assertIsNotNone(leak_reason("El costat fa 4cm.", "C", {"C": "4cm²2"}))
+        self.assertIsNone(leak_reason("Fa 270 en total.", "C", {"C": "27cm2"}))
+        self.assertIsNone(leak_reason("Fa 27.5 en total.", "C", {"C": "27cm2"}))
+
+
 class LetterLeakTest(unittest.TestCase):
     def check(self, hint, label="C"):
         reason = leak_reason(hint, label, OPTIONS)

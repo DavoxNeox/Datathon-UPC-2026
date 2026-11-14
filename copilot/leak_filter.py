@@ -70,7 +70,8 @@ def _numbers_in(value):
     for m in re.finditer(r"(\d+)\s*/\s*(\d+)", plain):
         if int(m.group(2)):
             found.add(round(int(m.group(1)) / int(m.group(2)), 4))
-    for m in re.finditer(r"\d+(?:[.,]\d+)?", plain):
+    # a digit right after a letter belongs to the unit ("27cm2", "4cm²2" from the OCR), it is not a number
+    for m in re.finditer(r"(?<![A-Za-z\d.,])\d+(?:[.,]\d+)?", plain):
         found.add(round(float(m.group(0).replace(",", ".")), 4))
     return found
 
@@ -98,7 +99,7 @@ def _spellings(number):
 def _core(value):
     """The option text without units, e.g. '36 cm²' -> '36', 'x = 4' -> 'x = 4'."""
     text = _fold(value)
-    text = re.sub(rf"(?<=\d)\s*{_UNITS}\b", "", text)
+    text = re.sub(rf"(?<=\d)\s*{_UNITS}\d*\b", "", text)  # "27 cm²", "27cm2", "4cm²2" (OCR noise) -> the value
     return text.strip(" .")
 
 
@@ -106,7 +107,9 @@ def _contains_token(haystack, needle):
     """needle appears in haystack as a whole token (18 does not match 180 or 118)."""
     if not needle:
         return False
-    pattern = r"(?<![\w/.,])" + re.escape(needle) + r"(?![\w/]|[.,]\d)"
+    # a number may be glued to its unit in the hint too ("27cm"), but 18 never matches 180 or 18.5
+    after = r"(?![\d/]|[.,]\d)" if needle[-1].isdigit() else r"(?![\w/]|[.,]\d)"
+    pattern = r"(?<![\w/.,])" + re.escape(needle) + after
     return re.search(pattern, haystack) is not None
 
 

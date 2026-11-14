@@ -420,7 +420,8 @@ class Session:
             if self.problem and self.problem["id"] == problem_id:
                 self.hints.append(result)
                 self.rung = max(self.rung, rung)
-                self.message = {"ca": "", "en": ""}
+                if not self.answer:  # after answering, the verdict stays (the solution does not erase it)
+                    self.message = {"ca": "", "en": ""}
             self.busy = False
             self._record(f"{label}:{result.get('kind')}", started, result.get("estimated_board_seconds", 0.0))
 
