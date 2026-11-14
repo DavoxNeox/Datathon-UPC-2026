@@ -132,6 +132,7 @@ function scanComponents(img) {
     const i = 4 * (y * W + x);
     if (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114 < 160000) ink[((y / CELL) | 0) * cw + ((x / CELL) | 0)] = 1;
   }
+  const raw = ink.slice();   // before bridging: the cuts inside an option need the real blanks
   for (let r = 0; r < ch; r++) {   // bridge the blanks between words
     let last = -99;
     for (let col = 0; col < cw; col++) if (ink[r * cw + col]) {
@@ -152,7 +153,7 @@ function scanComponents(img) {
     }
     comps.push({x0: x0 * CELL, y0: y0 * CELL, x1: Math.min(W, (x1 + 1) * CELL), y1: Math.min(H, (y1 + 1) * CELL)});
   }
-  return {comps, W, H, ink, cw, ch};
+  return {comps, W, H, ink: raw, cw, ch};
 }
 
 // Inside one option of the scan ("A) 15"), the value starts after the first blank gap that follows a
