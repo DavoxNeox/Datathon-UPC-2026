@@ -16,6 +16,8 @@ const I18N = {
         begin: "Comença", reset: "Reinicia l'alumne", auto: "Deixa que el copilot ho descobreixi",
         confirm_reset: "Vols esborrar l'historial d'aquest alumne i tornar a l'inici?",
         more: "mostra'l sencer", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
+        read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
+        other_kind: {eng: "Esglaó 0 · en anglès · no compta com a pista", cat: "Esglaó 0 · en català · no compta com a pista"},
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
         solution: "Solution", next: "Next problem", mastery: "Mastery by topic", close: "Close",
@@ -28,6 +30,8 @@ const I18N = {
         begin: "Start", reset: "Reset student", auto: "Let the copilot find out",
         confirm_reset: "Erase this student's history and go back to the start?",
         more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
+        read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
+        other_kind: {eng: "Rung 0 · in English · not counted as a hint", cat: "Rung 0 · in Catalan · not counted as a hint"},
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
 let lang = "cat", state = null, lastProblem = null, imageKey = null, loadReported = false;
@@ -81,6 +85,19 @@ function renderProblem(p) {
     }
   } else { $("img").hidden = true; $("img").removeAttribute("src"); imageKey = null; }
   $("img").alt = t().image;
+}
+
+function renderTranslation(s) {
+  // rung 0: the same problem in the other language, side by side with the statement; never its label
+  const other = s.other_language, tr = s.translation;
+  $("translate").hidden = !s.translation_available;
+  if (s.translation_available) { $("translate").textContent = tr ? t().hide_other[other] : t().read_in[other]; $("translate").classList.toggle("on", !!tr); }
+  $("other").hidden = !tr; $("bilingual").classList.toggle("on", !!tr);
+  if (!tr) return;
+  const opts = tr.options || {};
+  $("other-kind").textContent = t().other_kind[tr.language];
+  $("other-text").textContent = tr.text;
+  $("other-options").textContent = "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${opts[l]}`).join("   ");
 }
 
 function renderAnswer(s) {
@@ -145,7 +162,7 @@ function render(s) {
   $("who").textContent = s.student + (s.level !== null && s.level !== undefined ? ` · ${t().courses[s.level]}` : "");
   drawLed(s.led); renderTimeline(s);
   if (!s.started) { if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; } return; }
-  renderProblem(s.problem); renderAnswer(s); renderHints(s); renderMastery(s);
+  renderProblem(s.problem); renderTranslation(s); renderAnswer(s); renderHints(s); renderMastery(s);
   if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; }
 }
 
@@ -155,6 +172,7 @@ async function poll() {
 
 $("letters").addEventListener("click", async e => { const b = e.target.closest("button[data-l]"); if (b && !b.disabled) render(await api("/api/answer/" + b.dataset.l)); });
 $("hint").onclick = async () => { await api("/api/hint"); poll(); };
+$("translate").onclick = async () => render(await api("/api/translate/" + (state && state.translation ? "hide" : "show")));
 $("solution").onclick = async () => { await api("/api/solution"); poll(); };
 $("next").onclick = async () => render(await api("/api/next"));
 $("lang-cat").onclick = async () => render(await api("/api/lang/cat"));
@@ -170,6 +188,7 @@ document.addEventListener("keydown", e => {
   const k = e.key.toUpperCase();
   if ("ABCDE".includes(k) && k.length === 1) { const b = document.querySelector(`#letters button[data-l="${k}"]`); if (b && !b.disabled) b.click(); }
   else if (k === "P" || k === "H") $("hint").click();
+  else if (k === "T" && !$("translate").hidden) $("translate").click();
   else if (k === "N") $("next").click();
 });
 applyI18n();
