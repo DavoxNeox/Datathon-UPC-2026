@@ -11,7 +11,7 @@ One SQLite file, `STUDENTS_DB` in config.env or the environment (default
 `data/students.db`, git-ignored). `student_id` is a pseudonym chosen by the student or
 the teacher; nothing else about the student is stored (they are minors).
 
-    students(student_id, created_at, base_level, diagnostic_done)
+    students(student_id, created_at, base_level, diagnostic_done, start_level)
     answers(id, student_id, problem_id, topic, level, letter, label, correct,
             hint_rung, review, created_at)
     topic_state(student_id, topic, mastery, level, updated_at)
@@ -52,6 +52,11 @@ Choosing the next problem
 1. Diagnostic for a new student: 3 to 5 problems of increasing level (DIAGNOSTIC_LEVELS),
    on rotating topics. It stops after the first wrong answer once 3 are done. The base
    level is the highest level answered correctly (0 when none).
+   `start_student(student_id, level)` lets the teacher pick the Kangaroo band: the
+   diagnostic then runs at levels L, L+2, L+4, L+6, L+7 (clamped to 7) and the student's
+   base level is L from the first problem, so every topic's target level is
+   clamp(L + MASTERY_OFFSET[mastery]) until the diagnostic ends. At its end the base level
+   becomes the highest level passed, or L-1 when the student passed nothing.
 2. Review, about one problem in five (REVIEW_RATE): the worked topic whose last answer is
    the oldest, other than the current one, at its practice level. The student is not told;
    the `record_answer` result carries `review: True`. The main path then resumes from
@@ -106,7 +111,8 @@ CREATE TABLE IF NOT EXISTS students (
     student_id TEXT PRIMARY KEY,
     created_at REAL NOT NULL,
     base_level INTEGER NOT NULL DEFAULT 0,
-    diagnostic_done INTEGER NOT NULL DEFAULT 0
+    diagnostic_done INTEGER NOT NULL DEFAULT 0,
+    start_level INTEGER
 );
 CREATE TABLE IF NOT EXISTS answers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -176,6 +182,10 @@ def _connect():
     db = sqlite3.connect(path)
     db.row_factory = sqlite3.Row
     db.executescript(SCHEMA)
+    # Databases created before start_student existed lack the column
+    if "start_level" not in {r[1] for r in db.execute("PRAGMA table_info(students)")}:
+        db.execute("ALTER TABLE students ADD COLUMN start_level INTEGER")
+        db.commit()
     return db
 
 
@@ -362,9 +372,16 @@ def _problem_dict(problem_id, fallback=None):
     return bank().get(problem_id) or (dict(fallback) if fallback else None)
 
 
+def diagnostic_levels(start_level=None):
+    """The diagnostic's levels: DIAGNOSTIC_LEVELS shifted up to the teacher's starting level."""
+    start = _clamp_level(start_level or 0)
+    return tuple(_clamp_level(start + d) for d in DIAGNOSTIC_LEVELS)
+
+
 def _choose_diagnostic(db, student, rng, seen, n_answers):
-    """Problem n of the diagnostic: level DIAGNOSTIC_LEVELS[n] on a rotating topic."""
-    level = DIAGNOSTIC_LEVELS[min(n_answers, len(DIAGNOSTIC_LEVELS) - 1)]
+    """Problem n of the diagnostic: level diagnostic_levels()[n] on a rotating topic."""
+    levels = diagnostic_levels(student.get("start_level"))
+    level = levels[min(n_answers, len(levels) - 1)]
     order = list(TOPIC_KEYS)
     _rng(student["student_id"], "diagnostic-topics").shuffle(order)
     topic = order[n_answers % len(order)]
@@ -498,7 +515,9 @@ def record_answer(student_id, problem_id, letter, hint_rung_used):
             rows = db.execute("SELECT correct, level FROM answers WHERE student_id=? ORDER BY id",
                               (student_id,)).fetchall()
             if _diagnostic_finished(rows):
-                base = max([r["level"] for r in rows if r["correct"]], default=0)
+                start = student.get("start_level")
+                floor = _clamp_level(start - 1) if start is not None else 0
+                base = max([r["level"] for r in rows if r["correct"]], default=floor)
                 db.execute("UPDATE students SET base_level=?, diagnostic_done=1 WHERE student_id=?",
                            (base, student_id))
                 student["base_level"] = base
@@ -515,6 +534,35 @@ def record_answer(student_id, problem_id, letter, hint_rung_used):
                 "mastery_before": before, "mastery_after": after, "review": review}
     finally:
         db.close()
+
+
+def reset_student(student_id):
+    """Forget every answer, topic state and pending problem of this pseudonym. Safe when unknown."""
+    db = _connect()
+    try:
+        for table in ("answers", "topic_state", "pending", "students"):
+            db.execute(f"DELETE FROM {table} WHERE student_id=?", (student_id,))
+        db.commit()
+    finally:
+        db.close()
+
+
+def start_student(student_id, level=None):
+    """Create or restart a student; with `level` (0..7) the diagnostic starts there.
+
+    See "Choosing the next problem" above for how the level sets every topic's base level.
+    Returns mastery_map(student_id): all zeros, since the student starts afresh.
+    """
+    reset_student(student_id)
+    start = None if level is None else _clamp_level(level)
+    db = _connect()
+    try:
+        db.execute("INSERT INTO students (student_id, created_at, base_level, start_level) VALUES (?, ?, ?, ?)",
+                   (student_id, time.time(), start or 0, start))
+        db.commit()
+    finally:
+        db.close()
+    return mastery_map(student_id)
 
 
 def mastery_map(student_id):
@@ -564,6 +612,7 @@ def teacher_report(student_id=None):
             total = db.execute("SELECT COUNT(*), COALESCE(SUM(correct), 0), COALESCE(SUM(review), 0) "
                                "FROM answers WHERE student_id=?", (sid,)).fetchone()
             students.append({"student_id": sid, "base_level": row["base_level"],
+                             "start_level": row["start_level"],
                              "diagnostic_done": bool(row["diagnostic_done"]),
                              "answers": total[0], "correct": total[1], "reviews": total[2],
                              "mastery": {key: by_topic[key]["mastery"] for key in TOPIC_KEYS},
