@@ -7,7 +7,7 @@ import socket
 import time
 import urllib.error
 
-from . import bias, solvers
+from . import bias, ladder, solvers, votes
 from .board_clock import Clock
 from .config import CONFIG
 from .llm import URL, answer_letter, letter_scores
@@ -24,6 +24,20 @@ USE_SOLVERS = CONFIG.get("SOLVERS", "1") != "0"
 # 21.7% right, always D 23.1%, and its confidence is anti-correlated with being right, so the
 # default is 0. Turn it on to collect the letter logprobs for analysis.
 USE_LETTER_MODEL = CONFIG.get("LETTER_MODEL", "0") != "0"
+# MIDDLE_VALUE=1 (default): when the five options are distinct numbers, answer the middle value
+# (copilot/ladder.py) instead of the fallback letter; every other problem still gets FALLBACK_ANSWER.
+# Measured on 281 English validation problems: 27.4% against 23.1% for always D, at no cost.
+USE_MIDDLE_VALUE = CONFIG.get("MIDDLE_VALUE", "1") != "0"
+# Experiments on the options (copilot/votes.py), off by default. VOTE_SHIFTS=5 asks for a letter once per
+# cyclic shift of the options and takes a strict majority; VALUE_MODEL=1 asks for the option's value with
+# a grammar limited to the five strings. Both run only when the problem has options, after the solvers
+# and before the middle-value rule, and fall through when they abstain. Neither beat always D on the 281
+# validation problems, and five shifts put 6 of 281 problems over 60 s, so both skip a problem whose
+# board estimate would pass EXPERIMENT_BUDGET seconds (copilot/votes.py).
+VOTE_SHIFTS = int(CONFIG.get("VOTE_SHIFTS", "0") or 0)
+VOTE_MIN = int(CONFIG.get("VOTE_MIN", "3") or 3)
+USE_VALUE_MODEL = CONFIG.get("VALUE_MODEL", "0") != "0"
+EXPERIMENT_BUDGET = float(CONFIG.get("EXPERIMENT_BUDGET_SECONDS", "50") or 50)
 
 
 def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL,
@@ -38,7 +52,8 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
     image_b64 and llm_url send the problem image to a vision server.
 
     Order: a family solver when one applies (the model only copies numbers, Python
-    computes, the value must match exactly one option), else the letter model below.
+    computes, the value must match exactly one option), then the middle-value rule when
+    MIDDLE_VALUE=1 and the options are numbers, else the letter model below.
 
     With a letter-bias calibration (data_curated/letter_prior.json) the model is
     asked once for the log probabilities of A to E and the answer is the letter
@@ -48,7 +63,8 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
     start = time.perf_counter()
     clock = Clock()
     result = {"answer": FALLBACK, "status": "ok", "prompt_tokens": 0, "retrieved": "", "examples": [],
-              "board_seconds": 0.0, "raw_letter": "", "margin": None, "family": "", "letter_logprobs": None}
+              "board_seconds": 0.0, "raw_letter": "", "margin": None, "family": "", "letter_logprobs": None,
+              "rule": "", "extra": {}}
     try:
         if USE_SOLVERS and image_b64 is None:
             solved, spent = solvers.solve_with_timings(problem)
@@ -58,6 +74,36 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
             if solved is not None:
                 result.update(answer=solved["answer"], family=solved["family"],
                               seconds=round(time.perf_counter() - start, 2), board_seconds=round(clock.board_seconds(), 2))
+                return result
+        remaining = time_limit - (time.perf_counter() - start) - MARGIN
+        if VOTE_SHIFTS > 0 and image_b64 is None and len(problem.get("options") or {}) == 5:
+            letter, tally, spent = votes.vote_letter(problem, votes.SHIFTS[:VOTE_SHIFTS], timeout=max(remaining, 1.0),
+                                                     url=llm_url, min_votes=VOTE_MIN,
+                                                     budget=EXPERIMENT_BUDGET - clock.board_seconds())
+            for timings in spent:
+                clock.add_llm(timings)
+                result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
+            result["extra"]["votes"] = tally
+            if letter is not None:
+                result.update(answer=letter, rule="vote", seconds=round(time.perf_counter() - start, 2),
+                              board_seconds=round(clock.board_seconds(), 2))
+                return result
+        if USE_VALUE_MODEL and image_b64 is None and problem.get("options"):
+            remaining = time_limit - (time.perf_counter() - start) - MARGIN
+            letter, value, timings = votes.value_letter(problem, timeout=max(remaining, 1.0), url=llm_url,
+                                                        budget=EXPERIMENT_BUDGET - clock.board_seconds())
+            clock.add_llm(timings)
+            result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
+            result["extra"]["value"] = value
+            if letter is not None:
+                result.update(answer=letter, rule="value", seconds=round(time.perf_counter() - start, 2),
+                              board_seconds=round(clock.board_seconds(), 2))
+                return result
+        if USE_MIDDLE_VALUE and image_b64 is None:
+            middle = ladder.middle_letter(problem)
+            if middle is not None:
+                result.update(answer=middle, rule="middle_value", seconds=round(time.perf_counter() - start, 2),
+                              board_seconds=round(clock.board_seconds(), 2))
                 return result
         examples = []
         if index is not None and k > 0:
