@@ -46,7 +46,8 @@ def main():
                              result["seconds"], result["status"]])
             out.flush()
             print(f"[{n}/{len(problems)}] {problem['id']} -> {result['answer']} "
-                  f"in {result['seconds']:.1f} s ({result['status']})", file=sys.stderr)
+                  f"in {result['seconds']:.1f} s, board est. {result['board_seconds']:.1f} s "
+                  f"({result['status']})", file=sys.stderr)
 
 
 if __name__ == "__main__":
