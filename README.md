@@ -722,7 +722,7 @@ On your laptop:
 python3 laptop/prepare_m3kang.py --languages eng,cat
 ```
 
-It downloads the first `high_quality` file of the dataset (393 MB, once), keeps English and Catalan, reads the options from each image, and splits the problems into training and validation sets. It takes about 15 minutes per language. If you stop it, run it again: it caches the OCR results in `data/.ocr_cache.jsonl`.
+It downloads the first `high_quality` file of the dataset (393 MB, once), keeps English and Catalan, reads the options from each image, and splits the problems into training and validation sets. It takes about 15 minutes per language. If you stop it, run it again: it caches the OCR boxes in `data/.ocr_boxes.v2.jsonl` (one line per image and pass), so a change to the option parser re-reads no image: `--reparse` prints the coverage from the cache without writing. The translations of a problem vote on the options after OCR, so a language whose scan failed takes the numbers from the other one.
 
 To test it quickly first, add `--limit 20`.
 
