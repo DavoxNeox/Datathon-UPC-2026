@@ -181,3 +181,49 @@ only when the figure is wider than tall; otherwise allow up to 34vh as before, o
 under the text when its aspect ratio is above 1.2.
 
 Still open, as assigned to ui-fixes-5: Y1, Y2, Y3 and the two minors of the previous addendum.
+
+## Addendum 3: `ui-fixes-5` on `origin/main` at d2b3107
+
+Checked on the six demo problems in sim (port 7015), 1280x800 and 390x844, light and dark;
+284 tests OK, 1 skipped.
+
+**Closed.**
+- **Y1 and Y2.** `lvl-3_2021_20`: `optionsClean` now rejects "3cm2", "2 11 cm2" and "4cm²2"
+  (`NOISY`), the option band absorbs the numerators and superscripts, and the page shows five
+  pieces cut from the scan with the fractions intact (3 cm², 7/2 cm², 11/2 cm², 6 cm², 4 cm²; 66 px
+  tall, 168x84 cards, order A-E) and a figure crop of 232x232 that is the square alone. Same on
+  the phone (65x84 cards, fifth card at 583 px against a sheet at 727).
+- **Y3.** In dark the square with its black corners is drawn as it is on a white card (`figure
+  card`, image background white), and so are the five pieces; the grid of `lvl-1_2024_2` (line
+  art) keeps the tint. In light everything is tinted, black stays black.
+- **Y4** holds on d2b3107 (fifth card 325 to 345 px, sheet 701).
+- **The minors**: "veure l'escaneig original" is a small underlined caption, no longer a sixth row;
+  the solution scrolls to its card and leaves only "Continua" in the sheet; the menu is a 48 px
+  icon fixed at the left edge.
+
+**Letterless buttons.** The letters are present and clipped (`position: absolute; clip: rect(0 0
+0 0)`), so the keys A-E and the reading order still work; the `aria-label` is "A: 10" … when the
+options are text and only "A" … "E" when the options are scan pieces (the piece images carry no
+alt text): a screen reader hears a letter and no value on `lvl-3_2021_20`. For the pitch, the
+click column says "clic C": V3 must read it as "the third card, 15"; the audience sees the
+chosen value, not a letter, which is fine. *Minor:* give the pieces `alt` from the OCR text when
+one exists, or "opció C" otherwise.
+
+**F1 (IMPORTANT). The sidebar closes under a keyboard user.** `app.js` `setPanel(true)` arms
+`armClose(1500)` whenever `(hover: hover)` matches; only `mouseenter` cancels it. Measured:
+opened with Enter on the menu button and no mouse movement, the panel is hidden after 2.2 s;
+opened and then focused inside with Tab, it is hidden after 2.2 s while `document.activeElement`
+is still inside it. The sidebar holds CA/EN, the theme, "Llegeix-lo en anglès", the map, the LED,
+the teacher link and "Canvia d'alumne", so a keyboard-only student loses them. The same 1.5 s
+timer bites a mouse user who opens the menu (button at the top-left corner) and reads without
+moving the cursor into the panel, which sits 300 px below. *Fix:* cancel the timer on `focusin`
+of the panel or the button and re-arm on `focusout` to outside; do not arm on open when the
+opener was a keyboard event (`event.detail === 0`); raise the "never entered" delay to about 4 s
+or drop it and rely on leave, Escape and tap-outside.
+
+**P1 still open.** The hand of `lvl-5_2022_30` is 67x101 px at 1280 (7% of the column) because
+the figure is capped at the question's text height; the rings cannot be told apart without the
+zoom. On the phone it is 358 px wide and fine.
+
+**Touch behaviour not verified here**: the phone emulation still reports `(hover: hover)`, so
+the auto-close ran on it too; a tap outside did close the panel. Check once on a real phone.
