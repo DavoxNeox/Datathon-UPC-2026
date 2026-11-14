@@ -14,7 +14,7 @@ const I18N = {
         over: "supera els 60 s", image: "Imatge del problema", answered: "Ja has respost. Pots veure la solució.",
         welcome: "Hola! Com et dius?", course: "Curs", course_help: "Si no tries curs, el copilot el descobreix amb tres o quatre problemes.",
         begin: "Comença", reset: "Reinicia l'alumne", auto: "Deixa que el copilot ho descobreixi",
-        confirm_reset: "Vols esborrar l'historial d'aquest alumne i tornar a l'inici?", neighbour_intro: "Un problema semblant, més fàcil:",
+        confirm_reset: "Vols esborrar l'historial d'aquest alumne i tornar a l'inici?",
         more: "mostra'l sencer", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
@@ -26,7 +26,7 @@ const I18N = {
         over: "over 60 s", image: "Problem picture", answered: "Already answered. You can see the solution.",
         welcome: "Hi! What's your name?", course: "School year", course_help: "If you don't choose one, the copilot finds it out with three or four problems.",
         begin: "Start", reset: "Reset student", auto: "Let the copilot find out",
-        confirm_reset: "Erase this student's history and go back to the start?", neighbour_intro: "A similar, easier problem:",
+        confirm_reset: "Erase this student's history and go back to the start?",
         more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
@@ -101,7 +101,7 @@ function renderAnswer(s) {
 
 function renderHints(s) {
   $("hints").innerHTML = s.hints.map(h => {
-    let body = `<div>${h.kind === "neighbour" ? esc(t().neighbour_intro) : esc(txt(h, "text"))}</div>`;
+    let body = `<div>${esc(txt(h, "text"))}</div>`;
     if (h.kind === "neighbour" && h.problem) {
       const np = h.problem, opts = np.options || {}, long = (np.text || "").length > 160;
       body += `<div class="neighbour ${long ? "clamped" : ""}">${esc(np.text)}${Object.keys(opts).length ? "\n" + "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${esc(opts[l])}`).join("   ") : ""}</div>` +

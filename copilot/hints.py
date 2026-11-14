@@ -173,18 +173,27 @@ def _image_path(problem_id, lang):
 
 
 def _rung1(problem, lang):
-    hits = retrieval.neighbors(problem["id"], level_delta=-1, same_topic=True, lang=lang, k=1)
-    shown = None
-    if hits:
-        shown = {k: v for k, v in hits[0].items() if k != "label"}
-        if topics.is_visual(_topic_of(problem)):
-            shown["image"] = _image_path(shown["id"], shown.get("language", lang))
-    level = shown.get("level") if shown else None
-    return {"kind": "neighbour", "problem": shown,
-            "text_ca": "Mira aquest problema semblant, més fàcil" + (f" (nivell {level})" if level is not None else "") +
-                       ". Com el resoldries? La mateixa idea serveix per al teu.",
-            "text_en": "Look at this similar, easier problem" + (f" (level {level})" if level is not None else "") +
-                       ". How would you solve it? The same idea works for yours."}
+    """An easier neighbour of the same topic. Never a harder one and never another topic: at level 0,
+    or when nothing easier exists, a neighbour of the same level, said so."""
+    level = int(problem.get("level", 0) or 0)
+    topic = _topic_of(problem)
+    hits = retrieval.neighbors(problem["id"], level_delta=-1, same_topic=True, lang=lang, k=5)
+    fitting = [h for h in hits if int(h.get("level", level) or 0) <= level and h.get("topic", topic) == topic]
+    if not fitting:
+        return {"kind": "neighbour", "problem": None,
+                "text_ca": "No tinc cap problema semblant més fàcil. Prova una estratègia.",
+                "text_en": "I have no similar, easier problem. Try a strategy."}
+    shown = {k: v for k, v in fitting[0].items() if k != "label"}
+    if topics.is_visual(topic):
+        shown["image"] = _image_path(shown["id"], shown.get("language", lang))
+    easier = int(shown.get("level", level) or 0) < level
+    if easier:
+        text_ca = f"Un problema semblant, més fàcil (nivell {shown['level']}). Com el resoldries?"
+        text_en = f"A similar, easier problem (level {shown['level']}). How would you solve it?"
+    else:
+        text_ca = "Un problema semblant, del mateix nivell. Com el resoldries?"
+        text_en = "A similar problem of the same level. How would you solve it?"
+    return {"kind": "neighbour", "problem": shown, "easier": easier, "text_ca": text_ca, "text_en": text_en}
 
 
 def _rung2(problem, state):
