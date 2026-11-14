@@ -120,3 +120,37 @@ wide and under 250 px tall. A phone is slower but not two orders of magnitude; t
 
 The cut works on the demo's scans and is cheap; fix the OCR gate and the dark inversion before
 the demo, give the five options back their single row, and put rung 0 back or delete it.
+
+## Addendum: `ui-fixes-4` on `origin/main` at 832c0af
+
+Checked the same way (sim on port 7013, 1280x800 and 390x844, light and dark), on the six
+demo problems again. Tests 284 OK, 1 skipped.
+
+**Closed.**
+- **Y5, rung 0.** The T key and the "Llegeix-lo en anglès" button in the Menú sidebar call
+  `/api/translate/show|hide`; the English statement and its options appear under the Catalan
+  text in grey with the label "En anglès · no compta com a pista"; `hints_left` stays at 4 and
+  `rung` at 0 while `rung0.uses` goes to 1; the second press hides it. Regression closed.
+- **Y6, the fallback.** "Mostra l'escaneig sencer" (44 px, under the options) shows the full
+  scan tinted at the column's width (888 px at 1280: the scan's text is about 16 px, readable)
+  and "Amaga l'escaneig" puts it away; when the page fell back to the whole scan on its own the
+  link is hidden, as documented. On `lvl-3_2021_20` the link is the way out: the full scan shows
+  the real options (A) 3 cm², B) 7/2 cm², C) 11/2 cm², D) 6 cm², E) 4 cm²) where the rows show the
+  OCR's text.
+- **Restyle minors.** The sheet's top border is `--control` (`rgb(127,133,142)`); the phone
+  padding is 190 px (the neutral sheet is 102 px there; the green one measured 210 px on the
+  previous build and was not re-measured here); the map is rendered on the start screen too,
+  so a reset empties it (code path checked, not exercised with a non-zero map).
+
+**Still open on 832c0af.**
+- **Y1 and Y2.** `lvl-3_2021_20` renders exactly as before: option rows "3cm2 / 7 / 2 11 cm2 /
+  6cm2 / 4cm²2" (`optionsClean` still true after `tidyOption`) and a 912x232 "figure" that holds
+  the square plus three option fragments, now drawn 355 px wide. The link mitigates; the gate
+  and the band merge are not fixed.
+- **Y3.** In dark the black corner squares are light in the crop and in the full scan alike.
+- **Y4.** Rows are still 64 px: row E sits under the sheet at 1280x800 on the demo's first
+  problem.
+- **New, minor.** The rung-0 button in the sidebar is `.secondary.small`, 40 px tall (the 44 px
+  rule); and the link "Mostra l'escaneig sencer" sits between the options and the hints, which
+  on the projector reads as a sixth option row until the eye finds it is a link. A chip in the
+  figure's corner would be clearer.
