@@ -18,6 +18,7 @@ import subprocess
 import time
 from collections import Counter, defaultdict
 
+from copilot import board_clock
 from copilot.config import CONFIG
 from copilot.pipeline import TIME_LIMIT, solve
 
@@ -45,6 +46,8 @@ def main():
     p.add_argument("--rag", type=int, default=0, metavar="K")
     p.add_argument("--index", default="data/index.db")
     p.add_argument("--name", default="", help="a label for this experiment in ablations.csv")
+    p.add_argument("--simulate-latency", action="store_true",
+                   help="on a laptop, wait after each problem until the board estimate has passed")
     args = p.parse_args()
 
     with open(args.input) as f:
@@ -70,32 +73,42 @@ def main():
     with open(detail_path, "w", newline="") as out:
         writer = csv.writer(out)
         writer.writerow(["id", "language", "level", "has_options", "label", "answer",
-                         "correct", "seconds", "status", "prompt_tokens", "retrieved"])
+                         "correct", "seconds", "board_seconds", "status", "prompt_tokens", "retrieved"])
         for n, problem in enumerate(problems, 1):
             result = solve(problem, index=index, k=args.rag, exclude_id=problem["id"])
+            if args.simulate_latency and result["board_seconds"] > result["seconds"]:
+                time.sleep(result["board_seconds"] - result["seconds"])
             correct = result["answer"] == problem["label"]
             row = {**problem, **result, "correct": correct, "has_options": bool(problem.get("options"))}
             rows.append(row)
             writer.writerow([problem["id"], problem["language"], problem["level"], row["has_options"],
                              problem["label"], result["answer"], int(correct), result["seconds"],
-                             result["status"], result["prompt_tokens"], result["retrieved"]])
+                             result["board_seconds"], result["status"], result["prompt_tokens"], result["retrieved"]])
             out.flush()
             running = 100 * sum(r["correct"] for r in rows) / len(rows)
             print(f"[{n}/{len(problems)}] {problem['id']} {problem['language']}: "
-                  f"{result['answer']} (truth {problem['label']}) {result['seconds']:.1f} s, "
+                  f"{result['answer']} (truth {problem['label']}) {result['seconds']:.1f} s "
+                  f"(board est. {result['board_seconds']:.1f} s), "
                   f"running accuracy {running:.1f}%", flush=True)
 
     hits = [r["correct"] for r in rows]
     seconds = [r["seconds"] for r in rows]
+    board = [r["board_seconds"] for r in rows]
     floor = sum(r["label"] == CONFIG["FALLBACK_ANSWER"] for r in rows)
-    over = sum(s > TIME_LIMIT for s in seconds)
+    sim = board_clock.runtime() == "sim"
+    # In sim the limit is checked against the board estimate: the laptop is not the board
+    over = sum(s > TIME_LIMIT for s in (board if sim else seconds))
     accuracy = 100 * sum(hits) / len(hits)
 
     print("\n" + "=" * 60)
     print(f"Accuracy: {sum(hits)}/{len(hits)} = {accuracy:.1f}%")
     print(f"  floor, always {CONFIG['FALLBACK_ANSWER']}: {100 * floor / len(rows):.1f}%   random guess: 20.0%")
-    print(f"Latency: mean {statistics.mean(seconds):.1f} s, median {statistics.median(seconds):.1f} s, "
-          f"worst {max(seconds):.1f} s, over {TIME_LIMIT:.0f} s: {over}")
+    where = "laptop, real" if sim else "board, real"
+    print(f"Latency ({where}): mean {statistics.mean(seconds):.1f} s, median {statistics.median(seconds):.1f} s, "
+          f"worst {max(seconds):.1f} s")
+    print(f"Board estimate from token counts: mean {statistics.mean(board):.1f} s, "
+          f"median {statistics.median(board):.1f} s, worst {max(board):.1f} s, over {TIME_LIMIT:.0f} s: {over}"
+          + ("   (ESTIMATE: constants from the README, not yet calibrated on the board)" if sim else ""))
     print(f"Status: {dict(Counter(r['status'] for r in rows))}")
 
     for field, title in (("language", "By language"), ("level", "By level"),
@@ -115,11 +128,11 @@ def main():
     with open(log, "a", newline="") as f:
         writer = csv.writer(f)
         if new:
-            writer.writerow(["time", "name", "commit", "input", "languages", "n", "rag_k",
-                             "accuracy", "mean_s", "worst_s", "over_limit"])
-        writer.writerow([stamp, name, git_commit(), args.input, args.languages or "all", len(rows),
-                         args.rag, f"{accuracy:.1f}", f"{statistics.mean(seconds):.1f}",
-                         f"{max(seconds):.1f}", over])
+            writer.writerow(["time", "name", "commit", "runtime", "input", "languages", "n", "rag_k",
+                             "accuracy", "mean_s", "worst_s", "board_mean_s", "board_worst_s", "over_limit"])
+        writer.writerow([stamp, name, git_commit(), board_clock.runtime(), args.input, args.languages or "all",
+                         len(rows), args.rag, f"{accuracy:.1f}", f"{statistics.mean(seconds):.1f}",
+                         f"{max(seconds):.1f}", f"{statistics.mean(board):.1f}", f"{max(board):.1f}", over])
     print(f"\nDetails: {detail_path}\nAblation log: {log}")
 
 
