@@ -183,3 +183,51 @@ the Més drawer that pushes the page on wide screens and closes on answer on nar
 replaced by measured values; the text fold re-evaluated on resize until the student chooses.
 `review-letters-progress-verdict.png`: the letters with the new border, "Taulers i patrons"
 with two segments lit after a correct answer, and the green band with "Molt bé, correcte!".
+
+## Duolingo-like restyle (branch `ui-lesson`, 14 November, evening)
+
+Requested by the user: the same page in Duolingo's lesson language, with few colours and no
+drawings. Same structure, same routes and keys; `style.css` rewritten, `index.html` rearranged.
+
+- **Top bar as a lesson header**: "MÉS" on the left (where Duolingo has the X), the student
+  in small grey, the current topic's mastery as a 16 px rounded bar with its name in small
+  caps above it (fills in fifths; this is what the pitch points at), CA/EN and the theme
+  button on the right. The map of all topics stays in the drawer.
+- **Pressable buttons**: every button and option card has a 4 px darker bottom edge drawn as
+  a shadow (`--accent-deep`, `--ok-deep`, `--bad-deep`, `--control`), which disappears while
+  pressed as the button moves down 4 px. Labels are uppercase, 800 weight, letter-spaced.
+  The font stack starts with `ui-rounded` (SF Rounded on Apple devices) and falls back to the
+  system font elsewhere; nothing is fetched.
+- **Option cards**: 84 px tall, 16 px radius, 2 px `--control` border; the chosen one turns
+  accent-tinted, the right one green, the wrong one red; the others fade to 60 %.
+- **Action sheet**: fixed at the bottom of the viewport like a lesson's bar, 84 px tall,
+  with PISTA (and its dots and the book), SOLUCIÓ and the manipulative on the left, the
+  message in the middle and CONTINUA on the right once answered. Neutral before the answer,
+  pale green or pale red after it, with the button filled in the same colour. The main
+  column has 140 px of bottom padding (170 on a phone) so the sheet never covers an answer
+  or a hint; `aria-live="polite"` stays on it. Enter also continues, as in a lesson.
+- **Colours**: still the three (accent blue, success green, error red) plus neutrals; no
+  icons besides the book and the theme glyphs; no illustrations.
+- The topic segments under the letters were replaced by the top bar, which is bigger and
+  always visible; the review's intent (progress visible outside the drawer) holds.
+
+### Same background, no modals (same evening)
+
+The user asked for no modals and one background everywhere, with a dropdown of our own:
+
+- `--card` now equals `--bg` in both themes (#f7f4ee light, #15171c dark): the start form,
+  the hints, the drawer and the action sheet sit on the page and 2 px borders do the
+  separating; the problem picture keeps its white card because the PNGs are white. The start
+  screen lost its card: title, two fields and the button on the page.
+- **Course dropdown**: a button styled like the inputs (2 px `--control` border, 14 px radius,
+  a CSS chevron that turns when open) and a list that opens *in the flow* under it, pushing
+  the help text and the button down, never over anything; options are 46 px rows, the chosen
+  one accent-tinted with a check mark. Keyboard: Down/Up open and move, Enter or Space choose,
+  Escape closes and returns focus, Tab closes; a click outside closes. `role="listbox"` and
+  `role="option"` with `aria-selected`; the native `<select id="level">` stays hidden as the
+  value holder, so nothing else in `app.js` changed.
+- **No `<dialog>` and no `confirm()`**: the manipulative opens in a bordered box under the
+  hints (with its own "Tanca"), the picture zooms in place (click: the figure scrolls
+  sideways at 1100 px; click again to shrink), and "Canvia d'alumne" asks inline: the first
+  press turns the button red with "Segur? Esborra el progrés" for four seconds, the second
+  press erases. The `Escape` and letter keys no longer need a dialog guard.

@@ -77,6 +77,31 @@ statement and the options, and a page that must motivate a 10-to-18-year-old wit
     options, the options stay where they were, the chosen one gets a green check. Leave:
     the sidebar and the purple progress bar.
 
+## Second pass: the Duolingo lesson screen (restyle requested on 14 November)
+
+The brief changed to "Duolingo-like, but with few colours and no drawings". Three more Mobbin
+screens were read for the exact components:
+
+15. **Duolingo web, "Select the correct meaning" with the green feedback bar** ([screen](https://mobbin.com/screens/cfc0505e-5e75-4714-8d80-fcb7e5b1e9b6))
+    Take: the thick rounded progress bar across the top with a small uppercase label above it
+    and an X on the left; the options as full-width cards with a 2 px border and a key badge;
+    the bottom bar that turns pale green with a bold "Amazing!" and a green CONTINUE. Leave:
+    the mascot, the streak counter, the report link.
+
+16. **Duolingo web, "What sound does this make?" before checking** ([screen](https://mobbin.com/screens/de49b26b-7bc4-4a0b-a077-72290e6efce4))
+    Take: the neutral bottom bar with SKIP on the left and CHECK on the right, both uppercase
+    and bold; the chosen option in a light blue tint with a blue border. Ours keeps the
+    answer on the first press (the demo script depends on it), so the bar holds PISTA and
+    SOLUCIÓ on the left and the message in the middle until the verdict arrives.
+
+17. **Duolingo iOS, "Incorrect" sheet** ([screen](https://mobbin.com/screens/81b520ac-e864-4e64-bc18-f16caca3b124))
+    Take: a wrong answer is a pale red sheet with a bold red title, the correct answer named,
+    and a red GOT IT button; the options stay visible above it. Leave: the share and flag icons.
+
+What makes the look without colours or drawings: the pressable bottom edge on every button
+(a 4 px darker shadow that disappears on press), uppercase bold labels with letter spacing,
+16 px radii, 2 px borders, and a rounded system font (`ui-rounded` where the OS has it).
+
 ## What the references agree on
 
 - One column, 560 to 720 px wide, centred; nothing competes with the task.

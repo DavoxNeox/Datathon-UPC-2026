@@ -10,11 +10,15 @@
 </head>
 <body>
 <header class="bar">
-  <div class="brand"><span data-i18n="title">Copilot de mates</span><span class="who" id="who" hidden></span></div>
+  <button class="icon" id="more" aria-expanded="false" aria-controls="panel"><span data-i18n="more_panel">Més</span></button>
+  <div class="brand"><span class="who" id="who" hidden></span></div>
+  <div class="progress" id="progress" hidden>
+    <div class="label" id="progress-label"></div>
+    <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" id="progress-track"><div class="fill" id="progress-fill"></div></div>
+  </div>
   <div class="tools">
     <span class="lang" role="group" aria-label="CA / EN"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
     <button class="icon" id="theme" aria-live="polite"><span id="theme-label">◐</span></button>
-    <button class="icon" id="more" aria-expanded="false" aria-controls="panel"><span data-i18n="more_panel">Més</span></button>
   </div>
 </header>
 
@@ -46,8 +50,12 @@
     <h1 data-i18n="welcome">Hola! Com et dius?</h1>
     <label class="field"><span data-i18n="student">Àlies</span>
       <input id="student" maxlength="32" placeholder="per exemple: Mar" autocomplete="off"></label>
-    <label class="field"><span data-i18n="course">Curs</span>
-      <select id="level"></select></label>
+    <div class="field"><span id="course-label" data-i18n="course">Curs</span>
+      <select id="level" hidden aria-hidden="true"></select>
+      <div class="dropdown">
+        <button type="button" class="dd-button" id="level-button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="course-label level-text"><span id="level-text"></span><span class="dd-caret" aria-hidden="true"></span></button>
+        <ul class="dd-list" id="level-list" role="listbox" aria-labelledby="course-label" tabindex="-1" hidden></ul>
+      </div></div>
     <p class="meta" data-i18n="course_help">Si no tries cap curs, el copilot l'endevina amb tres o quatre problemes.</p>
     <button class="primary big" id="begin" data-i18n="begin">Comença</button>
   </section>
@@ -70,26 +78,28 @@
     <div class="options-text" id="other-options"></div>
   </div>
   <div class="letters" id="letters"></div>
-  <div class="topic-progress" id="topic-progress"></div>
-  <div class="feedback" id="feedback" aria-live="polite">
-    <div class="verdict" id="verdict"></div>
-    <button class="primary" id="next" data-i18n="next" hidden>Següent problema</button>
-  </div>
   <section class="help">
-    <div class="row">
+    <div class="hints" id="hints"></div>
+    <div class="manip-box" id="manip-box" hidden>
+      <div class="bar-row"><b id="manip-title"></b><button class="secondary small" id="manip-close" data-i18n="close">Tanca</button></div>
+      <iframe id="manip-frame" title="manipulative"></iframe>
+    </div>
+  </section>
+</main>
+
+<!-- the action sheet: hint and solution on the left, the verdict in the middle, continue on the right -->
+<div class="sheet" id="feedback" aria-live="polite" hidden>
+  <div class="inner">
+    <div class="actions">
       <button class="secondary" id="hint"><span data-i18n="hint">Pista</span><span class="rungs" id="rungs"><span></span><span></span><span></span></span></button>
       <button class="link" id="solution" data-i18n="solution">Solució</button>
       <button class="secondary manip-btn" id="manip" hidden></button>
     </div>
+    <div class="verdict" id="verdict"></div>
+    <div class="actions"><button class="primary" id="next" data-i18n="next" hidden>Continua</button></div>
     <div class="status" id="status"></div>
-    <div class="hints" id="hints"></div>
-  </section>
-</main>
-<dialog id="dialog">
-  <div class="dialog-bar"><b id="dialog-title"></b><button class="secondary small" id="dialog-close" data-i18n="close">Tanca</button></div>
-  <iframe id="dialog-frame" title="manipulative"></iframe>
-  <div class="zoom-box"><img id="zoom" alt="" hidden></div>
-</dialog>
+  </div>
+</div>
 <script src="app.js"></script>
 </body>
 </html>

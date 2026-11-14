@@ -8,7 +8,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&
 
 const I18N = {
   cat: {title: "Copilot de mates", student: "Àlies", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
-        solution: "Solució", next: "Següent problema", mastery: "El teu progrés", close: "Tanca",
+        solution: "Solució", next: "Continua", mastery: "El teu progrés", close: "Tanca",
         level: "Nivell", topic: "Tema", thinking: "Un moment…", kinds: {neighbour: "Un problema semblant",
         strategy: "Una estratègia", trace: "Un pas de la solució", llm: "Pista del model", solution: "Solució", lesson: "Lliçó"},
         manip: {rotate: "Gira i volteja", paths: "Comptador de camins", dice: "El dau"},
@@ -16,7 +16,7 @@ const I18N = {
         over: "supera els 60 s", image: "Imatge del problema", answered: "Ja has respost. Si vols, mira la solució.",
         welcome: "Hola! Com et dius?", course: "Curs", course_help: "Si no tries cap curs, el copilot l'endevina amb tres o quatre problemes.",
         begin: "Comença", reset: "Canvia d'alumne", auto: "Que ho endevini el copilot",
-        confirm_reset: "Vols esborrar el progrés d'aquest alumne i tornar a l'inici?",
+        confirm_reset: "Segur? Esborra el progrés",
         more: "mostra-ho tot", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
         read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
         other_kind: {eng: "Esglaó 0 · en anglès · no compta com a pista", cat: "Esglaó 0 · en català · no compta com a pista"},
@@ -25,7 +25,7 @@ const I18N = {
         theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"}, no_hints: "Ja no queden pistes en aquest problema",
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
-        solution: "Solution", next: "Next problem", mastery: "Your progress", close: "Close",
+        solution: "Solution", next: "Continue", mastery: "Your progress", close: "Close",
         level: "Level", topic: "Topic", thinking: "One moment…", kinds: {neighbour: "A similar problem",
         strategy: "A strategy", trace: "A step of the solution", llm: "Model hint", solution: "Solution", lesson: "Lesson"},
         manip: {rotate: "Rotate and flip", paths: "Path counter", dice: "The die"},
@@ -33,7 +33,7 @@ const I18N = {
         over: "over 60 s", image: "Problem picture", answered: "Already answered. Have a look at the solution if you like.",
         welcome: "Hi! What's your name?", course: "School year", course_help: "If you don't choose a year, the copilot finds it out with three or four problems.",
         begin: "Start", reset: "Change student", auto: "Let the copilot find out",
-        confirm_reset: "Erase this student's progress and go back to the start?",
+        confirm_reset: "Sure? Erase the progress",
         more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
         read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
         other_kind: {eng: "Rung 0 · in English · not counted as a hint", cat: "Rung 0 · in Catalan · not counted as a hint"},
@@ -68,9 +68,33 @@ function applyI18n() {
   const sel = $("level"), keep = sel.value;
   sel.innerHTML = `<option value="auto">${esc(t().auto)}</option>` + t().courses.map((c, i) => `<option value="${i}">${esc(c)} (${t().levelName.toLowerCase()} ${i})</option>`).join("");
   sel.value = keep || "auto";
+  renderDropdown();
   renderTheme();
   renderTextToggle();
 }
+
+// The course dropdown: a button and a list that opens in the flow of the page (no popup, no native menu).
+// The hidden <select id="level"> keeps the value, so the rest of the page reads it as before.
+function renderDropdown(open) {
+  const sel = $("level"), list = $("level-list"), btn = $("level-button");
+  if (open !== undefined) { list.hidden = !open; btn.setAttribute("aria-expanded", String(open)); }
+  $("level-text").textContent = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : "";
+  list.innerHTML = [...sel.options].map(o => `<li role="option" tabindex="-1" data-v="${o.value}" aria-selected="${o.value === sel.value}">${esc(o.textContent)}</li>`).join("");
+}
+function chooseLevel(value) { $("level").value = value; renderDropdown(false); $("level-button").focus(); }
+$("level-button").onclick = () => renderDropdown($("level-list").hidden);
+$("level-list").addEventListener("click", e => { const li = e.target.closest("li[data-v]"); if (li) chooseLevel(li.dataset.v); });
+$("level-button").addEventListener("keydown", e => {
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); renderDropdown(true); const items = [...$("level-list").children]; (items.find(li => li.getAttribute("aria-selected") === "true") || items[0]).focus(); }
+});
+$("level-list").addEventListener("keydown", e => {
+  const items = [...$("level-list").children], i = items.indexOf(document.activeElement);
+  if (e.key === "ArrowDown") { e.preventDefault(); (items[i + 1] || items[0]).focus(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); (items[i - 1] || items[items.length - 1]).focus(); }
+  else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (i >= 0) chooseLevel(items[i].dataset.v); }
+  else if (e.key === "Escape" || e.key === "Tab") { renderDropdown(false); if (e.key === "Escape") $("level-button").focus(); }
+});
+document.addEventListener("click", e => { if (!e.target.closest(".dropdown") && !$("level-list").hidden) renderDropdown(false); });
 
 function renderTheme() {
   const mode = window.Theme ? Theme.get() : "auto";
@@ -103,6 +127,7 @@ function optionLines(options) {
 function renderProblem(p) {
   if (!p) { $("text").textContent = ""; return; }
   const changed = !lastProblem || lastProblem.id !== p.id;
+  if (changed) { $("manip-box").hidden = true; $("manip-frame").src = "about:blank"; $("figure").classList.remove("zoomed"); }
   lastProblem = p;
   const text = (lang === "eng" && p.text_eng) || (lang === "cat" && p.text_cat) || p.text;
   const options = (lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options || {};
@@ -149,7 +174,7 @@ function renderAnswer(s) {
     b.classList.toggle("wrong", !!a && b.dataset.l === a.letter && !a.correct);
   });
   $("verdict").textContent = txt(s.message, "text") || (lang === "cat" ? s.message.ca : s.message.en) || "";
-  $("feedback").className = "feedback " + (a ? (a.correct ? "ok" : "bad") : "");
+  $("feedback").className = "sheet " + (a ? (a.correct ? "ok" : "bad") : "");
   $("next").hidden = !a;
   const left = s.hints_left ?? Infinity, max = s.hints_max ?? 3;
   $("hint").disabled = !!a || s.busy || left <= 0;
@@ -206,11 +231,13 @@ function renderMastery(s) {
 }
 
 function renderTopicProgress(s) {
-  // the current topic's mastery, 0 to 5, as segments next to its name: what the pitch points at
-  const p = s.problem; if (!p) { $("topic-progress").innerHTML = ""; return; }
+  // the current topic's mastery, 0 to 5, as the thick bar at the top with the topic's name: what the pitch points at
+  const p = s.problem; if (!p) return;
   const name = lang === "cat" ? p.topic_name_ca : p.topic_name_en, m = s.mastery[p.topic] || 0;
-  $("topic-progress").innerHTML = `<span>${esc(name)}</span><div class="segs" role="img" aria-label="${esc(name)} ${m}/5">` +
-    [1, 2, 3, 4, 5].map(i => `<span class="${i <= m ? "on" : ""}"></span>`).join("") + "</div>";
+  $("progress-label").textContent = name;
+  $("progress-fill").style.width = `${20 * m}%`;
+  $("progress-track").setAttribute("aria-valuenow", m);
+  $("progress-track").setAttribute("aria-label", `${name} ${m}/5`);
 }
 
 function renderTimeline(s) {
@@ -222,7 +249,7 @@ function renderTimeline(s) {
 function render(s) {
   state = s;
   if (lang !== s.lang) { lang = s.lang; applyI18n(); }
-  $("start").hidden = s.started; $("app").hidden = !s.started;
+  $("start").hidden = s.started; $("app").hidden = !s.started; $("feedback").hidden = !s.started; $("progress").hidden = !s.started;
   $("who").hidden = !s.started; $("reset").hidden = !s.started;
   $("who").textContent = s.student + (s.level !== null && s.level !== undefined ? ` · ${t().courses[s.level]}` : "");
   drawLed(s.led); renderTimeline(s);
@@ -246,13 +273,18 @@ $("lang-cat").onclick = async () => render(await api("/api/lang/cat"));
 $("lang-eng").onclick = async () => render(await api("/api/lang/eng"));
 $("begin").onclick = async () => render(await api(`/api/start/${encodeURIComponent($("student").value.trim() || "demo")}/${$("level").value}`));
 $("student").addEventListener("keydown", e => { if (e.key === "Enter") $("begin").click(); });
-$("reset").onclick = async () => { if (confirm(t().confirm_reset)) { lastProblem = null; render(await api("/api/reset")); } };
+// reset asks twice, inline: the first press turns the button red with the question, the second erases
+let resetArmed = null;
+$("reset").onclick = async () => {
+  if (!resetArmed) { resetArmed = setTimeout(() => { resetArmed = null; $("reset").classList.remove("confirm"); $("reset").textContent = t().reset; }, 4000); $("reset").classList.add("confirm"); $("reset").textContent = t().confirm_reset; return; }
+  clearTimeout(resetArmed); resetArmed = null; $("reset").classList.remove("confirm"); $("reset").textContent = t().reset;
+  lastProblem = null; $("manip-box").hidden = true; render(await api("/api/reset"));
+};
 $("hints").addEventListener("click", e => { const b = e.target.closest("button[data-more]"); if (!b) return; const box = b.previousElementSibling; box.classList.toggle("clamped"); b.textContent = box.classList.contains("clamped") ? t().more : t().less; });
-$("manip").onclick = () => { const m = $("manip").dataset.m; $("dialog-title").textContent = t().manip[m]; $("dialog-frame").src = `manip/${m}.html?lang=${lang}${window.Theme ? Theme.query() : ""}`; $("dialog").showModal(); };
-$("dialog-close").onclick = () => $("dialog").close();
-$("dialog").addEventListener("close", () => { $("dialog-frame").src = "about:blank"; $("zoom").hidden = true; $("dialog-frame").hidden = false; });  // also after Escape
-// the picture, bigger: useful on a phone, where M3Kang's wide scans get small
-$("figure").onclick = () => { if (!$("img").src) return; $("dialog-title").textContent = t().image; $("zoom").src = $("img").src; $("zoom").hidden = false; $("dialog-frame").hidden = true; $("dialog").showModal(); };
+$("manip").onclick = () => { const m = $("manip").dataset.m; $("manip-title").textContent = t().manip[m]; $("manip-frame").src = `manip/${m}.html?lang=${lang}${window.Theme ? Theme.query() : ""}`; $("manip-box").hidden = false; $("manip-box").scrollIntoView({behavior: "smooth", block: "nearest"}); };
+$("manip-close").onclick = () => { $("manip-box").hidden = true; $("manip-frame").src = "about:blank"; };
+// the picture, bigger in its place: useful on a phone, where M3Kang's wide scans get small
+$("figure").onclick = () => { if ($("img").src) $("figure").classList.toggle("zoomed"); };
 $("toggle-text").onclick = () => { textOpen = !textOpen; textChosen = true; renderTextToggle(); if (state) renderProblem(state.problem); };
 NARROW.addEventListener("change", e => { if (textChosen) return; textOpen = e.matches; renderTextToggle(); if (state && state.problem) renderProblem(state.problem); });
 $("theme").onclick = () => { if (window.Theme) Theme.next(); renderTheme(); };
@@ -260,12 +292,12 @@ function setPanel(open) { $("panel").hidden = !open; $("more").setAttribute("ari
 $("more").onclick = () => setPanel($("panel").hidden);
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("panel").hidden) { setPanel(false); return; }
-  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.metaKey || e.ctrlKey || e.altKey || $("dialog").open || !state || !state.started) return;
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.metaKey || e.ctrlKey || e.altKey || !state || !state.started) return;
   const k = e.key.toUpperCase();
   if ("ABCDE".includes(k) && k.length === 1) { const b = document.querySelector(`#letters button[data-l="${k}"]`); if (b && !b.disabled) b.click(); }
   else if (k === "P" || k === "H") $("hint").click();
   else if (k === "T" && !$("translate").hidden) $("translate").click();
-  else if (k === "N") $("next").click();
+  else if (k === "N" || (e.key === "Enter" && !$("next").hidden)) $("next").click();
 });
 applyI18n();
 poll();

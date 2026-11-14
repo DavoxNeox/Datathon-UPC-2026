@@ -4,8 +4,8 @@
 :root {
   color-scheme: light;
   --bg: #f7f4ee;            /* warm off-white page */
-  --card: #ffffff;          /* surfaces */
-  --card-2: #f1ede6;        /* a quieter surface inside a card */
+  --card: #f7f4ee;          /* surfaces: the same as the page, borders do the separating */
+  --card-2: #ebe6dd;        /* a tint for hover and the neighbour's text */
   --ink: #1f2430;           /* text, 14.6:1 on --card */
   --muted: #5f6673;         /* secondary text, 5.6:1 on --card */
   --line: #e4ded4;          /* borders of cards and separators (decorative) */
@@ -13,6 +13,8 @@
   --accent: #2f5fd6;        /* the one action colour, 5.9:1 on --card */
   --accent-ink: #ffffff;    /* text on an accent button */
   --accent-soft: #e7edfb;   /* accent tint for chips and the chosen option */
+  --accent-deep: #244ab0;   /* the bottom edge of an accent button */
+  --ok-deep: #145f37; --bad-deep: #8e1b18;
   --ok: #1a7a47;            /* 5.1:1 on --ok-bg */
   --ok-bg: #e2f4e8;
   --bad: #b4231f;           /* 5.7:1 on --bad-bg */
@@ -28,16 +30,16 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #15171c; --card: #1e2128; --card-2: #272b33; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f; --control: #737a88;
-    --accent: #8aa6ff; --accent-ink: #0f1424; --accent-soft: #273153;
+    --bg: #15171c; --card: #15171c; --card-2: #22262e; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f; --control: #737a88;
+    --accent: #8aa6ff; --accent-ink: #0f1424; --accent-soft: #273153; --accent-deep: #6d88e0; --ok-deep: #6fb98f; --bad-deep: #d4847c;
     --ok: #8fd9ad; --ok-bg: #1b3326; --bad: #f3a59d; --bad-bg: #44211e; --warn: #f0c070; --warn-bg: #3d3016;
     --focus: #8aa6ff; --figure-bg: #ffffff; --figure-dim: brightness(.86); --shadow: none;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #15171c; --card: #1e2128; --card-2: #272b33; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f; --control: #737a88;
-  --accent: #8aa6ff; --accent-ink: #0f1424; --accent-soft: #273153;
+  --bg: #15171c; --card: #15171c; --card-2: #22262e; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f; --control: #737a88;
+  --accent: #8aa6ff; --accent-ink: #0f1424; --accent-soft: #273153; --accent-deep: #6d88e0; --ok-deep: #6fb98f; --bad-deep: #d4847c;
   --ok: #8fd9ad; --ok-bg: #1b3326; --bad: #f3a59d; --bad-bg: #44211e; --warn: #f0c070; --warn-bg: #3d3016;
   --focus: #8aa6ff; --figure-bg: #ffffff; --figure-dim: brightness(.86); --shadow: none;
 }
