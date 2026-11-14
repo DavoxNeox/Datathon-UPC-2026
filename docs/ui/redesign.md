@@ -485,3 +485,44 @@ by level 0 to 7: 142, 106, 146, 123, 339, 296, 305, 290.
   black fills take the page's ink, grey patches keep their smoothed mean with no lift, colours
   keep their hue with no lightening. The cuts are tinted once per scan (no retint on a theme
   change). The measurements of the thirteenth round's light column stand.
+
+### Fifteenth round (branch `ui-teacher`): the teacher's view diagnoses a student
+
+The teacher page (`assets/teacher.html`) was a mastery table and a rung-0 table. It is now two
+blocks, the class and one student, with inline SVG charts drawn on the page (no library, nothing
+fetched) and a table of advanced statistics with a "how" column. References 18 to 21 in
+`research.md`.
+
+- **Data.** `trainer.answer_log()` (new, read-only) returns every answer in order with its
+  topic, level, letter, label, correctness, hint rung, review flag and time, plus each student's
+  row and topic states; `/api/teacher` carries it as `log` next to the report. The page computes
+  everything in the browser. Nothing else of the trainer changed; the predictor and the hints see
+  the same data as before.
+- **The class.** Tiles (students and active today, answers, accuracy with its Wilson interval,
+  accuracy without hints, share of problems with a hint); the mastery heatmap with attempts and
+  accuracy per student (a click on a row picks the student); accuracy by level and by topic.
+- **The student.** A picker (the page's own dropdown), tiles (answers, accuracy with the 95 %
+  interval, accuracy without hints, hint share, median time per problem, current streak, working
+  level and base level), the diagnosis in sentences, and the charts: mastery pips and accuracy per
+  topic; the rolling accuracy of the last five answers with a dot per answer and the problem's
+  level as steps behind; hint use as one stacked bar and the accuracy per rung; letters chosen
+  against the 20 % of chance; accuracy per level; answers per day over the last 14 days.
+- **Advanced statistics** (each row says how it is computed): Wilson 95 % interval; accuracy
+  without hints; hint dependence (accuracy after a hint over accuracy without); trend (last 10
+  against the previous 10, with a two-proportion z test); learning slope (least squares of
+  correctness on answer order, shown from 10 answers); guessing index (chi-square of the letters
+  chosen with 4 degrees of freedom, and accuracy against 20 % chance); median time per problem
+  (gaps over 10 minutes dropped); longest streaks; working level (highest level with at least
+  half correct over 3 answers or more); weakest and strongest topic with 3 answers or more;
+  share of answers given after the solution; rung-0 uses and accuracy after it.
+- **The diagnosis in words** is a list of rules over those numbers, in Catalan and English:
+  little data (under 5), too hard / right zone / masters it (under 45 %, 45 to 75 %, over 75 %),
+  possible guessing (from 8 answers: accuracy not above chance, or one letter dominant with
+  accuracy under 40 %), hint dependence, improving or worsening (15 points between the last 10
+  and the previous 10), answering under 20 s or over 4 minutes, working level and challenge, a
+  topic to reinforce (under 40 %) or mastered (80 % or more), looking at the solution on 30 % or
+  more, rung-0 use. Checked on the local database: a student with 6 answers gets "too hard
+  (33 %)", "answers very fast (5 s)", "uses rung 0"; a student with one answer gets only
+  "little data".
+- Layout: cards of at least 440 px so the 520 px charts draw close to 1:1; one column on a phone,
+  the tables scroll sideways; the bar keeps the student page and the decision dashboard links.

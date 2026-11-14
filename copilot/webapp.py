@@ -457,6 +457,13 @@ class Session:
         students = sorted(self.students | {self.student})
         out = {"topics": topics.TOPICS, "students": {}, "by_level": None, "source": "mastery_map",
                "rung0": self.rung0.report()}
+        log = getattr(trainer, "answer_log", None)
+        if callable(log):
+            # every answer, so the page can diagnose a student (trend, hints, time, letter bias)
+            try:
+                out["log"] = log()
+            except Exception as error:
+                out["log_error"] = f"answer_log: {type(error).__name__}: {error}"
         if callable(report):
             try:
                 data = report()
@@ -492,7 +499,8 @@ def _normalise_report(data, out):
         levels = row.get("by_level") or {}
         by_level[name] = {str(lvl): {"correct": int(v.get("correct") or 0), "total": int(v.get("answers", v.get("total", 0)) or 0)}
                           for lvl, v in levels.items()}
-        out.setdefault("details", {})[name] = {k: row.get(k) for k in ("base_level", "diagnostic_done", "answers", "correct", "reviews")}
+        out.setdefault("details", {})[name] = {k: row.get(k) for k in ("base_level", "start_level", "diagnostic_done", "answers", "correct", "reviews")}
+        out.setdefault("by_topic", {})[name] = row.get("by_topic") or {}
     out["by_level"] = by_level if any(by_level.values()) else None
     return out
 
