@@ -201,12 +201,20 @@ def _clamp_level(level):
     return max(0, min(7, int(level)))
 
 
-def _level_of(problem_id, level):
-    """The M3Kang level, or with DIFFICULTY_ADJUST the level adjusted to this class's answers."""
+def _estimates():
+    """The class's difficulty estimates, read ONCE per step (None when DIFFICULTY_ADJUST is off)."""
     if not DIFFICULTY_ADJUST:
+        return None
+    from . import difficulty
+    return difficulty.estimate(db_path())
+
+
+def _level_of(problem_id, level, estimates):
+    """The M3Kang level, or with the estimates of `_estimates()` the level adjusted to this class."""
+    if estimates is None:
         return level
     from . import difficulty
-    return difficulty.adjusted_level({"id": problem_id, "level": level}, difficulty.estimate(db_path()))
+    return difficulty.adjusted_level({"id": problem_id, "level": level}, estimates)
 
 
 def _topic_of(problem):
@@ -417,7 +425,8 @@ def _choose_adaptive(student, rng, seen, last):
     """Correct -> neighbour one level up (any topic); wrong -> same topic, one level down."""
     delta = 1 if last["correct"] else -1
     same_topic = not last["correct"]
-    level = _clamp_level(round(_level_of(last["problem_id"], last["level"])) + delta)
+    estimates = _estimates()
+    level = _clamp_level(round(_level_of(last["problem_id"], last["level"], estimates)) + delta)
     hits = _neighbors(last["problem_id"], level_delta=level - last["level"] if DIFFICULTY_ADJUST else delta,
                       same_topic=same_topic)
     # A neighbour at a level the rule did not ask for (the wanted level ran out of
@@ -425,7 +434,7 @@ def _choose_adaptive(student, rng, seen, last):
     for p in hits:
         if p["id"] in seen or p["id"] == last["problem_id"]:
             continue
-        p_level = _level_of(p["id"], p.get("level", level))
+        p_level = _level_of(p["id"], p.get("level", level), estimates)
         if (delta < 0 and p_level > level) or (delta > 0 and p_level < level):
             continue
         return p["id"], p

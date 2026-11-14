@@ -187,15 +187,50 @@ class TrainerHookTest(unittest.TestCase):
     def test_level_of_is_the_m3kang_level_when_off(self):
         self.make_class()
         trainer.DIFFICULTY_ADJUST = False
-        self.assertEqual(trainer._level_of("syn-logic-3-0", 3), 3)
+        self.assertIsNone(trainer._estimates())
+        self.assertEqual(trainer._level_of("syn-logic-3-0", 3, trainer._estimates()), 3)
 
     def test_level_of_is_adjusted_when_on(self):
         self.make_class()
         trainer.DIFFICULTY_ADJUST = True
-        est = difficulty.estimate(self.db)
-        self.assertEqual(trainer._level_of("syn-logic-3-0", 3), difficulty.adjusted_level(self.by_id["syn-logic-3-0"], est))
-        self.assertGreater(trainer._level_of("syn-logic-3-0", 3), 3)
-        self.assertEqual(trainer._level_of("syn-logic-3-5", 3), 3)   # no data: unchanged
+        est = trainer._estimates()
+        self.assertEqual(est, difficulty.estimate(self.db))
+        self.assertEqual(trainer._level_of("syn-logic-3-0", 3, est), difficulty.adjusted_level(self.by_id["syn-logic-3-0"], est))
+        self.assertGreater(trainer._level_of("syn-logic-3-0", 3, est), 3)
+        self.assertEqual(trainer._level_of("syn-logic-3-5", 3, est), 3)   # no data: unchanged
+
+    def test_estimate_is_read_at_most_once_per_step(self):
+        self.make_class()
+        calls = []
+        real = difficulty.estimate
+
+        def counting(*args, **kwargs):
+            calls.append(1)
+            return real(*args, **kwargs)
+        difficulty.estimate = counting
+        try:
+            trainer.DIFFICULTY_ADJUST = True
+            trainer.start_student("probe", level=3)
+            for _ in range(8):
+                p = trainer.next_problem("probe")
+                before = len(calls)
+                trainer.record_answer("probe", p["id"], "Z", 0)
+                self.assertEqual(len(calls), before)       # recording never estimates
+            steps = []
+            for _ in range(6):                          # past the diagnostic: the adaptive rule runs
+                before = len(calls)
+                p = trainer.next_problem("probe")
+                steps.append(len(calls) - before)
+                trainer.record_answer("probe", p["id"], "Z", 0)
+            self.assertTrue(all(c <= 1 for c in steps), steps)
+            self.assertEqual(max(steps), 1)                 # the rule did read the estimates
+            trainer.DIFFICULTY_ADJUST = False
+            before = len(calls)
+            p = trainer.next_problem("probe")
+            trainer.record_answer("probe", p["id"], "Z", 0)
+            self.assertEqual(len(calls), before)           # flag off: never read
+        finally:
+            difficulty.estimate = real
 
     def test_wrong_answer_on_a_hard_problem_steps_down_from_its_empirical_level(self):
         self.make_class()
