@@ -266,3 +266,25 @@ and a hint button without icons.
   when there is more than one sentence; the statement and the neighbour problem stay as prose.
 - **Compact sheet.** 76 px tall on a laptop; on a phone the message sits on its own line and
   the buttons share one row, nothing wraps.
+
+### Second round for young readers (same day)
+
+- **Answers on the buttons.** When the OCR could not read the options, each option is cut out
+  of the scan and drawn inside its button, without its letter: text options ("A) 15") lose the
+  label by column profile (the letter and its parenthesis are one run, the value starts after
+  the first real gap); options drawn as pictures (keys, cubes, tiles, unfoldings, puzzle
+  pieces) are found as five letters each next to its own picture, or bridged into it (the
+  leading columns of the picture with ink only in the bottom band are the letter, masked
+  white). Five found, five buttons; anything else keeps the previous behaviour. Checked on 34
+  scans: the five picture-option scans split into five pieces, none of the 29 others did.
+- **Figures without background.** Every crop becomes an alpha mask: a pixel's alpha is its
+  darkness, grey pixels take the theme's ink colour, saturated colours keep their hue and are
+  lightened by 40 % in the dark theme. The figure sits on the page itself, no card; the
+  neighbour problem's picture gets the same treatment; everything is re-tinted when the theme
+  changes and the tinted crops are cached per theme.
+- **Figure on the right, text around it.** The figure floats right at up to 46 % of the
+  column and the statement wraps on its left and below it; on a phone it goes under the text.
+- **Bugs.** The hints were rebuilt on every poll (twice a second), which closed "mostra-ho
+  tot" at once: they are now rebuilt only when their content changes and the expanded state is
+  kept per problem and hint. Pista and Solució now disable themselves and show "Un moment…"
+  the instant they are pressed, until the next poll brings the result.

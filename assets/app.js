@@ -152,10 +152,29 @@ function scanComponents(img) {
     }
     comps.push({x0: x0 * CELL, y0: y0 * CELL, x1: Math.min(W, (x1 + 1) * CELL), y1: Math.min(H, (y1 + 1) * CELL)});
   }
-  return {comps, W, H};
+  return {comps, W, H, ink, cw, ch};
 }
 
-function classifyParts(comps, W, H, clean) {
+// Inside one option of the scan ("A) 15"), the value starts after the first blank gap that follows a
+// label-sized run of ink; the cut keeps the value only. Returns the box unchanged when unsure.
+function trimLabel(box, ink, cw, lineH) {
+  const c0 = Math.floor(box[0] / CELL), c1 = Math.ceil(box[2] / CELL), r0 = Math.floor(box[1] / CELL), r1 = Math.ceil(box[3] / CELL);
+  const col = c => { for (let r = r0; r < r1; r++) if (ink[r * cw + c]) return 1; return 0; };
+  // the label is the first group of ink runs separated by tiny gaps ("A" and ")"); the value starts after a real gap
+  let c = c0; while (c < c1 && !col(c)) c++;
+  const s0 = c; let e0 = c;
+  while (c < c1) {
+    while (c < c1 && col(c)) c++;
+    e0 = c; let blank = 0; while (c < c1 && !col(c)) { c++; blank++; }
+    if (c >= c1) return box;             // nothing after the label
+    if (blank >= 3) break;               // a real gap: the value begins here
+  }
+  const labelW = (e0 - s0) * CELL;
+  if (labelW < 0.6 * lineH || labelW > 3 * lineH) return box;
+  return [Math.max(box[0], c * CELL - 4), box[1], box[2], box[3]];
+}
+
+function classifyParts(comps, W, H, clean, ink, cw, ch) {
   for (const c of comps) { c.w = c.x1 - c.x0; c.h = c.y1 - c.y0; }
   const hs = comps.filter(c => c.h >= 12 && c.h <= 64 && c.w >= 0.05 * W).map(c => c.h).sort((a, b) => a - b);
   const lineH = hs.length ? hs[hs.length >> 1] : 30;
@@ -174,7 +193,16 @@ function classifyParts(comps, W, H, clean) {
     }
     return merged.length >= 3 && merged[merged.length - 1].x1 - merged[0].x0 >= 0.4 * W;
   };
-  const opt = new Set(); bands.filter(isOptions).forEach(b => b.items.forEach(c => opt.add(c)));
+  const opt = new Set(), pieces = [];   // the options one by one, in reading order, for the buttons
+  for (const b of bands.filter(isOptions).sort((a, b) => a.y0 - b.y0)) {
+    b.items.forEach(c => opt.add(c));
+    const merged = [];
+    for (const c of [...b.items].sort((a, b) => a.x0 - b.x0)) {
+      if (merged.length && c.x0 - merged[merged.length - 1].x1 < 1.2 * lineH) merged[merged.length - 1].x1 = Math.max(merged[merged.length - 1].x1, c.x1);
+      else merged.push({x0: c.x0, x1: c.x1});
+    }
+    merged.forEach(m => pieces.push([Math.max(0, m.x0 - 4), Math.max(0, b.y0 - 4), Math.min(W, m.x1 + 4), Math.min(H, b.y1 + 4)]));
+  }
   // the text column: its left margin from the long lines, its right limit from the first big thing on the right
   const longLines = comps.filter(c => textlike(c) && c.w >= 0.25 * W && !opt.has(c));
   const textLeft = longLines.length ? Math.min(...longLines.map(c => c.x0)) : 0;
@@ -204,7 +232,37 @@ function classifyParts(comps, W, H, clean) {
   else if (fb && ob && ob[1] - fb[3] < 2 * lineH && Math.min(ob[2], fb[2]) - Math.max(ob[0], fb[0]) >= 0.6 * (ob[2] - ob[0])) {
     fb = [Math.min(fb[0], ob[0]), Math.min(fb[1], ob[1]), Math.max(fb[2], ob[2]), Math.max(fb[3], ob[3])]; ob = null;   // pictures with their letters
   }
-  return {figure: fb, options: ob, statement: bbox([...stmt], 0)};
+  // five options in the scan and none readable: each one goes on its button, without its letter
+  let perButton = !clean && ob && pieces.length === 5 ? pieces.map(b => trimLabel(b, ink, cw, lineH)).map(b => ({box: b, mask: null})) : null;
+  // options drawn as pictures: five letters each next to its own picture (left of it or under it), or bridged into it
+  if (!clean && !perButton) {
+    const labels = comps.filter(c => textlike(c) && !stmt.has(c) && c.w >= 0.5 * lineH && c.w <= 2.2 * lineH);
+    const bigs = figure.filter(c => !textlike(c) && c.w * c.h >= (1.5 * lineH) ** 2);
+    const mid = c => (c.y0 + c.y1) / 2, pics = [];
+    for (const l of labels) {
+      const right = bigs.filter(c => c.y0 < l.y1 + lineH && c.y1 > l.y0 - lineH && c.x0 - l.x1 >= -0.3 * lineH && c.x0 - l.x1 <= 2.5 * lineH)
+        .sort((a, b) => (a.x0 - l.x1 + Math.abs(mid(a) - mid(l))) - (b.x0 - l.x1 + Math.abs(mid(b) - mid(l))));
+      const above = bigs.filter(c => c.x0 < l.x1 + lineH && c.x1 > l.x0 - lineH && l.y0 - c.y1 >= -0.3 * lineH && l.y0 - c.y1 <= 1.5 * lineH)
+        .sort((a, b) => (l.y0 - a.y1) - (l.y0 - b.y1));
+      const pic = right[0] || above[0];
+      if (pic) pics.push({at: l, pic, mask: null});
+    }
+    const taken = new Set(pics.map(p => p.pic));
+    for (const c of bigs) {
+      if (taken.has(c)) continue;
+      const m = labelRect(c, ink, cw, ch, lineH);
+      if (m) pics.push({at: {y0: m[1], x0: m[0]}, pic: c, mask: m});
+    }
+    if (pics.length === 5 && new Set(pics.map(p => p.pic)).size === 5) {
+      pics.sort((a, b) => Math.round(a.at.y0 / (2 * lineH)) - Math.round(b.at.y0 / (2 * lineH)) || a.at.x0 - b.at.x0);
+      perButton = pics.map(p => ({box: [Math.max(0, p.pic.x0 - 6), Math.max(0, p.pic.y0 - 6), Math.min(W, p.pic.x1 + 6), Math.min(H, p.pic.y1 + 6)], mask: p.mask}));
+      const used = new Set([...pics.map(p => p.pic), ...pics.map(p => p.at)]);
+      fb = bbox(figure.filter(c => !used.has(c)), 8);
+      if (fb && (fb[2] - fb[0]) * (fb[3] - fb[1]) < (2 * lineH) ** 2) fb = null;
+      ob = null;
+    }
+  }
+  return {figure: fb, options: perButton ? null : ob, pieces: perButton, statement: bbox([...stmt], 0)};
 }
 
 function cropPart(img, box, masks) {
@@ -213,43 +271,90 @@ function cropPart(img, box, masks) {
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
   ctx.drawImage(img, box[0], box[1], c.width, c.height, 0, 0, c.width, c.height);
   for (const m of masks) if (m) ctx.fillRect(m[0] - box[0], m[1] - box[1], m[2] - m[0], m[3] - m[1]);   // the text the page already shows
+  return c;
+}
+
+// The scans are black on white. On the page the white goes: every pixel becomes ink with the
+// alpha of its darkness, so lines and shading sit on the page's own background in both themes;
+// a saturated colour keeps its hue (lightened in the dark theme).
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function tinted(raw) {
+  const [ir, ig, ib] = hexRgb(cssVar("--ink") || "#1f2430"), [br, bg, bb] = hexRgb(cssVar("--bg") || "#ffffff");
+  const dark = br * 299 + bg * 587 + bb * 114 < 128000;
+  const c = document.createElement("canvas"); c.width = raw.width; c.height = raw.height;
+  const ctx = c.getContext("2d"); ctx.drawImage(raw, 0, 0);
+  const im = ctx.getImageData(0, 0, c.width, c.height), d = im.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i + 1], b = d[i + 2], mn = Math.min(r, g, b), mx = Math.max(r, g, b);
+    d[i + 3] = Math.min(d[i + 3], 255 - mn);
+    if (mx - mn < 40) { d[i] = ir; d[i + 1] = ig; d[i + 2] = ib; }
+    else if (dark) { d[i] = r + (255 - r) * .4; d[i + 1] = g + (255 - g) * .4; d[i + 2] = b + (255 - b) * .4; }
+  }
+  ctx.putImageData(im, 0, 0);
   return c.toDataURL("image/png");
 }
 
 function extractParts(img, clean) {
-  const {comps, W, H} = scanComponents(img);
-  const parts = classifyParts(comps, W, H, clean);
+  const {comps, W, H, ink, cw, ch} = scanComponents(img);
+  const parts = classifyParts(comps, W, H, clean, ink, cw, ch);
   return {
     figure: parts.figure ? cropPart(img, parts.figure, [parts.statement, parts.options]) : null,
     options: parts.options ? cropPart(img, parts.options, []) : null,
+    pieces: parts.pieces ? parts.pieces.map(p => cropPart(img, p.box, [p.mask])) : null,
   };
 }
 
 // one scan per problem: fetched once, cut once, then reused on every poll
-let scan = {id: null, figure: null, options: null, whole: null};
+let scan = {id: null, figure: null, options: null, pieces: null, whole: null};
 function loadScan(p, clean) {
-  scan = {id: p.id, figure: null, options: null, whole: null};
+  scan = {id: p.id, figure: null, options: null, pieces: null, whole: null};
   api("/api/image").then(r => {
     if (!r.image_b64 || scan.id !== p.id) return;
     const img = new Image();
     img.onload = () => {
       if (scan.id !== p.id) return;
       try { Object.assign(scan, extractParts(img, clean)); }
-      catch (e) { scan.whole = img.src; }   // anything odd: the whole scan, as before
-      if (!scan.figure && !scan.options && !clean) scan.whole = img.src;   // nothing found but the options are unreadable: show the scan
+      catch (e) { scan.whole = img; }   // anything odd: the whole scan, as before
+      if (!scan.figure && !scan.options && !scan.pieces && !clean) scan.whole = img;   // nothing found but the options are unreadable: show the scan
       applyScan();
     };
     img.src = "data:image/png;base64," + r.image_b64;
   });
 }
+const setSrc = (img, url) => { if (!url) img.removeAttribute("src"); else if (img.getAttribute("src") !== url) img.src = url; };
 function applyScan() {
-  const fig = scan.figure || scan.whole;
-  $("figure").hidden = !fig; if (fig) $("img").src = fig; else $("img").removeAttribute("src");
+  // tinted once per theme, then reused on every poll
+  const key = cssVar("--bg");
+  if (scan.tintKey !== key) {
+    const fig = scan.figure || scan.whole;
+    scan.tinted = {figure: fig ? tinted(fig) : "", options: scan.options ? tinted(scan.options) : "", pieces: (scan.pieces || []).map(tinted)};
+    scan.tintKey = key;
+  }
+  const tt = scan.tinted || {figure: "", options: "", pieces: []};
+  $("figure").hidden = !tt.figure; setSrc($("img"), tt.figure);
   // small crops (a die, a 5x5 grid) are drawn bigger; the CSS caps them at the column's width
   $("img").onload = () => { const w = $("img").naturalWidth; $("img").style.width = w && w < 500 ? `${Math.round(w * 1.6)}px` : ""; };
-  $("strip").hidden = !scan.options; if (scan.options) $("strip-img").src = scan.options; else $("strip-img").removeAttribute("src");
+  $("strip").hidden = !tt.options; setSrc($("strip-img"), tt.options);
   $("img").alt = t().image; $("strip-img").alt = t().options_image;
+  // the answers themselves on the buttons, when the scan had them and the OCR did not
+  document.querySelectorAll("#letters button").forEach((b, i) => {
+    const pic = b.querySelector(".pic");
+    if (tt.pieces[i]) setSrc(pic || b.appendChild(Object.assign(document.createElement("img"), {className: "pic", alt: ""})), tt.pieces[i]);
+    else if (pic) pic.remove();
+  });
+  $("letters").classList.toggle("pics", tt.pieces.length > 0);
 }
+// the neighbour problem's picture, tinted the same way, once per problem
+const tintCache = new Map();
+function tintedHintImage(key, b64) {
+  if (tintCache.has(key)) return tintCache.get(key);
+  tintCache.set(key, "");
+  const img = new Image(); img.onload = () => tintCache.set(key, tinted(img)); img.src = "data:image/png;base64," + b64;
+  return "";
+}
+function retint() { tintCache.clear(); scan.tintKey = null; if (state && state.started) { applyScan(); renderHints(state); } }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retint);
 
 function renderProblem(p) {
   if (!p) { $("text").textContent = ""; return; }
@@ -264,8 +369,9 @@ function renderProblem(p) {
   $("problem-id").textContent = `${t().problem}: ${p.id}`;
   $("text").textContent = text;
   $("letters").classList.toggle("rows", clean);
-  $("letters").innerHTML = "ABCDE".split("").map(l =>
+  if (changed || $("letters").dataset.lang !== lang) $("letters").innerHTML = "ABCDE".split("").map(l =>
     `<button data-l="${l}" aria-label="${l}${clean && options[l] ? ": " + esc(options[l]) : ""}"><span class="l">${l}</span>${clean && options[l] ? `<span class="o">${esc(options[l])}</span>` : ""}</button>`).join("");
+  $("letters").dataset.lang = lang;
   if (p.has_image) { if (changed || scan.id !== p.id) loadScan(p, clean); else applyScan(); }
   else { scan = {id: p.id}; applyScan(); }
 }
@@ -289,8 +395,19 @@ function renderAnswer(s) {
   $("status").textContent = s.busy ? t().thinking : (a && !s.hints.some(h => h.kind === "solution") ? t().answered : "");
 }
 
+const expanded = new Set();   // "mostra-ho tot" pressed, by problem and hint index
+let hintsSig = "";
 function renderHints(s) {
-  $("hints").innerHTML = s.hints.map(h => {
+  const pid = s.problem ? s.problem.id : "";
+  const sig = JSON.stringify([pid, lang, cssVar("--bg"), s.hints.map((h, i) => [h.kind, h.rung, txt(h, "text"), h.problem && h.problem.id, h.problem && tintCache.get(h.problem.id || h.rung) ? 1 : 0, expanded.has(pid + ":" + i)])]);
+  if (sig !== hintsSig) { hintsSig = sig; $("hints").innerHTML = hintsHtml(s, pid); }
+  // the manipulative of the last strategy card, if any
+  const manip = [...s.hints].reverse().find(h => h.manipulative);
+  $("manip").hidden = !manip || !!s.answer;
+  if (manip) { $("manip").textContent = t().manip[manip.manipulative]; $("manip").dataset.m = manip.manipulative; }
+}
+function hintsHtml(s, pid) {
+  return s.hints.map((h, i) => {
     if (h.kind === "lesson") {
       // the last use of the button: a short lesson on the topic, its own card, never timed; it counts as a use like any rung
       return `<article class="lesson"><div class="kind">${esc(t().kinds.lesson)} · ${esc(t().lesson_sub)}</div>` +
@@ -298,10 +415,10 @@ function renderHints(s) {
     }
     let body = bullets(txt(h, "text"));
     if (h.kind === "neighbour" && h.problem) {
-      const np = h.problem, opts = np.options || {}, long = (np.text || "").length > 160;
+      const np = h.problem, opts = np.options || {}, long = (np.text || "").length > 160 && !expanded.has(pid + ":" + i);
       body += `<div class="neighbour ${long ? "clamped" : ""}">${esc((np.text || "").replace(/\s*\n\s*/g, " "))}${Object.keys(opts).length ? "\n" + "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${esc(opts[l])}`).join("   ") : ""}</div>` +
-        (long ? `<button class="more" data-more>${esc(t().more)}</button>` : "") +
-        (np.image_b64 ? `<div class="neighbour"><img src="data:image/png;base64,${np.image_b64}" alt=""></div>` : "");
+        ((np.text || "").length > 160 ? `<button class="more" data-more="${i}">${esc(long ? t().more : t().less)}</button>` : "") +
+        (np.image_b64 && tintedHintImage(np.id || h.rung, np.image_b64) ? `<div class="neighbour pic"><img src="${tintedHintImage(np.id || h.rung, np.image_b64)}" alt=""></div>` : "");
     }
     if (h.kind === "solution" && h.trace && h.trace.length) {
       body += `<ol>${h.trace.map(step => `<li>${esc(txt(step, "text"))}</li>`).join("")}</ol>`;
@@ -311,10 +428,6 @@ function renderHints(s) {
     return `<div class="hint ${h.kind}"><div class="kind">${t().kinds[h.kind] || h.kind}${badge}</div>${body}` +
       `<div class="time">${t().laptop} ${(h.laptop_seconds ?? 0).toFixed(2)} s${time}</div></div>`;
   }).join("");
-  // the manipulative of the last strategy card, if any
-  const manip = [...s.hints].reverse().find(h => h.manipulative);
-  $("manip").hidden = !manip || !!s.answer;
-  if (manip) { $("manip").textContent = t().manip[manip.manipulative]; $("manip").dataset.m = manip.manipulative; }
 }
 
 function renderMastery(s) {
@@ -364,8 +477,9 @@ async function poll() {
 function setPanel(open) { $("panel").hidden = !open; $("more").setAttribute("aria-expanded", String(open)); document.body.classList.toggle("panel-open", open); }
 $("more").onclick = () => setPanel($("panel").hidden);
 $("letters").addEventListener("click", async e => { const b = e.target.closest("button[data-l]"); if (b && !b.disabled) render(await api("/api/answer/" + b.dataset.l)); });
-$("hint").onclick = async () => { await api("/api/hint"); poll(); };
-$("solution").onclick = async () => { await api("/api/solution"); poll(); };
+const pressed = b => { b.disabled = true; $("status").textContent = t().thinking; };
+$("hint").onclick = async () => { pressed($("hint")); await api("/api/hint"); poll(); };
+$("solution").onclick = async () => { pressed($("solution")); await api("/api/solution"); poll(); };
 $("next").onclick = async () => render(await api("/api/next"));
 $("lang-cat").onclick = async () => render(await api("/api/lang/cat"));
 $("lang-eng").onclick = async () => render(await api("/api/lang/eng"));
@@ -378,12 +492,12 @@ $("reset").onclick = async () => {
   clearTimeout(resetArmed); resetArmed = null; $("reset").classList.remove("confirm"); $("reset").textContent = t().reset;
   lastProblem = null; $("manip-box").hidden = true; render(await api("/api/reset"));
 };
-$("hints").addEventListener("click", e => { const b = e.target.closest("button[data-more]"); if (!b) return; const box = b.previousElementSibling; box.classList.toggle("clamped"); b.textContent = box.classList.contains("clamped") ? t().more : t().less; });
+$("hints").addEventListener("click", e => { const b = e.target.closest("button[data-more]"); if (!b || !state) return; const key = (state.problem ? state.problem.id : "") + ":" + b.dataset.more; if (expanded.has(key)) expanded.delete(key); else expanded.add(key); renderHints(state); });
 $("manip").onclick = () => { const m = $("manip").dataset.m; $("manip-title").textContent = t().manip[m]; $("manip-frame").src = `manip/${m}.html?lang=${lang}${window.Theme ? Theme.query() : ""}`; $("manip-box").hidden = false; $("manip-box").scrollIntoView({behavior: "smooth", block: "nearest"}); };
 $("manip-close").onclick = () => { $("manip-box").hidden = true; $("manip-frame").src = "about:blank"; };
 // the figure, bigger in its place: useful on a phone
 $("figure").onclick = () => { if ($("img").src) $("figure").classList.toggle("zoomed"); };
-$("theme").onclick = () => { if (window.Theme) Theme.next(); renderTheme(); };
+$("theme").onclick = () => { if (window.Theme) Theme.next(); renderTheme(); retint(); };
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("panel").hidden) { setPanel(false); return; }
   if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.metaKey || e.ctrlKey || e.altKey || !state || !state.started) return;
