@@ -219,6 +219,30 @@ class Rung0Test(unittest.TestCase):
         self.assertEqual(self.s.teacher()["rung0"]["students_total"], 0)
 
 
+class TeacherLogTest(unittest.TestCase):
+    """The teacher report carries the answer log when the trainer has one, and works without it."""
+
+    def test_the_log_travels_with_the_report(self):
+        fake = mock.MagicMock(wraps=webapp.trainer)
+        fake.answer_log = lambda: {"answers": [{"student_id": "Mar", "correct": True}], "students": {"Mar": {}}}
+        fake.teacher_report = lambda: {"students": [{"student_id": "Mar", "mastery": {"areas": 2}, "by_level": {},
+                                                     "by_topic": {"areas": {"answers": 1, "correct": 1}}}]}
+        with mock.patch.object(webapp, "trainer", fake):
+            out = webapp.Session().teacher()
+        self.assertEqual(out["log"]["answers"][0]["student_id"], "Mar")
+        self.assertEqual(out["by_topic"]["Mar"]["areas"]["answers"], 1)
+
+    def test_without_a_log_the_report_still_comes(self):
+        fake = mock.MagicMock(wraps=webapp.trainer)
+        fake.mastery_map = lambda s: {}
+        del fake.answer_log
+        del fake.teacher_report
+        with mock.patch.object(webapp, "trainer", fake):
+            out = webapp.Session().teacher()
+        self.assertNotIn("log", out)
+        self.assertIn("students", out)
+
+
 class Rung0StatsTest(unittest.TestCase):
     def test_counters_survive_a_restart_through_the_json_file(self):
         with tempfile.TemporaryDirectory() as d:

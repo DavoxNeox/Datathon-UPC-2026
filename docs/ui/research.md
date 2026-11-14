@@ -98,6 +98,22 @@ screens were read for the exact components:
     Take: a wrong answer is a pale red sheet with a bold red title, the correct answer named,
     and a red GOT IT button; the options stay visible above it. Leave: the share and flag icons.
 
+18. **SchoolAI, session insights (web)** ([screen](https://mobbin.com/screens/8ead459b-3814-472c-bb41-7c5fce76ef2d))
+    Take: the class first (a gauge and per-outcome bars), then one student at a time with the
+    insight written in sentences, not only numbers. Leave: the sidebar and the AI badges.
+
+19. **Uxcel, dashboard with a skill radar (web)** ([screen](https://mobbin.com/screens/6c41db0e-279f-4772-a96a-30662a01ae9e))
+    Take: one card per question, each with a title and one chart; empty states say what to do.
+    Leave: the radar (eight topics with 0 to 5 read better as pips in a row).
+
+20. **Workable, assessment result against the average (web)** ([screen](https://mobbin.com/screens/8106522f-56e0-4902-8ea1-19bb73ac79d6))
+    Take: the number with its interpretation next to it ("better than 4 %"), and the method
+    explained under the chart. Our table of advanced statistics keeps a "how" column for this.
+
+21. **Babbel, weekly summary (iOS)** ([screen](https://mobbin.com/screens/65435f22-30a8-440c-9868-8fb64d41c7e9))
+    Take: activity per day as seven small bars with the number on top, the average score as a
+    large figure with a label under it. Leave: the goal banner.
+
 What makes the look without colours or drawings: the pressable bottom edge on every button
 (a 4 px darker shadow that disappears on press), uppercase bold labels with letter spacing,
 16 px radii, 2 px borders, and a rounded system font (`ui-rounded` where the OS has it).
