@@ -22,6 +22,10 @@ LEVELS = range(ROWS)
 LINK_BRIGHTNESS = 3         # a rung of the chain
 CURRENT_BRIGHTNESS = 7      # the level the student is on
 BAR_FLOOR = 0.5             # similarity shown as 0 LEDs; 1.0 is the full row of 13
+# Hand judgement of 74 links on validation (docs/lineage.md): below 0.70 almost no link is the
+# same idea, from 0.75 two out of three are. The signature keeps 0.6 (the contract); the web
+# should pass this one.
+RECOMMENDED_MIN_SIMILARITY = 0.75
 
 # Fields of a stored problem that a link carries to the student. Never the label.
 _LINK_FIELDS = ("id", "level", "year", "language", "text", "options", "text_only")
