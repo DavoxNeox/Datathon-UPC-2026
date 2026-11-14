@@ -200,7 +200,8 @@ adb push [?]exam.jsonl /home/arduino/Datathon-UPC-2026/data/exam.jsonl
 adb shell 'cd ~/Datathon-UPC-2026 && wc -l data/exam.jsonl && head -c 300 data/exam.jsonl && python3 -c "import json,sys; ids=[json.loads(l)[\"id\"] for l in open(\"data/exam.jsonl\") if l.strip()]; print(len(ids), \"rows\", len(set(ids)), \"distinct ids\")"'
 ```
 
-3. Nothing else may use the model servers (close every rehearsal tab, no `eval.py` running):
+3. Nothing else may use the model servers (close every rehearsal tab, no `eval.py` running,
+   the demo page idle):
    the 54 s and 41 s outliers in `docs/results-A.md` §10 came from foreign requests queued on
    the LLM. The shipped policy (`SOLVERS=1`, `MIDDLE_VALUE=1`, `LETTER_MODEL=0`) calls the
    model only inside a family solver, so the run is mostly milliseconds per problem.
@@ -251,16 +252,52 @@ id; after the run, check in the CSV that its status says why. If several problem
 row, something else is using the LLM: `adb shell 'journalctl -u math-llm -n 20'` shows the
 foreign requests, and the run is repeated once they stop. Only if the organisers allow a rerun.
 
-### If an id gets no row (a crash)
+### If the board restarts or a row is missing: rerun the same command
 
-Rerun on the missing ids only and append (the CSV header must appear once):
+`predict.py` **resumes** (main 7833e4d): when `--output` already exists it keeps the rows it
+holds and answers only the ids that are missing, in input order; a restart in the middle of
+the exam costs the problem in flight, not the file. So after a crash or a reboot, run step 4
+again, unchanged. `--fresh` throws the CSV away and starts over: never on exam day.
+
+### Which policy runs: checklist (decision after `docs/reviews/review-reason-think.md`)
+
+The exam policy is the current one: family solvers, the middle-value rule, else D
+(`THINK_LEVELS=` empty in `config.env`), about 2 minutes for 562 problems. The brief-reasoning
+stage (`copilot/think.py`) stays **off** unless, on the day, all of this holds:
+
+- [ ] `predict.py` resumes (it does, since 7833e4d; check `python3 predict.py --help` shows `--fresh`).
+- [ ] A run as long as the exam has finished on the board without a reboot (rehearse it the
+      day before with `data/val.jsonl`, 562 problems, under the chosen variant).
+- [ ] Someone from the team watches the run from start to end (the log of step 4 open).
+- [ ] The organisers set no total time cap that the variant would break (table below).
+- [ ] The run is ours: if the organisers run `predict.py` themselves, unattended, it stays off.
+
+Variant A, the default (nothing to set; this is what `config.env` on main does):
 
 ```bash
-adb shell 'cd ~/Datathon-UPC-2026 && python3 -c "
-import csv,json
-done={r[\"id\"] for r in csv.DictReader(open(\"results/exam-predictions.csv\"))}
-open(\"data/exam-rest.jsonl\",\"w\").writelines(l for l in open(\"data/exam.jsonl\") if l.strip() and json.loads(l)[\"id\"] not in done)" && python3 predict.py --input data/exam-rest.jsonl --output results/exam-rest.csv && tail -n +2 results/exam-rest.csv >> results/exam-predictions.csv'
+adb shell 'cd ~/Datathon-UPC-2026 && nohup python3 predict.py --input data/exam.jsonl --output results/exam-predictions.csv > results/exam-run.log 2>&1 &'
 ```
+
+Variant B, brief reasoning on levels 2 to 5 including problems with a figure (expected about
++2 points, bootstrap tail below zero 6%), only with every box above ticked:
+
+```bash
+adb shell 'cd ~/Datathon-UPC-2026 && THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0 nohup python3 predict.py --input data/exam.jsonl --output results/exam-predictions.csv > results/exam-run.log 2>&1 &'
+```
+
+A third variant, the stage on every level (21 s per problem, measured), was not chosen: the
+same expected gain for twice the exposure. Never mix variants inside one CSV (the resume keeps
+rows from the earlier run): if the variant changes, start from `--fresh` and from the top.
+
+| problems | A: solvers + middle value (0.4 s each) | B: brief reasoning, levels 2-5 (10.7 s each) | every level (21 s each, not chosen) |
+| ---: | ---: | ---: | ---: |
+| 100 | under 1 min | 18 min | 35 min |
+| 300 | 2 min | 54 min | 1 h 45 min |
+| 562 | 4 min (measured about 2 min on the board) | 1 h 40 min | 3 h 17 min |
+
+The per-problem figures are means on the board (`docs/results-A.md`, the review above); the
+worst single problem stays under 60 s in every variant (budgets `THINK_BUDGET_SECONDS=45`,
+`SOLVER_BUDGET_SECONDS=42`, HTTP timeout 57 s).
 
 ### Questions for the organisation (ask today)
 
