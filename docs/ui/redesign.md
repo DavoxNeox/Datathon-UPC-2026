@@ -431,3 +431,12 @@ cuts (figure, option strip, pieces) are tinted and transparent.
 Problems the page can serve today (the trainer's bank, `data/train.jsonl` and `data/val.jsonl`):
 1747 problems, each in Catalan and English (3494 versions): 1466 from train and 281 from val;
 by level 0 to 7: 142, 106, 146, 123, 339, 296, 305, 290.
+### Twelfth round (branch `ui-fixes-7`)
+
+- The verdict is captured when the answer arrives (both languages) and stays on the sheet
+  while the problem is open, whatever the server's message does afterwards: a hint in
+  progress, a hand-written step, the lesson, a refusal or the solution. Other messages go to
+  the status line. Checked on `lvl-3_2021_20`: wrong answer, three hints, lesson, solution.
+- The settings popup has `role="dialog"`, `aria-modal="true"` and `aria-labelledby` pointing at
+  the student's name; the teacher link and "Canvia d'alumne" are 44 px tall.
+- The hand-written steps (`demo_steps`) have a label of their own in both languages.
