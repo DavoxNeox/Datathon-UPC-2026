@@ -59,8 +59,12 @@ Choosing the next problem
 3. Otherwise the adaptive rule from the last answered problem: correct -> an embedding
    neighbour one level up, any topic; wrong -> a neighbour on the same topic one level down.
 4. A problem the student has already seen is never served again while candidates remain.
-   Neighbours are asked with k=NEIGHBOUR_K and filtered; when all are seen, the problem
-   bank is searched at the wanted level (nearest level with candidates).
+   Neighbours are asked with k=NEIGHBOUR_K and filtered; when all are seen, or the
+   neighbours come from the wrong side (the wanted level had no candidates left, so
+   retrieval moved to the nearest level), the problem bank is searched at the wanted level,
+   then at the levels further in the same direction, so a wrong answer never sends the
+   student up and a right one never down. Only when that side is exhausted does the search
+   turn around.
 
 Every random choice uses `random.Random` seeded from SEED, the student id and the number
 of answers so far, so a student's path is reproducible.
@@ -221,15 +225,27 @@ class _Bank:
                 return dict(versions[lang])
         return dict(next(iter(versions.values())))
 
-    def candidates(self, level, topic=None, exclude=()):
-        """Unseen ids at the nearest level to `level` that has any; same topic when given."""
+    def at_level(self, level, topic=None, exclude=()):
+        """Unseen ids at exactly `level`; same topic when given."""
+        keys = [(topic, level)] if topic else [(t, level) for t in TOPIC_KEYS]
+        return sorted(pid for key in keys for pid in self.by_topic_level.get(key, []) if pid not in exclude)
+
+    def candidates(self, level, topic=None, exclude=(), direction=0):
+        """Unseen ids at the nearest level to `level` that has any; same topic when given.
+
+        direction -1 only looks at `level` and below, +1 at `level` and above, 0 both ways.
+        """
         exclude = set(exclude)
         for distance in range(8):
-            for lvl in sorted({_clamp_level(level - distance), _clamp_level(level + distance)}):
-                keys = [(topic, lvl)] if topic else [(t, lvl) for t in TOPIC_KEYS]
-                found = [pid for key in keys for pid in self.by_topic_level.get(key, []) if pid not in exclude]
+            levels = set()
+            if direction <= 0:
+                levels.add(_clamp_level(level - distance))
+            if direction >= 0:
+                levels.add(_clamp_level(level + distance))
+            for lvl in sorted(levels):
+                found = self.at_level(lvl, topic, exclude)
                 if found:
-                    return sorted(found)
+                    return found
         return []
 
 
@@ -373,14 +389,21 @@ def _choose_adaptive(student, rng, seen, last):
     """Correct -> neighbour one level up (any topic); wrong -> same topic, one level down."""
     delta = 1 if last["correct"] else -1
     same_topic = not last["correct"]
-    hits = _neighbors(last["problem_id"], level_delta=delta, same_topic=same_topic)
-    for p in hits:
-        if p["id"] not in seen and p["id"] != last["problem_id"]:
-            return p["id"], p
     level = _clamp_level(last["level"] + delta)
-    ids = bank().candidates(level, last["topic"] if same_topic else None, exclude=seen)
-    if not ids:
-        ids = bank().candidates(level, None, exclude=seen)
+    hits = _neighbors(last["problem_id"], level_delta=delta, same_topic=same_topic)
+    # A neighbour at a level the rule did not ask for (the wanted level ran out of
+    # candidates) is skipped: a wrong answer never sends the student up, a right one never down
+    for p in hits:
+        if p["id"] in seen or p["id"] == last["problem_id"]:
+            continue
+        if (delta < 0 and p.get("level", level) > level) or (delta > 0 and p.get("level", level) < level):
+            continue
+        return p["id"], p
+    topic = last["topic"] if same_topic else None
+    ids = (bank().candidates(level, topic, exclude=seen, direction=delta)
+           or bank().candidates(level, None, exclude=seen, direction=delta)
+           or bank().candidates(level, topic, exclude=seen)
+           or bank().candidates(level, None, exclude=seen))
     return _pick(rng, ids), None
 
 
