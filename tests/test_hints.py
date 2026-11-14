@@ -267,6 +267,71 @@ class DemoSetTest(unittest.TestCase):
         self.assertEqual(hints.get_hint("sample-1", 3, "cat")["kind"], "trace")
 
 
+class LessonTest(unittest.TestCase):
+    """get_lesson: the fourth hint, by solver family, else by topic, always through the leak filter."""
+
+    LESSONS = {"lessons": [
+        {"key": "arithmetic", "family": "sharing", "title_ca": "Repartir", "title_en": "Sharing",
+         "text_ca": "Quan es reparteix, pensa primer en el total i després en les parts.",
+         "text_en": "When sharing, think of the total first and then of the parts.", "strategy_ref": 1},
+        {"key": "arithmetic", "title_ca": "Problemes de paraules", "title_en": "Word problems",
+         "text_ca": "Tradueix cada frase a una operació abans de calcular res.",
+         "text_en": "Turn each sentence into an operation before computing anything."},
+        {"key": "areas", "title_ca": "Àrees", "title_en": "Areas", "text_ca": "Talla la figura.", "text_en": "Cut the figure."},
+    ]}
+
+    def use_lessons(self, content, families=None):
+        import json, os, tempfile
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+        if content is not None:
+            tmp.write(content if isinstance(content, str) else json.dumps(content))
+        tmp.close()
+        if content is None:
+            os.unlink(tmp.name)
+        self.addCleanup(lambda: os.path.exists(tmp.name) and os.unlink(tmp.name))
+        for name, value in (("LESSONS_FILE", tmp.name), ("_lessons", None), ("_families", families or {})):
+            patch = mock.patch.object(hints, name, value)
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def test_lesson_of_the_family_comes_first(self):
+        self.use_lessons(self.LESSONS, {"sample-4": "sharing"})
+        lesson = hints.get_lesson("sample-4", "cat")
+        self.assertEqual(lesson["kind"], "lesson")
+        self.assertEqual(lesson["rung"], "lesson")
+        self.assertEqual(lesson["family"], "sharing")
+        self.assertEqual(lesson["title_ca"], "Repartir")
+        self.assertEqual(lesson["strategy_ref"], 1)
+        self.assertEqual(lesson["estimated_board_seconds"], 0.0)
+
+    def test_lesson_of_the_topic_when_the_problem_has_no_family(self):
+        self.use_lessons(self.LESSONS, {})
+        lesson = hints.get_lesson("sample-4", "cat")   # arithmetic
+        self.assertIsNone(lesson["family"])
+        self.assertEqual(lesson["title_en"], "Word problems")
+        self.assertEqual(hints.get_lesson("sample-3", "eng")["key"], "areas")
+
+    def test_no_lesson_for_an_unknown_topic_or_missing_file(self):
+        self.use_lessons({"lessons": [{"key": "boards", "text_ca": "x", "text_en": "x"}]})
+        self.assertIsNone(hints.get_lesson("sample-4", "cat"))
+        self.use_lessons(None)
+        self.assertIsNone(hints.get_lesson("sample-4", "cat"))
+        self.use_lessons("{broken")
+        self.assertIsNone(hints.get_lesson("sample-4", "cat"))
+
+    def test_a_leaking_lesson_is_skipped_for_the_next_candidate_or_none(self):
+        leaking = dict(self.LESSONS["lessons"][0], text_ca="En Pau es queda amb 9 cromos.", text_en="Pau keeps 9 cards.")
+        self.use_lessons({"lessons": [leaking, self.LESSONS["lessons"][1]]}, {"sample-4": "sharing"})
+        lesson = hints.get_lesson("sample-4", "cat")   # sample-4: C = 9
+        self.assertEqual(lesson["title_en"], "Word problems")
+        self.use_lessons({"lessons": [leaking]}, {"sample-4": "sharing"})
+        self.assertIsNone(hints.get_lesson("sample-4", "cat"))
+
+    def test_families_file_is_read_once_and_tolerated(self):
+        with mock.patch.object(hints, "FAMILIES_FILE", "/nonexistent/families.json"), mock.patch.object(hints, "_families", None):
+            self.assertIsNone(hints.family_of("sample-4"))
+
+
 class LlmHintTest(unittest.TestCase):
     """llm_hint with a fake server: the leak filter and the retry, no network."""
 

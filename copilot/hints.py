@@ -35,6 +35,9 @@ from .leak_filter import leak_reason
 STRATEGIES_FILE = os.path.join(ROOT, "data_curated", "strategies.json")
 # Problems the team explains by hand for the demo: steps[] per id, the last step is the solution
 DEMO_SET_FILE = os.path.join(ROOT, "data_curated", "demo_set.json")
+# The fourth hint: a short lesson per solver family or topic, and the id -> family table
+LESSONS_FILE = os.path.join(ROOT, "data_curated", "lessons.json")
+FAMILIES_FILE = os.path.join(ROOT, "data_curated", "families.json")
 QUALITY_FILE = os.path.join(ROOT, "data_curated", "hint_quality.json")
 IMAGES_DIR = os.path.join(ROOT, "data", "images")
 # Where problems are looked up by id: the shared splits when linked, else the samples
@@ -77,6 +80,8 @@ _state = {}             # problem_id -> {"strategy": int, "trace_step": int, "so
 _strategies = None
 _quality = None
 _demo_set = None        # {id: [steps]} from DEMO_SET_FILE, loaded once
+_lessons = None         # [lesson dicts] from LESSONS_FILE, loaded once
+_families = None        # {id: family key} from FAMILIES_FILE, loaded once
 
 
 # ---------------------------------------------------------------- problems by id
@@ -194,6 +199,62 @@ def demo_steps(problem_id):
             pass
         _demo_set = table
     return _demo_set.get(problem_id)
+
+
+def _load_json(path, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def family_of(problem_id):
+    """The solver family of a problem from data_curated/families.json, or None."""
+    global _families
+    if _families is None:
+        data = _load_json(FAMILIES_FILE, {})
+        table = data.get("families", data) if isinstance(data, dict) else {}
+        _families = {k: v for k, v in table.items() if isinstance(v, str)} if isinstance(table, dict) else {}
+    return _families.get(problem_id)
+
+
+def _lesson_list():
+    global _lessons
+    if _lessons is None:
+        data = _load_json(LESSONS_FILE, {})
+        rows = data.get("lessons", []) if isinstance(data, dict) else data
+        _lessons = [r for r in (rows or []) if isinstance(r, dict) and (r.get("text_ca") or r.get("text_en"))]
+    return _lessons
+
+
+def get_lesson(problem_id, lang="cat"):
+    """The fourth hint: a short lesson on how to think about this kind of problem, no formula and
+    no solving. From data_curated/lessons.json: the lesson of the problem's solver family when
+    there is one, else the lesson of its topic. Every text goes through the leak filter against
+    this problem. None when the file is missing or nothing fits (the page then shows a strategy).
+    """
+    lessons = _lesson_list()
+    if not lessons:
+        return None
+    problem = problem_for(problem_id, lang) or {"id": problem_id}
+    topic = _topic_of(problem)
+    family = family_of(problem_id)
+    by_family = [r for r in lessons if family and r.get("family") == family]
+    by_topic = [r for r in lessons if r.get("key") == topic and not r.get("family")]
+    any_topic = [r for r in lessons if r.get("key") == topic and r not in by_topic]
+    label, options = problem.get("label"), problem.get("options") or {}
+    for row in by_family + by_topic + any_topic:
+        texts = [row.get("title_ca", ""), row.get("title_en", ""), row.get("text_ca", ""), row.get("text_en", "")]
+        if label and any(leak_reason(t, label, options) for t in texts if t):
+            continue
+        return {"kind": "lesson", "rung": "lesson", "key": row.get("key", topic), "family": row.get("family"),
+                "title_ca": row.get("title_ca") or row.get("title_en") or "",
+                "title_en": row.get("title_en") or row.get("title_ca") or "",
+                "text_ca": row.get("text_ca") or row.get("text_en") or "",
+                "text_en": row.get("text_en") or row.get("text_ca") or "",
+                "strategy_ref": row.get("strategy_ref"), "estimated_board_seconds": 0.0}
+    return None
 
 
 def quality(topic, lang="cat"):
