@@ -138,6 +138,63 @@ class LadderTest(unittest.TestCase):
             thread.assert_called_once()
 
 
+class Rung0Test(unittest.TestCase):
+    """Rung 0: the problem in the other language, found by id, never with its label."""
+
+    def setUp(self):
+        hints.register_problem({"id": "bi-1", "language": "cat", "level": 1, "text": "Quants cromos li queden?",
+                                "options": {"A": "6", "B": "8", "C": "9"}, "label": "C"})
+        hints.register_problem({"id": "bi-1", "language": "eng", "level": 1, "text": "How many cards are left?",
+                                "options": {"A": "6", "B": "8", "C": "9"}, "label": "C"})
+
+    def test_catalan_reader_gets_the_english_version_by_id(self):
+        h = hints.translation("bi-1", "cat")
+        self.assertEqual(h["kind"], "translation")
+        self.assertEqual(h["rung"], 0)
+        self.assertTrue(h["available"])
+        self.assertEqual(h["language"], "eng")
+        self.assertEqual(h["text"], "How many cards are left?")
+        self.assertEqual(h["options"], {"A": "6", "B": "8", "C": "9"})
+        self.assertIn("en anglès", h["text_ca"])
+        self.assertIn("in English", h["text_en"])
+
+    def test_english_reader_gets_the_catalan_version(self):
+        h = hints.translation("bi-1", "eng")
+        self.assertEqual(h["language"], "cat")
+        self.assertEqual(h["text"], "Quants cromos li queden?")
+        self.assertIn("in Catalan", h["text_en"])
+
+    def test_translation_never_carries_the_label(self):
+        for lang in ("cat", "eng"):
+            h = hints.translation("bi-1", lang)
+            self.assertNotIn("label", h)
+            self.assertNotIn("label", str(h).lower())
+            self.assertNotIn("answer", str(h).lower())
+            self.assertEqual(set(h), {"rung", "kind", "language", "estimated_board_seconds", "text_ca", "text_en",
+                                      "available", "text", "options"})
+
+    def test_rung_0_costs_no_model_time(self):
+        self.assertEqual(hints.translation("bi-1", "cat")["estimated_board_seconds"], 0.0)
+
+    def test_missing_other_language_is_not_available_and_never_raises(self):
+        h = hints.translation("sample-4", "cat")  # sample-4 exists in Catalan only
+        self.assertFalse(h["available"])
+        self.assertEqual(h["text"], "")
+        self.assertEqual(h["options"], {})
+        self.assertFalse(hints.translation("no-such-problem", "cat")["available"])
+
+    def test_get_hint_rung_0_is_the_translation_and_rungs_stay_clamped_at_0(self):
+        self.assertEqual(hints.get_hint("bi-1", 0, "cat"), hints.translation("bi-1", "cat"))
+        self.assertEqual(hints.get_hint("bi-1", -3, "cat")["rung"], 0)
+        self.assertEqual(hints.get_hint("sample-4", 1, "cat")["rung"], 1)
+
+    def test_problem_in_is_strict_about_the_language(self):
+        self.assertIsNone(hints.problem_in("sample-4", "eng"))
+        self.assertEqual(hints.problem_in("sample-4", "cat")["id"], "sample-4")
+        self.assertEqual(hints.other_language("cat"), "eng")
+        self.assertEqual(hints.other_language("eng"), "cat")
+
+
 class LlmHintTest(unittest.TestCase):
     """llm_hint with a fake server: the leak filter and the retry, no network."""
 
