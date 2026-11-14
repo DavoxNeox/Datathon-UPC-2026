@@ -22,7 +22,11 @@
     .tile .s { font-size: 12px; color: var(--muted); font-weight: 600; }
     .tile.good .v { color: var(--ok); } .tile.bad .v { color: var(--bad); } .tile.warn .v { color: var(--warn); }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 12px; }
-    .card { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+    .card { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; position: relative; }
+    /* the tooltip of a chart: follows the cursor, drawn by the page (no title attributes) */
+    .card .tip { position: absolute; display: none; pointer-events: none; z-index: 2; max-width: 260px; padding: 6px 10px; border-radius: 10px;
+                 background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 700; line-height: 1.35; white-space: pre-line; box-shadow: 0 4px 14px rgba(31, 36, 48, .18); }
+    .card svg [data-tip] { cursor: default; } .card svg [data-tip]:hover { filter: brightness(.82); }
     .card.wide { grid-column: 1 / -1; }
     .card svg { width: 100%; height: auto; display: block; overflow: visible; }
     .card svg text { font: 600 12px ui-rounded, "SF Pro Rounded", system-ui, sans-serif; fill: var(--muted); }
@@ -295,7 +299,23 @@ function diagnose(s) {
 // ---------------------------------------------------------------- SVG helpers
 function el(tag, attrs, text) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
 function svg(w, h) { return el("svg", {viewBox: `0 0 ${w} ${h}`, role: "img", preserveAspectRatio: "xMidYMid meet"}); }
-function titled(node, text) { node.appendChild(el("title", {}, text)); return node; }
+function titled(node, text) { node.dataset.tip = text; return node; }
+// one tooltip per card: the hovered element's data-tip, or what the chart's own nearest() says
+function tips(box) {
+  const tp = document.createElement("div"); tp.className = "tip"; box.appendChild(tp);
+  const hide = () => { tp.style.display = "none"; box.querySelectorAll("svg").forEach(g => g.leave && g.leave()); };
+  const show = e => {
+    const g = e.target.closest("svg"), hit = e.target.closest("[data-tip]");
+    const text = hit ? hit.dataset.tip : (g && g.nearest ? g.nearest(e) : null);
+    if (!text) { hide(); return; }
+    tp.textContent = text; tp.style.display = "block";
+    const r = box.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    tp.style.left = Math.max(4, Math.min(x + 14, r.width - tp.offsetWidth - 6)) + "px";
+    tp.style.top = (y - tp.offsetHeight - 12 > 0 ? y - tp.offsetHeight - 12 : y + 18) + "px";
+  };
+  box.addEventListener("mousemove", show); box.addEventListener("mouseleave", hide);
+  box.addEventListener("touchstart", e => { const t0 = e.touches[0]; show({target: document.elementFromPoint(t0.clientX, t0.clientY) || e.target, clientX: t0.clientX, clientY: t0.clientY}); }, {passive: true});
+}
 const C = () => ({ink: cssVar("--ink"), muted: cssVar("--muted"), line: cssVar("--line"), card2: cssVar("--card-2"), accent: cssVar("--accent"), ok: cssVar("--ok"), bad: cssVar("--bad"), warn: cssVar("--warn")});
 
 // horizontal bars: rows [{label, value (0..1), text}]
@@ -306,7 +326,8 @@ function hbars(rows, opts = {}) {
     const y = i * rowH + 4, bw = Math.max(0, (w - left - right) * (r.value || 0));
     s.appendChild(el("text", {x: left - 10, y: y + 17, "text-anchor": "end", class: "small"}, r.label));
     s.appendChild(el("rect", {x: left, y, width: w - left - right, height: 20, rx: 10, fill: c.card2}));
-    if (r.value) s.appendChild(titled(el("rect", {x: left, y, width: bw, height: 20, rx: 10, fill: c.accent}), r.text));
+    s.appendChild(titled(el("rect", {x: left, y, width: w - left - right, height: 20, rx: 10, fill: "transparent"}), `${r.label}\n${r.text} · ${Math.round(100 * (r.value || 0))} %`));
+    if (r.value) s.appendChild(titled(el("rect", {x: left, y, width: bw, height: 20, rx: 10, fill: c.accent}), `${r.label}\n${r.text} · ${Math.round(100 * r.value)} %`));
     s.appendChild(el("text", {x: left + (w - left - right) + 8, y: y + 17, class: "ink"}, r.text));
   });
   return s;
@@ -318,11 +339,12 @@ function topicsChart(s) {
   (data.topics || []).forEach((tp, i) => {
     const y = i * rowH + 4, m = +(s.mastery[tp.key] || 0), b = s.byTopic[tp.key];
     g.appendChild(el("text", {x: left - 10, y: y + 17, "text-anchor": "end", class: "small"}, lang === "cat" ? tp.name_ca : tp.name_en));
-    for (let p = 0; p < 5; p++) g.appendChild(titled(el("rect", {x: left + p * 16, y: y + 3, width: 12, height: 18, rx: 4, fill: p < m ? (m >= 4 ? c.ok : m >= 3 ? c.accent : m === 2 ? c.warn : c.bad) : c.card2}), t().legend[m]));
+    const name = lang === "cat" ? tp.name_ca : tp.name_en;
+    for (let p = 0; p < 5; p++) g.appendChild(titled(el("rect", {x: left + p * 16, y: y + 3, width: 12, height: 18, rx: 4, fill: p < m ? (m >= 4 ? c.ok : m >= 3 ? c.accent : m === 2 ? c.warn : c.bad) : c.card2}), `${name}\n${t().legend[m]}`));
     const x0 = left + 96, bw = w - x0 - 64;
-    g.appendChild(el("rect", {x: x0, y: y + 3, width: bw, height: 18, rx: 9, fill: c.card2}));
+    g.appendChild(titled(el("rect", {x: x0, y: y + 3, width: bw, height: 18, rx: 9, fill: c.card2}), b && b.n ? `${name}\n${b.k}/${b.n} · ${pct(b.k, b.n)} %` : `${name}\n–`));
     if (b && b.n) {
-      g.appendChild(titled(el("rect", {x: x0, y: y + 3, width: bw * b.k / b.n, height: 18, rx: 9, fill: c.accent}), `${b.k}/${b.n}`));
+      g.appendChild(titled(el("rect", {x: x0, y: y + 3, width: bw * b.k / b.n, height: 18, rx: 9, fill: c.accent}), `${name}\n${b.k}/${b.n} · ${pct(b.k, b.n)} %`));
       g.appendChild(el("text", {x: x0 + bw + 8, y: y + 17, class: "ink"}, `${b.k}/${b.n}`));
     } else g.appendChild(el("text", {x: x0 + bw + 8, y: y + 17, class: "small"}, "–"));
   });
@@ -342,10 +364,19 @@ function trendChart(s) {
   const win = 5; let p = "";
   s.log.forEach((_, i) => { const xs = s.log.slice(Math.max(0, i - win + 1), i + 1); const v = xs.filter(a => a.correct).length / xs.length; p += (i ? " L" : "M") + `${x(i)} ${yAcc(v)}`; });
   g.appendChild(titled(el("path", {d: p, fill: "none", stroke: c.accent, "stroke-width": 3, "stroke-linejoin": "round"}), t().charts.rolling));
-  s.log.forEach((a, i) => g.appendChild(titled(el("circle", {cx: x(i), cy: yAcc(a.correct ? 1 : 0), r: 4.5, fill: a.correct ? c.ok : c.bad}), `${i + 1}: ${topicName(a.topic)} · N${a.level} · ${a.letter}${a.correct ? " ✓" : " ✗ (" + a.label + ")"}${a.hint_rung ? " · " + t().rungs[a.hint_rung] : ""}`)));
+  s.log.forEach((a, i) => g.appendChild(el("circle", {cx: x(i), cy: yAcc(a.correct ? 1 : 0), r: 4.5, fill: a.correct ? c.ok : c.bad})));
   g.appendChild(el("text", {x: left, y: h - 8, class: "small"}, "1"));
   g.appendChild(el("text", {x: left + pw, y: h - 8, "text-anchor": "end", class: "small"}, `${n}`));
   g.appendChild(el("text", {x: left + pw / 2, y: h - 8, "text-anchor": "middle", class: "small"}, `${t().charts.rolling} · ${t().charts.level_line}`));
+  const guide = g.appendChild(el("line", {x1: 0, x2: 0, y1: top, y2: top + ph, stroke: c.ink, "stroke-width": 1, "stroke-dasharray": "2 3", visibility: "hidden"}));
+  g.nearest = e => {   // the answer closest to the cursor, whatever the cursor is over
+    const r = g.getBoundingClientRect(), vx = (e.clientX - r.left) * w / r.width;
+    let best = 0; for (let i = 1; i < n; i++) if (Math.abs(x(i) - vx) < Math.abs(x(best) - vx)) best = i;
+    const a = s.log[best], xs = s.log.slice(Math.max(0, best - win + 1), best + 1), roll = Math.round(100 * xs.filter(q => q.correct).length / xs.length);
+    guide.setAttribute("x1", x(best)); guide.setAttribute("x2", x(best)); guide.setAttribute("visibility", "visible");
+    return `${best + 1}/${n} · ${topicName(a.topic)} · ${t().level} ${a.level}\n${a.letter}${a.correct ? " ✓" : " ✗ (" + a.label + ")"}${a.hint_rung ? " · " + t().rungs[a.hint_rung] : ""}\n${t().charts.rolling}: ${roll} %`;
+  };
+  g.leave = () => guide.setAttribute("visibility", "hidden");
   return g;
 }
 
@@ -354,7 +385,7 @@ function hintsChart(s) {
   const c = C(), w = 520, h = 40 + 5 * 26, g = svg(w, h), colors = [c.ok, c.accent, c.accent, c.warn, c.bad], fade = [1, 1, .7, 1, 1];
   let x = 0; const bw = w - 2;
   g.appendChild(el("rect", {x: 1, y: 2, width: bw, height: 22, rx: 11, fill: c.card2}));
-  if (s.n) s.byRung.forEach((r, i) => { if (!r.n) return; const ww = bw * r.n / s.n; g.appendChild(titled(el("rect", {x: 1 + x, y: 2, width: ww, height: 22, fill: colors[i], opacity: fade[i]}), `${t().rungs[i]}: ${r.n} (${pct(r.n, s.n)} %)`)); x += ww; });
+  if (s.n) s.byRung.forEach((r, i) => { if (!r.n) return; const ww = bw * r.n / s.n; g.appendChild(titled(el("rect", {x: 1 + x, y: 2, width: ww, height: 22, fill: colors[i], opacity: fade[i]}), `${t().rungs[i]}\n${r.n} · ${pct(r.n, s.n)} % · ${t().charts.acc_rung} ${pct(r.k, r.n)} %`)); x += ww; });
   s.byRung.forEach((r, i) => {
     const y = 40 + i * 26;
     g.appendChild(el("circle", {cx: 8, cy: y + 10, r: 6, fill: colors[i], opacity: fade[i]}));
@@ -374,7 +405,8 @@ function lettersChart(s) {
   g.appendChild(el("text", {x: left + pw, y: y(.2) - 4, "text-anchor": "end", class: "small"}, t().charts.chance));
   "ABCDE".split("").forEach((L, i) => {
     const v = s.n ? s.letters[L] / s.n : 0, bw = pw / 5 - 14, x = left + 7 + i * pw / 5;
-    g.appendChild(titled(el("rect", {x, y: y(v), width: bw, height: top + ph - y(v), rx: 8, fill: c.accent}), `${L}: ${s.letters[L]} (${Math.round(100 * v)} %)`));
+    g.appendChild(titled(el("rect", {x, y: top, width: bw, height: ph, fill: "transparent"}), `${L}\n${s.letters[L]} · ${Math.round(100 * v)} %`));
+    if (s.letters[L]) g.appendChild(titled(el("rect", {x, y: y(v), width: bw, height: top + ph - y(v), rx: 8, fill: c.accent}), `${L}\n${s.letters[L]} · ${Math.round(100 * v)} %`));
     g.appendChild(el("text", {x: x + bw / 2, y: h - 8, "text-anchor": "middle", class: "ink"}, L));
     if (s.letters[L]) g.appendChild(el("text", {x: x + bw / 2, y: y(v) - 4, "text-anchor": "middle", class: "small"}, `${s.letters[L]}`));
   });
@@ -390,7 +422,8 @@ function daysChart(s) {
   const max = Math.max(1, ...days.map(d => d.n));
   days.forEach((d, i) => {
     const bw = pw / 14 - 6, x = left + 3 + i * pw / 14, bh = ph * d.n / max;
-    if (d.n) g.appendChild(titled(el("rect", {x, y: top + ph - bh, width: bw, height: bh, rx: 5, fill: i === 13 ? c.accent : c.muted}), `${d.label}: ${d.n}`));
+    g.appendChild(titled(el("rect", {x, y: top, width: bw, height: ph, fill: "transparent"}), `${d.key.split("-").reverse().join("/")}\n${d.n}`));
+    if (d.n) g.appendChild(titled(el("rect", {x, y: top + ph - bh, width: bw, height: bh, rx: 5, fill: i === 13 ? c.accent : c.muted}), `${d.key.split("-").reverse().join("/")}\n${d.n}`));
     else g.appendChild(el("rect", {x, y: top + ph - 2, width: bw, height: 2, rx: 1, fill: c.line}));
     g.appendChild(el("text", {x: x + bw / 2, y: h - 6, "text-anchor": "middle", class: "small"}, d.label));
     if (d.n) g.appendChild(el("text", {x: x + bw / 2, y: top + ph - bh - 4, "text-anchor": "middle", class: "small"}, `${d.n}`));
@@ -399,7 +432,7 @@ function daysChart(s) {
 }
 
 // ---------------------------------------------------------------- the page
-function card(title, node, cls) { const d = document.createElement("div"); d.className = "card" + (cls ? " " + cls : ""); const h = document.createElement("h3"); h.textContent = title; d.appendChild(h); d.appendChild(node); return d; }
+function card(title, node, cls) { const d = document.createElement("div"); d.className = "card" + (cls ? " " + cls : ""); const h = document.createElement("h3"); h.textContent = title; d.appendChild(h); d.appendChild(node); if (node.tagName === "svg") tips(d); return d; }
 function tile(k, v, s, cls) { return `<div class="tile ${cls || ""}"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="s">${esc(s || "")}</div></div>`; }
 const accClass = p => p == null ? "" : p >= 75 ? "good" : p >= 45 ? "" : "bad";
 function empty(text) { const p = document.createElement("p"); p.className = "empty"; p.textContent = text || t().no_answers; return p; }
@@ -433,6 +466,7 @@ function renderClass() {
   const byLevel = {}; log.forEach(a => { const b = byLevel[a.level] = byLevel[a.level] || {n: 0, k: 0}; b.n++; if (a.correct) b.k++; });
   const lv = Object.keys(byLevel).sort((a, b) => a - b).map(l => ({label: `${t().level} ${l}`, value: byLevel[l].k / byLevel[l].n, text: `${byLevel[l].k}/${byLevel[l].n}`}));
   $("class-levels").replaceChildren(lv.length ? hbars(lv, {left: 90}) : empty());
+  [$("class-levels"), $("class-topics")].forEach(b => { if (!b.parentElement.querySelector(".tip")) tips(b.parentElement); });
   const byTopic = {}; log.forEach(a => { const b = byTopic[a.topic] = byTopic[a.topic] || {n: 0, k: 0}; b.n++; if (a.correct) b.k++; });
   const tp = topics.filter(x => byTopic[x.key]).map(x => ({label: lang === "cat" ? x.name_ca : x.name_en, value: byTopic[x.key].k / byTopic[x.key].n, text: `${byTopic[x.key].k}/${byTopic[x.key].n}`}));
   $("class-topics").replaceChildren(tp.length ? hbars(tp) : empty());

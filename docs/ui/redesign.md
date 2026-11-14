@@ -559,3 +559,7 @@ language and the rest were noisy or mixed.
   measured changes. No file, no overlay. Two tests in `tests/test_webapp.py`.
 - Checked in the browser: `lvl-3_2024_29` shows its five angles as text buttons
   in one row, the figure alone on the right; `lvl-0_2015_1` (pictures) is unchanged.
+- **Tooltips.** Every chart has a tooltip drawn by the page (one `.tip` per card, dark on the
+  page's background): bars, pips, segments and days carry a `data-tip`, and the trend chart
+  answers to the cursor anywhere over it with the nearest answer (a dotted guide marks it) and
+  the rolling accuracy at that point. No `title` attributes, so the text appears at once.
