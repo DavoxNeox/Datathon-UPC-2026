@@ -84,7 +84,6 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
 .figure.zoomed { float: none; max-width: none; width: 100%; margin: 12px 0; cursor: zoom-out; display: flex; justify-content: center; }
 .figure.zoomed img { height: auto !important; max-height: none; width: 100%; max-width: 760px; }
 .figure.strip { float: none; max-width: none; cursor: default; margin: 12px 0 0; display: flex; justify-content: center; }
-.figure.card img, .letters.card .pic, .hint .neighbour.pic.card img { background: #fff; padding: 6px; border-radius: 10px; box-sizing: content-box; }
 .figure figcaption { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; margin-top: 4px; }
 .figure { flex-direction: column; align-items: center; }
 .figure.strip img { max-height: 160px; }

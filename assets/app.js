@@ -294,41 +294,36 @@ function cropPart(img, box, masks) {
   return c;
 }
 
-// The scans are black on white. On the page the white goes: every pixel becomes ink with the
-// alpha of its darkness, so lines and shading sit on the page's own background in both themes;
-// a saturated colour keeps its hue (lightened in the dark theme).
+// The scans are black on white. On the page the white goes: every pixel becomes ink with the alpha of its
+// darkness. Strokes and the edges of shapes take the theme's ink colour, so lines read on a dark page;
+// the inside of a filled shape (dark pixels with dark neighbours 3 px away in every direction) keeps its
+// own colour, so "the black square" stays black and grey stays grey, with a light rim around it. A
+// saturated colour keeps its hue (lightened in the dark theme). The light theme tints the same way:
+// black ink on the warm page. No white card anywhere.
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-const COLOUR_WORDS = /\b(negr[ea]s?|blan[cq]u?[ae]?s?|gris(os|a|es)?|fosc[sa]?|fosques|clar[sa]?|ombrejad[ae]s?|ombrejat|pintad[ae]s?|black|white|gr[ae]y|dark|light|shaded|painted)\b/i;
-// A figure with filled areas cannot be turned into light ink on a dark page: "the black square" would read
-// white. Interior pixels (dark with dark neighbours 3 px away in every direction) tell fills from lines.
-function hasFills(raw) {
-  const w = raw.width, h = raw.height, d = raw.getContext("2d").getImageData(0, 0, w, h).data;
-  const dark = (x, y) => { const i = 4 * (y * w + x); return Math.min(d[i], d[i + 1], d[i + 2]) < 110; };
-  let interior = 0, total = 0;
-  for (let y = 4; y < h - 4; y += 2) for (let x = 4; x < w - 4; x += 2) {
-    total++;
-    if (dark(x, y) && dark(x - 3, y) && dark(x + 3, y) && dark(x, y - 3) && dark(x, y + 3)) interior++;
-  }
-  return total > 0 && interior / total > 0.004;
-}
 function isDarkTheme() { const [br, bg, bb] = hexRgb(cssVar("--bg") || "#ffffff"); return br * 299 + bg * 587 + bb * 114 < 128000; }
-// the figure as it is, on a white card (the dark theme's safe route for fills and colour questions)
-function onCard(raw) { return raw.toDataURL("image/png"); }
 function tinted(raw) {
-  const [ir, ig, ib] = hexRgb(cssVar("--ink") || "#1f2430"), [br, bg, bb] = hexRgb(cssVar("--bg") || "#ffffff");
-  const dark = br * 299 + bg * 587 + bb * 114 < 128000;
-  const c = document.createElement("canvas"); c.width = raw.width; c.height = raw.height;
+  const [ir, ig, ib] = hexRgb(cssVar("--ink") || "#1f2430"), dark = isDarkTheme();
+  const w = raw.width, h = raw.height;
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
   const ctx = c.getContext("2d"); ctx.drawImage(raw, 0, 0);
-  const im = ctx.getImageData(0, 0, c.width, c.height), d = im.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], g = d[i + 1], b = d[i + 2], mn = Math.min(r, g, b), mx = Math.max(r, g, b);
-    const dark = 255 - mn;   // 0 on white; the scan's faint noise (under 60) goes, lines reach full ink by 170
-    d[i + 3] = Math.min(d[i + 3], dark < 60 ? 0 : Math.min(255, Math.round((dark - 60) * 255 / 110)));
-    if (mx - mn < 40) { d[i] = ir; d[i + 1] = ig; d[i + 2] = ib; }
-    else if (dark) { d[i] = r + (255 - r) * .4; d[i + 1] = g + (255 - g) * .4; d[i + 2] = b + (255 - b) * .4; }
+  const im = ctx.getImageData(0, 0, w, h), d = im.data;
+  const darkAt = (x, y) => x >= 0 && y >= 0 && x < w && y < h && Math.min(d[4 * (y * w + x)], d[4 * (y * w + x) + 1], d[4 * (y * w + x) + 2]) < 110;
+  const out = new Uint8ClampedArray(d.length);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = 4 * (y * w + x), r = d[i], g = d[i + 1], b = d[i + 2], mn = Math.min(r, g, b), mx = Math.max(r, g, b);
+    const darkness = 255 - mn;   // 0 on white; the scan's faint noise (under 60) goes, ink reaches full by 170
+    const a = darkness < 60 ? 0 : Math.min(255, Math.round((darkness - 60) * 255 / 110));
+    out[i + 3] = Math.min(d[i + 3], a);
+    if (!a) continue;
+    const interior = dark && mn < 110 && darkAt(x - 3, y) && darkAt(x + 3, y) && darkAt(x, y - 3) && darkAt(x, y + 3);
+    if (interior) { out[i] = r; out[i + 1] = g; out[i + 2] = b; out[i + 3] = 255; }   // a fill keeps its colour, black stays black
+    else if (mx - mn < 40) { out[i] = ir; out[i + 1] = ig; out[i + 2] = ib; }         // strokes and edges in the theme's ink
+    else if (dark) { out[i] = r + (255 - r) * .4; out[i + 1] = g + (255 - g) * .4; out[i + 2] = b + (255 - b) * .4; }
+    else { out[i] = r; out[i + 1] = g; out[i + 2] = b; }
   }
-  ctx.putImageData(im, 0, 0);
+  im.data.set(out); ctx.putImageData(im, 0, 0);
   return c.toDataURL("image/png");
 }
 
@@ -347,7 +342,7 @@ const toCanvas = img => { const c = document.createElement("canvas"); c.width = 
 let scan = {id: null, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false, colours: false};
 function loadScan(p, clean) {
   scan = {id: p.id, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false,
-          colours: COLOUR_WORDS.test([p.text, p.text_cat, p.text_eng].filter(Boolean).join(" "))};
+        };
   api("/api/image").then(r => {
     if (!r.image_b64 || scan.id !== p.id) return;
     const img = new Image();
@@ -368,19 +363,15 @@ function applyScan() {
   const key = cssVar("--bg");
   if (scan.tintKey !== key) {
     const fig = scan.figure || scan.whole;
-    // dark theme: a card for figures with fills or for colour questions; light theme: always the tint
-    const card = isDarkTheme() && (scan.colours || [fig, scan.options, ...(scan.pieces || [])].some(r => r && hasFills(r)));
-    const draw = card ? onCard : tinted;
-    scan.tinted = {figure: fig ? draw(fig) : "", options: scan.options ? draw(scan.options) : "", pieces: (scan.pieces || []).map(draw), full: "", card};
+    scan.tinted = {figure: fig ? tinted(fig) : "", options: scan.options ? tinted(scan.options) : "", pieces: (scan.pieces || []).map(tinted), full: ""};
     scan.tintKey = key;
   }
-  const tt = scan.tinted || {figure: "", options: "", pieces: [], full: "", card: false};
-  document.querySelectorAll("#figure, #strip, #letters").forEach(e => e.classList.toggle("card", !!tt.card));
+  const tt = scan.tinted || {figure: "", options: "", pieces: [], full: ""};
   $("fig-cap").hidden = !scan.whole;   // the whole scan stands in for a figure: say so
   // the whole scan, one click away (not offered when the page already fell back to it)
   const canToggle = !!scan.full && !scan.whole;
   $("whole-toggle").hidden = !canToggle; $("whole-toggle").textContent = scan.showFull ? t().hide_scan : t().show_scan;
-  if (scan.showFull && canToggle && !tt.full) tt.full = (tt.card ? onCard : tinted)(scan.full);
+  if (scan.showFull && canToggle && !tt.full) tt.full = tinted(scan.full);
   $("whole").hidden = !(scan.showFull && canToggle); setSrc($("whole-img"), scan.showFull && canToggle ? tt.full : "");
   $("whole-img").alt = t().image;
   $("figure").hidden = !tt.figure; setSrc($("img"), tt.figure);
@@ -405,8 +396,7 @@ const tintCache = new Map();
 function tintedHintImage(key, b64) {
   if (tintCache.has(key)) return tintCache.get(key);
   tintCache.set(key, "");
-  const img = new Image(); img.onload = () => { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext("2d").drawImage(img, 0, 0);
-    tintCache.set(key, isDarkTheme() && (scan.colours || hasFills(c)) ? "card:" + onCard(c) : tinted(c)); }; img.src = "data:image/png;base64," + b64;
+  const img = new Image(); img.onload = () => tintCache.set(key, tinted(toCanvas(img))); img.src = "data:image/png;base64," + b64;
   return "";
 }
 function retint() { tintCache.clear(); scan.tintKey = null; if (state && state.started) { applyScan(); renderHints(state); } }
@@ -528,7 +518,7 @@ function hintsHtml(s, pid) {
       const np = h.problem, opts = np.options || {}, long = (np.text || "").length > 160 && !expanded.has(pid + ":" + i);
       body += `<div class="neighbour ${long ? "clamped" : ""}">${esc((np.text || "").replace(/\s*\n\s*/g, " "))}${Object.keys(opts).length ? "\n" + "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${esc(opts[l])}`).join("   ") : ""}</div>` +
         ((np.text || "").length > 160 ? `<button class="more" data-more="${i}">${esc(long ? t().more : t().less)}</button>` : "") +
-        (np.image_b64 && tintedHintImage(np.id || h.rung, np.image_b64) ? `<div class="neighbour pic ${tintedHintImage(np.id || h.rung, np.image_b64).startsWith("card:") ? "card" : ""}"><img src="${tintedHintImage(np.id || h.rung, np.image_b64).replace(/^card:/, "")}" alt=""></div>` : "");
+        (np.image_b64 && tintedHintImage(np.id || h.rung, np.image_b64) ? `<div class="neighbour pic"><img src="${tintedHintImage(np.id || h.rung, np.image_b64)}" alt=""></div>` : "");
     }
     if (h.kind === "solution" && h.trace && h.trace.length) {
       body += `<ol>${h.trace.map(step => `<li>${esc(txt(step, "text"))}</li>`).join("")}</ol>`;
