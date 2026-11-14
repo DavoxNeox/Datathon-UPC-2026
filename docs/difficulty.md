@@ -1,10 +1,12 @@
-# Empirical difficulty per class: measurements
+# Empirical difficulty per class: measurements on a SIMULATED class
+
+Every figure in this file comes from simulated students whose success depends on a difficulty planted by this script. Nothing is measured with real students yet; the recommended use of copilot/difficulty.py is the teacher's report(), not the choice of problems.
 
 `python3 laptop/measure_difficulty.py --steps 60 --neighbors retrieval` on 14 Nov 2026, laptop, bank data/train.jsonl + data/val.jsonl. Estimator constants: a = 3, MIN_N = 3, 0.25 rate points per level, max shift 2 levels. See the module docstring of copilot/difficulty.py for the formula and laptop/measure_difficulty.py for the four experiments.
 
 ## 1. Label class: ten of simulate's students, true difficulty = M3Kang band
 
-Students: threshold0,threshold1,threshold2,threshold3,threshold4,threshold5,threshold6,threshold7,random20-1,improving; 60 steps each, 3.2 s on the laptop.
+Students: threshold0,threshold1,threshold2,threshold3,threshold4,threshold5,threshold6,threshold7,random20-1,improving; 60 steps each, 1.6 s on the laptop.
 
 - Answers: 600; problems answered: 456 of 1747 in the bank; with at least 3 answers (rated): 21.
 - Answers per problem: n=1: 340, n=2: 95, n=3: 17, n=4: 2, n=5: 1, n=6: 1.
@@ -56,7 +58,7 @@ Easiest problems observed / Problemes més fàcils observats (`easiest`):
 
 ## 2. Hidden class: ten threshold students on a hidden difficulty
 
-Thresholds (0, 1, 2, 3, 4, 5, 6, 7, 2, 5); hidden level = band + offset(id), offsets -2/-1/0/+1/+2 for 10/20/40/20/10% of the ids (1047 of 1747 bank problems are off their band); a student above their threshold guesses a letter. 60 steps each, 3.4 s on the laptop.
+Thresholds (0, 1, 2, 3, 4, 5, 6, 7, 2, 5); hidden level = band + offset(id), offsets -2/-1/0/+1/+2 for 10/20/40/20/10% of the ids (1047 of 1747 bank problems are off their band); a student above their threshold guesses a letter. 60 steps each, 1.7 s on the laptop.
 
 - Answers: 600; problems answered: 409 of 1747 in the bank; with at least 3 answers (rated): 41.
 - Answers per problem: n=1: 280, n=2: 88, n=3: 25, n=4: 12, n=5: 3, n=6: 1.
@@ -116,16 +118,16 @@ Three hidden-difficulty students (thresholds (1, 3, 5)) run 60 steps each on a c
 
 | probe | DIFFICULTY_ADJUST | n | wrong answers | mean hidden level - threshold | steps on a rated problem | settled band (M3Kang) | hidden levels, last 10 | steps to settle | repeats | laptop ms/step |
 |---|---|---|---|---|---|---|---|---|---|---|
-| hidden threshold 1 | off | 60 | 29 | 1.52 | 7 | 1-3 (unsettled) | 0-4 | - | 0 | 4.9 |
-| hidden threshold 1 | on | 60 | 28 | 1.65 | 4 | 2-5 (unsettled) | 0-7 | - | 0 | 6.6 |
-| hidden threshold 3 | off | 60 | 29 | 1.25 | 2 | 2-4 (unsettled) | 1-6 | - | 0 | 7.4 |
-| hidden threshold 3 | on | 60 | 27 | 1.40 | 1 | 4-6 (unsettled) | 3-6 | - | 0 | 10.4 |
-| hidden threshold 5 | off | 60 | 26 | 1.25 | 3 | 4-7 (unsettled) | 3-7 | - | 0 | 4.2 |
-| hidden threshold 5 | on | 60 | 27 | 1.30 | 2 | 5-7 (unsettled) | 3-7 | - | 0 | 5.2 |
+| hidden threshold 1 | off | 60 | 29 | 1.52 | 7 | 1-3 (unsettled) | 0-4 | - | 0 | 2.9 |
+| hidden threshold 1 | on | 60 | 28 | 1.65 | 4 | 2-5 (unsettled) | 0-7 | - | 0 | 2.8 |
+| hidden threshold 3 | off | 60 | 29 | 1.25 | 2 | 2-4 (unsettled) | 1-6 | - | 0 | 3.2 |
+| hidden threshold 3 | on | 60 | 27 | 1.40 | 1 | 4-6 (unsettled) | 3-6 | - | 0 | 3.5 |
+| hidden threshold 5 | off | 60 | 26 | 1.25 | 3 | 4-7 (unsettled) | 3-7 | - | 0 | 3.0 |
+| hidden threshold 5 | on | 60 | 27 | 1.30 | 2 | 5-7 (unsettled) | 3-7 | - | 0 | 3.8 |
 
 ## 4. Long history: the hidden class after 300 steps per student
 
-Same ten students and offsets as experiment 2, 300 steps each (11.8 s on the laptop): what the estimate and the probes look like once the class has a term's worth of answers.
+Same ten students and offsets as experiment 2, 300 steps each (9.2 s on the laptop): what the estimate and the probes look like once the class has a term's worth of answers.
 
 - Answers: 3000; problems answered: 1278 of 1747 in the bank; with at least 3 answers (rated): 490.
 - Answers per problem: n=1: 452, n=2: 336, n=3: 223, n=4: 168, n=5: 66, n=6: 27, n=7: 5, n=8: 1.
@@ -183,12 +185,13 @@ Probes (60 steps each) on this history:
 
 | probe | DIFFICULTY_ADJUST | n | wrong answers | mean hidden level - threshold | steps on a rated problem | settled band (M3Kang) | hidden levels, last 10 | steps to settle | repeats | laptop ms/step |
 |---|---|---|---|---|---|---|---|---|---|---|
-| hidden threshold 1 | off | 60 | 29 | 1.52 | 22 | 1-3 (unsettled) | 0-4 | - | 0 | 3.0 |
-| hidden threshold 1 | on | 60 | 26 | 1.40 | 18 | 1-5 (unsettled) | 0-5 | - | 0 | 10.1 |
-| hidden threshold 3 | off | 60 | 29 | 1.25 | 21 | 2-4 (unsettled) | 1-6 | - | 0 | 3.8 |
-| hidden threshold 3 | on | 60 | 29 | 1.55 | 12 | 4-7 (unsettled) | 2-7 | - | 0 | 10.1 |
-| hidden threshold 5 | off | 60 | 26 | 1.25 | 16 | 4-7 (unsettled) | 3-7 | - | 0 | 3.9 |
-| hidden threshold 5 | on | 60 | 27 | 1.15 | 19 | 5-7 (unsettled) | 4-6 | - | 0 | 10.4 |
+| hidden threshold 1 | off | 60 | 29 | 1.52 | 22 | 1-3 (unsettled) | 0-4 | - | 0 | 2.3 |
+| hidden threshold 1 | on | 60 | 26 | 1.40 | 18 | 1-5 (unsettled) | 0-5 | - | 0 | 4.5 |
+| hidden threshold 3 | off | 60 | 29 | 1.25 | 21 | 2-4 (unsettled) | 1-6 | - | 0 | 3.1 |
+| hidden threshold 3 | on | 60 | 29 | 1.55 | 12 | 4-7 (unsettled) | 2-7 | - | 0 | 4.9 |
+| hidden threshold 5 | off | 60 | 26 | 1.25 | 16 | 4-7 (unsettled) | 3-7 | - | 0 | 3.2 |
+| hidden threshold 5 | on | 60 | 27 | 1.15 | 19 | 5-7 (unsettled) | 4-6 | - | 0 | 5.2 |
+
 ## Reading the figures
 
 Written by hand after the run above (14 Nov 2026, `--neighbors retrieval`, the embedding
@@ -196,7 +199,7 @@ server for the validation ids); the same script with `--neighbors index` gave th
 picture (results/difficulty-index.md, not committed). Everything below the first heading
 and above this one is regenerated by the script; this section is kept.
 
-**The estimator recovers a class's difficulty.** On the hidden class the mean error against
+**The estimator recovers a simulated class's difficulty.** On the hidden (simulated) class the mean error against
 the hidden difficulty falls from 0.71 to 0.58 levels after 600 answers (41 rated problems)
 and from 0.72 to 0.52 after 3000 answers (490 rated problems). Of the shifts of half a level
 or more on problems that are off their band, 11 of 12 point the right way after 600 answers
@@ -217,7 +220,7 @@ it. The rate per level says how the class is matched to the problems, not how ha
 bands are; the per-problem shrinkage against the level's own rate is what measures
 difficulty.
 
-**The trainer hook does not help a simulated student, so it stays off.** With
+**The trainer hook does not help a simulated student, so it stays off; with real students nothing is measured.** With
 `DIFFICULTY_ADJUST=1` the three probes made 28, 27 and 27 wrong answers against 29, 29 and
 26 with it off (600-answer history) and 26, 29, 27 against 29, 29, 26 (3000-answer
 history): within noise, and the mean distance between the hidden level served and the
@@ -226,12 +229,12 @@ the paths: a lucky guess on a problem the class rates two levels harder sends th
 two levels up instead of one, so the adjustment amplifies the guessing noise of a
 multiple-choice answer as much as it corrects mislabelled problems. A variant that steps
 from the M3Kang level and uses the adjusted level only to filter neighbours was no better
-(results/difficulty-variant-filter.md, not committed). The step cost also grows from 3 to
-10 ms on the laptop with a 3000-answer history, since `estimate` re-reads the table on
-every step (the cache proposed in INTERFACES.md would remove that).
+(results/difficulty-variant-filter.md, not committed). The estimate is read once per step
+(never with the flag off): 4 to 5 ms per step on the laptop with a 3000-answer history
+against 2 to 3 ms with the flag off.
 
-What the module is for, then, is the teacher: `report()` lists the problems this class
+What the module is for, then, is the teacher, not the choice of problems: `report()` lists the problems this class
 finds hardest and easiest with their counts, and the rate per level, from the board's own
-data. A real class may differ from the hidden model (the offsets here are an assumption:
+data. All of the above is a simulated class; a real class may differ from the hidden model (the offsets here are an assumption:
 40% of the problems off their band by one or two levels); the first real figure comes from
 `python3 -m copilot.difficulty --db data/students.db` on the board after a few sessions.

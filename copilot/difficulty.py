@@ -44,6 +44,15 @@ MIN_N (3) answers keeps its M3Kang level exactly: nothing is inferred from one o
 answers. All constants are module attributes and keyword arguments, so a class with a
 long history can be measured with a bigger MIN_N.
 
+What is measured and what is not
+--------------------------------
+The estimator and the adjustment were validated ONLY on a SIMULATED class
+(laptop/measure_difficulty.py, docs/difficulty.md): synthetic students whose success
+depends on a planted per-problem difficulty. With real students nothing is measured yet.
+The recommended use is the teacher's `report()`, which shows what this class finds hard
+and easy; the trainer hook behind `DIFFICULTY_ADJUST` did not help a simulated student and
+stays off by default.
+
 Standard library only (sqlite3), no model call: a full estimate over a few thousand
 answers is milliseconds of Python on the board.
 """
@@ -74,6 +83,10 @@ LABELS = {
     "answers": {"ca": "Respostes a la classe", "en": "Answers in this class"},
     "problems_seen": {"ca": "Problemes resposts", "en": "Problems answered"},
     "problems_rated": {"ca": "Problemes amb prou respostes", "en": "Problems with enough answers"},
+    "note": {"ca": "Dificultat observada en aquesta classe a partir de les seves respostes. El mètode s'ha "
+                   "validat només amb una classe simulada, no amb alumnes reals.",
+             "en": "Difficulty observed in this class from its own answers. The method was validated only "
+                   "on a simulated class, not with real students."},
 }
 
 
@@ -162,7 +175,8 @@ def report(db_path=None, min_n=MIN_N, top=TOP, prior_weight=PRIOR_WEIGHT):
      "prior_weight", "hardest": [row], "easiest": [row], "by_level": [{"level", "n", "correct",
      "p_correct", "prior"}]}  where row = {"id", "level", "n", "p_correct", "p_without_hints",
      "shrunk", "prior", "adjusted_level"}. Only problems with at least `min_n` answers are
-     listed, hardest first by the shrunk rate (ties by raw rate, then id). Ids only, never text.
+     listed, hardest first by the shrunk rate (ties by raw rate, then id). `note` (ca/en) says the
+     method was validated on a simulated class only. Ids only, never text.
     """
     rows = _read_answers(db_path)
     estimates = estimate(db_path, prior_weight)
@@ -177,7 +191,7 @@ def report(db_path=None, min_n=MIN_N, top=TOP, prior_weight=PRIOR_WEIGHT):
         totals[level] = (n + 1, k + int(bool(correct)))
     by_level = [{"level": level, "n": n, "correct": k, "p_correct": round(k / n, 3), "prior": round(priors[level], 3)}
                 for level, (n, k) in sorted(totals.items())]
-    return {"labels": LABELS, "answers": len(rows), "problems_seen": len(estimates), "problems_rated": len(rated),
+    return {"labels": LABELS, "note": LABELS["note"], "answers": len(rows), "problems_seen": len(estimates), "problems_rated": len(rated),
             "min_n": min_n, "prior_weight": prior_weight, "hardest": hardest, "easiest": easiest, "by_level": by_level}
 
 

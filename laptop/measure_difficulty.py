@@ -248,7 +248,10 @@ def main():
     tmp = tempfile.TemporaryDirectory()
     folder = args.keep_db or tmp.name
     os.makedirs(folder, exist_ok=True)
-    lines = ["# Empirical difficulty per class: measurements", "",
+    lines = ["# Empirical difficulty per class: measurements on a SIMULATED class", "",
+             "Every figure in this file comes from simulated students whose success depends on a difficulty "
+             "planted by this script. Nothing is measured with real students yet; the recommended use of "
+             "copilot/difficulty.py is the teacher's report(), not the choice of problems.", "",
              f"`python3 laptop/measure_difficulty.py --steps {args.steps} --neighbors {args.neighbors}` on "
              f"{time.strftime('%d %b %Y')}, laptop, bank data/train.jsonl + data/val.jsonl. "
              f"Estimator constants: a = {difficulty.PRIOR_WEIGHT}, MIN_N = {difficulty.MIN_N}, "

@@ -208,7 +208,10 @@ rate on level L (0.5 without data). `adjusted_level` shifts the level by
 problem; with fewer, or no data, it returns the M3Kang level. `report` lists the 10
 hardest and 10 easiest problems with enough answers (ids, n, p) and the rate per level,
 with a `labels` dict of Catalan and English strings for every column. Ids only, never text.
-Formula, constants and the mapping are documented at the top of the module.
+Formula, constants and the mapping are documented at the top of the module. The report
+carries a `note` (ca/en): the method was validated on a SIMULATED class only
+(docs/difficulty.md), nothing is measured with real students yet. Recommended use: the
+teacher's `report()`; the trainer hook below is measured as neutral and stays off.
 
 ## Empirical difficulty
 
@@ -226,11 +229,14 @@ How the trainer uses `adjusted_level`, behind `DIFFICULTY_ADJUST=0|1` in config.
 - The diagnostic, the review problems and the bank fallback keep M3Kang levels: they
   pick problems by band from the bank, where the empirical level is unknown for most ids.
 
+- `estimate` is read once per `next_problem` (`trainer._estimates()`), never when the
+  flag is off; `tests/test_difficulty.py` checks the count.
+
 Proposed, not implemented: a `level_fn` argument to `trainer.configure(...)` (default
 `None` = the rule above) would let the simulator and the tests inject any level function
-without touching the flag. Cost on the board: `estimate` re-reads the `answers` table on
-every trainer step (one SQL query, milliseconds for a class's history); a cache keyed by
-the number of answers would remove even that if the table grows large.
+without touching the flag. Measured on a simulated class only (docs/difficulty.md): the
+hook did not reduce a simulated student's wrong answers, so the recommended use of the
+module is the teacher's report, not the choice of problems.
 
 ## Phase 0 stubs
 
