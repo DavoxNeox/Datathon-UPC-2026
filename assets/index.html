@@ -94,14 +94,15 @@
 <!-- the action sheet: hint and solution on the left, the verdict in the middle, continue on the right -->
 <div class="sheet" id="feedback" aria-live="polite" hidden>
   <div class="inner">
-    <div class="actions">
-      <button class="secondary" id="hint"><span id="hint-label">Pista</span></button>
-      <button class="link" id="solution" data-i18n="solution">Solució</button>
-      <button class="secondary manip-btn" id="manip" hidden></button>
+    <div class="left">
+      <div class="verdict" id="verdict"></div>
+      <div class="status" id="status"></div>
+      <div class="row"><button class="link" id="solution" data-i18n="solution">Solució</button><button class="secondary manip-btn" id="manip" hidden></button></div>
     </div>
-    <div class="verdict" id="verdict"></div>
-    <div class="actions"><button class="primary" id="next" data-i18n="next" hidden>Continua</button></div>
-    <div class="status" id="status"></div>
+    <div class="right">
+      <button class="primary" id="next" data-i18n="next" hidden>Continua</button>
+      <button class="secondary" id="hint"><span id="hint-label">Pista</span></button>
+    </div>
   </div>
 </div>
 <script src="app.js"></script>

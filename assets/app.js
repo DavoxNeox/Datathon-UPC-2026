@@ -351,8 +351,7 @@ function applyScan() {
   $("whole").hidden = !(scan.showFull && canToggle); setSrc($("whole-img"), scan.showFull && canToggle ? tt.full : "");
   $("whole-img").alt = t().image;
   $("figure").hidden = !tt.figure; setSrc($("img"), tt.figure);
-  // small crops (a die, a 5x5 grid) are drawn bigger; the CSS caps them at the column's width
-  $("img").onload = () => { const w = $("img").naturalWidth; $("img").style.width = w ? `${Math.min(400, Math.round(w * (w < 500 ? 1.25 : 1)))}px` : ""; };
+  $("img").onload = fitFigure;
   $("strip").hidden = !tt.options; setSrc($("strip-img"), tt.options);
   $("img").alt = t().image; $("strip-img").alt = t().options_image;
   // the answers themselves on the buttons, when the scan had them and the OCR did not
@@ -374,6 +373,22 @@ function tintedHintImage(key, b64) {
 function retint() { tintCache.clear(); scan.tintKey = null; if (state && state.started) { applyScan(); renderHints(state); } }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retint);
 
+// The figure never grows past the question: its height is the text's height (and at most a third of the
+// window, and at most 1.25 times its own size); the CSS keeps it under 30 % of the column. On a phone it
+// sits above the text at its natural size. Measured twice, because the text wraps around the figure.
+function fitFigure() {
+  const img = $("img");
+  if (!img.naturalWidth || $("figure").hidden) return;
+  if (matchMedia("(max-width: 640px)").matches || $("figure").classList.contains("zoomed")) { img.style.height = ""; return; }
+  const once = () => {
+    const textH = $("text").getBoundingClientRect().height;
+    const h = Math.min(Math.max(90, textH), innerHeight * 0.34, img.naturalHeight * 1.25);
+    img.style.height = `${Math.round(h)}px`;
+  };
+  once(); requestAnimationFrame(once);
+}
+addEventListener("resize", fitFigure);
+
 function renderProblem(p) {
   if (!p) { $("text").textContent = ""; return; }
   const changed = !lastProblem || lastProblem.id !== p.id;
@@ -386,8 +401,10 @@ function renderProblem(p) {
   const clean = optionsClean(options);
   $("meta").textContent = `${t().level} ${p.level} · ${t().courses[p.level] || ""} · ${lang === "cat" ? p.topic_name_ca : p.topic_name_en}`;
   $("problem-id").textContent = `${t().problem}: ${p.id}`;
-  $("text").textContent = text;
-  $("letters").classList.toggle("rows", clean);
+  if ($("text").textContent !== text) { $("text").textContent = text; requestAnimationFrame(fitFigure); }
+  const short = clean && Object.values(options).every(v => v.length <= 10);   // "42 cm", "3√2 cm": one row; sentences: one per row
+  $("letters").classList.toggle("rows", clean && !short);
+  $("letters").classList.toggle("short", short);
   if (changed || $("letters").dataset.lang !== lang) $("letters").innerHTML = "ABCDE".split("").map(l =>
     `<button data-l="${l}" aria-label="${l}${clean && options[l] ? ": " + esc(options[l]) : ""}"><span class="l">${l}</span>${clean && options[l] ? `<span class="o">${esc(options[l])}</span>` : ""}</button>`).join("");
   $("letters").dataset.lang = lang;
@@ -530,7 +547,7 @@ $("hints").addEventListener("click", e => { const b = e.target.closest("button[d
 $("manip").onclick = () => { const m = $("manip").dataset.m; $("manip-title").textContent = t().manip[m]; $("manip-frame").src = `manip/${m}.html?lang=${lang}${window.Theme ? Theme.query() : ""}`; $("manip-box").hidden = false; $("manip-box").scrollIntoView({behavior: "smooth", block: "nearest"}); };
 $("manip-close").onclick = () => { $("manip-box").hidden = true; $("manip-frame").src = "about:blank"; };
 // the figure, bigger in its place: useful on a phone
-$("figure").onclick = () => { if ($("img").src) $("figure").classList.toggle("zoomed"); };
+$("figure").onclick = () => { if ($("img").src) { $("figure").classList.toggle("zoomed"); fitFigure(); } };
 $("theme").onclick = () => { if (window.Theme) Theme.next(); renderTheme(); retint(); };
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("panel").hidden) { setPanel(false); return; }

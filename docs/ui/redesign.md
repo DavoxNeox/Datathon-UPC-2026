@@ -320,3 +320,17 @@ and a hint button without icons.
   When the OCR options are readable text and no figure is found, nothing is shown besides the
   text and the option rows (a text-only problem). A wrong cut that does not throw (a figure
   trimmed too tight, a label left in) is not detected: that is what the link is for.
+
+### Fourth round (branch `ui-polish`)
+
+- Short options (every value up to 10 characters: "42 cm", "3√2 cm") go in one row of five
+  cards with the value as the main text; longer ones keep one per row.
+- The figure takes at most 30 % of the column and is never taller than the question: its
+  height is set from the text's height (measured twice, since the text wraps around it), capped
+  at a third of the window and at 1.25 times its own size. On a phone it sits above the text
+  at its natural size, then the text, then the answers in a row.
+- Zoom shows the whole figure: the figure leaves the float and takes the column (up to 760 px),
+  the image scales to fit; a second click puts it back.
+- The action sheet has two columns: the message with all the width and "Solució" under it on
+  the left; "Continua" on top of "Pista" on the right. 160 px of room under it on a laptop,
+  200 px on a phone (the sheet with a verdict measures 134 and 186 px).
