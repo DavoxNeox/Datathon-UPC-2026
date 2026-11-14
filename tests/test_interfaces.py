@@ -51,7 +51,8 @@ class SolversTest(unittest.TestCase):
     def test_solve_shape_or_none(self):
         self.assertIsNone(solvers.solve({"id": "sample-2", "text": "x", "options": {}}))
         r = solvers.solve({"id": "sample-1", "text": "x", "options": {}})
-        self.assertEqual(set(r), {"answer", "value", "family", "trace"})
+        self.assertTrue({"answer", "value", "family", "trace"} <= set(r))
+        self.assertTrue(set(r) <= {"answer", "value", "family", "trace", "timings"})
         self.assertIn(r["answer"], LETTERS)
         self.assertGreaterEqual(len(r["trace"]), 2)
         for step in r["trace"]:

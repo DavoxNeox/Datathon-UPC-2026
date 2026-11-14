@@ -95,6 +95,7 @@ An answer given after rung 3 or 4 never raises mastery.
     {"text_ca": "...", "text_en": "...", "value": "..."},   # value is optional
     ...
   ],
+  "timings": [...],           # optional: llama-server `timings` of each LLM call, for the board clock
 }
 ```
 

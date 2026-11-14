@@ -84,3 +84,57 @@ def letter_scores(problem, examples=(), timeout=60, url=URL, top=20):
     floor = (min(candidates.values()) if candidates else 0.0) - 1.0
     scores = {l: candidates.get(l, floor) for l in LETTERS}
     return letter, scores, response.get("timings", {})
+
+
+EXTRACT_SYSTEM = ("You read a school math problem and copy the numbers it states into a JSON object. "
+                  "Do not solve the problem. Use only values written in the problem.")
+
+
+def extract_json(problem_text, grammar, fields_hint, timeout=60, max_tokens=60, url=URL):
+    """Ask the model to fill a small JSON object, constrained by a GBNF grammar.
+
+    The model never reasons here: it copies parameters (copilot/solvers). The
+    grammar fixes the keys and the value types, so the output is always valid
+    JSON of the expected shape, or None when it cannot be parsed. fields_hint is
+    one line telling the model what each key means. Returns (dict or None, timings).
+
+    Cost on the board: the problem text once (prefill) plus the JSON (about 10 to
+    30 tokens at 5.5 tokens/s). Estimate it with board_clock.estimate_tokens first.
+    """
+    import json as _json
+    response = post(url, {
+        "messages": [
+            {"role": "system", "content": EXTRACT_SYSTEM},
+            {"role": "user", "content": f"{problem_text.strip()}\n\nFill in: {fields_hint}\nJSON:"},
+        ],
+        "grammar": grammar,
+        "max_tokens": max_tokens,
+        "temperature": 0,
+        "seed": int(CONFIG["SEED"]),
+        "cache_prompt": True,
+    }, timeout=timeout)
+    text = response["choices"][0]["message"]["content"].strip()
+    try:
+        data = _json.loads(text)
+    except ValueError:
+        data = None
+    return data, response.get("timings", {})
+
+
+def json_grammar(fields):
+    """A GBNF grammar for a flat JSON object with these keys, in this order.
+
+    fields: {"name": "int" | "number" | "letter"}. Values: int = optional minus and
+    digits; number = int with an optional decimal part; letter = one of A to E.
+    """
+    parts = []
+    for i, (key, kind) in enumerate(fields.items()):
+        sep = '"," ws ' if i else ""
+        parts.append(f'{sep}"\\"{key}\\":" ws {kind}')
+    return "\n".join([
+        'root ::= "{" ws ' + " ".join(parts) + ' ws "}"',
+        'int ::= "-"? [0-9]+',
+        'number ::= "-"? [0-9]+ ("." [0-9]+)?',
+        'letter ::= "\\"" [A-E] "\\""',
+        'ws ::= [ ]?',
+    ])
