@@ -51,11 +51,11 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
               "board_seconds": 0.0, "raw_letter": "", "margin": None, "family": "", "letter_logprobs": None}
     try:
         if USE_SOLVERS and image_b64 is None:
-            solved = solvers.solve(problem)
+            solved, spent = solvers.solve_with_timings(problem)
+            for timings in spent:  # counted even when the solver abstains: the board still read the problem
+                clock.add_llm(timings)
+                result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
             if solved is not None:
-                for timings in solved.get("timings", []):
-                    clock.add_llm(timings)
-                    result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
                 result.update(answer=solved["answer"], family=solved["family"],
                               seconds=round(time.perf_counter() - start, 2), board_seconds=round(clock.board_seconds(), 2))
                 return result

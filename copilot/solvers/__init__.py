@@ -36,24 +36,34 @@ def classify(problem):
 
 
 def solve(problem):
-    """{"answer", "value", "family", "trace", "timings"} or None."""
+    """{"answer", "value", "family", "trace", "timings"} or None (INTERFACES.md)."""
+    return solve_with_timings(problem)[0]
+
+
+def solve_with_timings(problem):
+    """(result or None, [llama-server timings of every LLM call made]).
+
+    The pipeline uses this one: an extraction that ends in abstention still cost the
+    board the reading of the problem, and that time counts against the 60-second limit.
+    """
     if problem.get("id") == "sample-1":
-        return _SAMPLE_1  # fixture for the made-up smoke-test problem, used by D's hint tests
+        return _SAMPLE_1, []  # fixture for the made-up smoke-test problem, used by D's hint tests
     key = classify(problem)
     if key is None:
-        return None
+        return None, []
     module = FAMILIES[key]
     params, timings = module.extract(problem)
+    spent = [timings] if timings else []
     if params is None:
-        return None
+        return None, spent
     try:
         value, trace = module.compute(params, problem.get("options") or {})
     except (ArithmeticError, ValueError, TypeError, KeyError):
-        return None
+        return None, spent
     answer = match_option(value, problem.get("options") or {})
     if answer is None:
-        return None
-    return {"answer": answer, "value": common.fmt(value), "family": key, "trace": trace, "timings": [timings]}
+        return None, spent
+    return {"answer": answer, "value": common.fmt(value), "family": key, "trace": trace, "timings": spent}, spent
 
 
 # Hand-written trace for data/sample_problems.jsonl sample-1: 3 bags x 4 apples - 2 eaten

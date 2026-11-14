@@ -124,3 +124,17 @@ class AgesTest(unittest.TestCase):
 
     def test_classify(self):
         self.assertEqual(solvers.classify({"text": "The ages of a family of five add up to 80 years. What was the sum 7 years ago?"}), "ages")
+
+
+class TimingsTest(unittest.TestCase):
+    def test_abstention_still_reports_its_llm_time(self):
+        from unittest import mock
+        from copilot.solvers import consecutive
+        problem = {"id": "x", "text": "The sum of five consecutive whole numbers is 105. What is the largest?",
+                   "options": {"A": "1", "B": "2", "C": "3", "D": "4", "E": "5"}}  # 23 matches no option -> abstain
+        fake = ({"count": 5, "sum": 105, "step": 1, "asked": 3}, {"prompt_n": 90, "predicted_n": 20})
+        with mock.patch.object(consecutive, "extract", return_value=fake):
+            result, spent = solvers.solve_with_timings(problem)
+        self.assertIsNone(result)
+        self.assertEqual(spent, [{"prompt_n": 90, "predicted_n": 20}])
+        self.assertIsNone(solvers.solve({"id": "y", "text": "nothing here", "options": {}}))
