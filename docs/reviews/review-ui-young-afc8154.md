@@ -227,3 +227,46 @@ zoom. On the phone it is 358 px wide and fine.
 
 **Touch behaviour not verified here**: the phone emulation still reports `(hover: hover)`, so
 the auto-close ran on it too; a tap outside did close the panel. Check once on a real phone.
+
+## Addendum 4: ninth round, no white card (`origin/main` at ff45825)
+
+Checked on the six demo problems in sim (port 7017) at 1280x800, light and dark, by reading the
+pixels of each tinted figure back from the page and timing `tinted()` on the raw crops; 285 tests
+OK, 1 skipped. `c849c56` (options from the other language) is not exercised by the six demo
+problems (all have Catalan OCR options).
+
+**What holds.**
+- **Black is never shown as white.** `lvl-3_2021_20` in dark: of 11,024 black pixels in the crop,
+  9,136 stay black (the insides of the four corner squares) and 1,888 become the light rim at
+  their edges; no pixel of any of the six figures is white (over 245) in dark. In light every
+  opaque pixel is ink.
+- **Filled shapes read on the dark page**: the black squares sit inside a light rim; the hand's
+  ring bands stay black (8% of its opaque pixels).
+- **Thin lines stay legible**: the grid of `lvl-1_2024_2` is 98% light strokes in dark, the folded
+  sheet 99%; both zoom crisp.
+- **Cost**: `tinted()` takes 2 to 10 ms per figure at 1280 (232x232 square 9.5 ms in dark, 2.2 ms
+  in light; 328x216 grid 4.2 ms; the five 70x66 pieces 2 to 6 ms each), once per problem and per
+  theme change. Nothing a phone or the board's browser would notice.
+
+**G1 (IMPORTANT). Grey does not stay grey, in either theme, and the demo's sixth problem asks
+about the grey part.** `lvl-3_2021_20`'s crop has 4,168 neutral grey pixels (levels 60 to 200,
+mostly 80 to 120: the eight grey triangles and the anti-aliased edges). In dark 3,320 of them
+become the light ink, 820 transparent and 28 stay grey; in light 3,348 become black and 820
+transparent. The interior test (`mn < 110` and dark neighbours 3 px away in four directions)
+rarely holds inside thin triangles of mid grey, so they are treated as strokes. The student
+reads "Quina és l'àrea de la part grisa?" and sees, in dark, whitish triangles between black
+squares, and in light, black triangles next to black squares. The round's note says the opposite
+("grey stays grey", checked on this id). *Fix:* treat a neutral pixel with `mn` between 60 and
+200 as a fill whenever it has at least two neutral neighbours of similar level at 2 px (not four
+dark ones at 3 px), and keep its own level in both themes (lightened by a fixed amount in dark
+so it reads against the page); or fall back to the white card for crops whose grey share passes
+a few percent. Re-measure with this script on `lvl-3_2021_20` after the change.
+
+**G2 (MINOR). Light greys vanish.** The hand of `lvl-5_2022_30` is filled light grey (217) in the
+scan; `darkness < 60` makes it transparent in both themes, so the hand is an outline on the page.
+Harmless here, but any figure whose light grey carries meaning (a shaded region in a counting
+problem) loses it. Lower the noise floor to 40 for neutral pixels inside a closed outline, or
+keep 60 and say so in the note.
+
+**Still open**: P1 (the hand is 181x272 px at 1280 now, so the tall-figure cap was relaxed:
+closed), the pieces' `alt` text, the two controls under 44 px in the settings popup.
