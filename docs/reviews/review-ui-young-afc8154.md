@@ -154,3 +154,30 @@ demo problems again. Tests 284 OK, 1 skipped.
   rule); and the link "Mostra l'escaneig sencer" sits between the options and the hints, which
   on the projector reads as a sixth option row until the eye finds it is a link. A chip in the
   figure's corner would be clearer.
+
+## Addendum 2: `ui-polish` on `origin/main` at aef2a17
+
+Scope asked: Y4 and the five-card row. Checked on the six demo problems in sim (port 7014),
+1280x800 and 390x844, light; 284 tests OK, 1 skipped.
+
+**Y4 closed.** On all six problems the five options are one row of cards (`letters short`),
+in the order A B C D E, 168x76 px at 1280 (65x64 on the phone, 65x72 on `lvl-3_2021_20`), and
+the fifth card's bottom edge sits far above the sheet at load: 321 to 334 px against a sheet top
+of 701 px at 1280; 344 to 592 px against 727 px on the phone, even under the tallest figure (the
+hand, 232 px on the phone). No horizontal scroll at either size. The letter badge is 12 px
+`--muted` on the card, 5.26:1; the value is `--ink`, 14.1:1. The sheet has two columns (message
+and Solució on the left; Continua over Pista on the right, 50 px each); after the verdict it is
+134 px at 1280 and 126 px on the phone, under the 160 / 200 px reserved, so the last content
+clears it at maximum scroll. The figure stays within 30% of the column (15% grid, 29% folded
+sheet and square) and the zoom shows the whole figure at up to 760 px wide without widening the
+page.
+
+**New, minor (P1).** The figure is also capped at the height of the question's text, so a tall,
+narrow figure under a short question becomes a thumbnail: the hand with the three rings
+(`lvl-5_2022_30`, reserve chain) is 67 px wide at 1280, 7% of the column; the rings are not
+distinguishable on a projector without the zoom (which then makes it 1145 px tall). The two
+visual problems of the main chain are wide figures and are fine. *Fix:* cap by the text's height
+only when the figure is wider than tall; otherwise allow up to 34vh as before, or drop the figure
+under the text when its aspect ratio is above 1.2.
+
+Still open, as assigned to ui-fixes-5: Y1, Y2, Y3 and the two minors of the previous addendum.
