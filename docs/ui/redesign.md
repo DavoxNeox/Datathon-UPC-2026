@@ -367,3 +367,18 @@ Reviewer's three important points and the user's next requests, in one branch:
 - **Fallback and captions.** When the whole scan stands in for a figure it carries the
   caption "Escaneig original" and zooms like any figure; the "veure l'escaneig original" link
   is a small underlined caption under the options, not a sixth row. "mostra-ho tot" is 44 px.
+
+### Sixth round (branch `ui-fixes-6`)
+
+- **The sidebar under a keyboard user.** Opened from the keyboard (a click with `detail`
+  0) it never closes by itself; focus inside the panel or on the menu button cancels any
+  pending close and focus leaving them re-arms it; the "opened with the mouse and never
+  visited" close waits 4 s and only exists for a fine pointer (`hover: hover` and
+  `pointer: fine`), so a phone's emulation does not trigger it. Escape and a tap outside
+  still close it.
+- **After an answer the right button offers a hint**, right or wrong, while hints are left;
+  the solution only when none are left. The server still refuses hints after an answer
+  (`already answered`): until it allows them, the page falls back to the solution on that
+  error, so the button is never dead. The server change is requested.
+- **Pieces have names**: when the OCR read an option well its text is the piece's `alt` and
+  the button's `aria-label` ("C: 15") even when the picture is shown; otherwise "opció C".

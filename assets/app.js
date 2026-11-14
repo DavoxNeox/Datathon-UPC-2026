@@ -20,7 +20,7 @@ const I18N = {
         begin: "Comença", reset: "Canvia d'alumne", auto: "Que ho endevini el copilot",
         confirm_reset: "Segur? Esborra el progrés",
         more: "mostra-ho tot", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
-        more_panel: "Menú", board_led: "La placa", timing: "Temps (per al professor)", problem: "Problema",
+        more_panel: "Menú", board_led: "La placa", timing: "Temps (per al professor)", problem: "Problema", option: "opció",
         theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"}, no_hints: "Ja no queden pistes en aquest problema",
         read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
         other_kind: {eng: "En anglès · no compta com a pista", cat: "En català · no compta com a pista"},
@@ -37,7 +37,7 @@ const I18N = {
         begin: "Start", reset: "Change student", auto: "Let the copilot find out",
         confirm_reset: "Sure? Erase the progress",
         more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
-        more_panel: "Menu", board_led: "The board", timing: "Timings (for the teacher)", problem: "Problem",
+        more_panel: "Menu", board_led: "The board", timing: "Timings (for the teacher)", problem: "Problem", option: "option",
         theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"}, no_hints: "No hints left on this problem",
         read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
         other_kind: {eng: "In English · not counted as a hint", cat: "In Catalan · not counted as a hint"},
@@ -388,7 +388,12 @@ function applyScan() {
   // the answers themselves on the buttons, when the scan had them and the OCR did not
   document.querySelectorAll("#letters button").forEach((b, i) => {
     const pic = b.querySelector(".pic");
-    if (tt.pieces[i]) setSrc(pic || b.appendChild(Object.assign(document.createElement("img"), {className: "pic", alt: ""})), tt.pieces[i]);
+    if (tt.pieces[i]) {
+      const img = pic || b.appendChild(Object.assign(document.createElement("img"), {className: "pic"}));
+      const label = (b.getAttribute("aria-label") || "").split(": ")[1];
+      img.alt = label || `${t().option} ${b.dataset.l}`;
+      setSrc(img, tt.pieces[i]);
+    }
     else if (pic) pic.remove();
   });
   $("letters").classList.toggle("pics", tt.pieces.length > 0);
@@ -441,8 +446,9 @@ function renderProblem(p) {
   const short = clean && Object.values(options).every(v => v.length <= 10);   // "42 cm", "3√2 cm": one row; sentences: one per row
   $("letters").classList.toggle("rows", clean && !short);
   $("letters").classList.toggle("short", short);
+  const readable = v => v && CLEAN.test(v) && !NOISY.test(v);   // an option the OCR read well, usable as a label even when the picture is shown
   if (changed || $("letters").dataset.lang !== lang) $("letters").innerHTML = "ABCDE".split("").map(l =>
-    `<button data-l="${l}" aria-label="${l}${clean && options[l] ? ": " + esc(options[l]) : ""}"><span class="l">${l}</span>${clean && options[l] ? `<span class="o">${esc(options[l])}</span>` : ""}</button>`).join("");
+    `<button data-l="${l}" aria-label="${l}${readable(options[l]) ? ": " + esc(options[l]) : ""}"><span class="l">${l}</span>${clean && options[l] ? `<span class="o">${esc(options[l])}</span>` : ""}</button>`).join("");
   $("letters").dataset.lang = lang;
   if (p.has_image) { if (changed || scan.id !== p.id) loadScan(p, clean); else applyScan(); }
   else { scan = {id: p.id}; applyScan(); }
@@ -472,13 +478,16 @@ function renderAnswer(s) {
   $("feedback").className = "sheet " + (a ? (a.correct ? "ok" : "bad") : "");
   const solved = s.hints.some(h => h.kind === "solution");
   $("next").hidden = !(a || solved);
-  $("hint").hidden = solved; $("solution").hidden = solved || !!a;   // answered: the right button itself becomes "Solució"
+  $("hint").hidden = solved; $("solution").hidden = solved || !!a;   // answered: the right button itself offers the next step
   // the hint button says what the next press gives: a hint (and how many are left) or, as the last use, the lesson
   const left = s.hints_left ?? Infinity, max = s.hints_max ?? 3, lessonLast = max >= 4;
+  // the right button: a hint while there are some (also after the answer: it still teaches), else the solution
+  const hintLabel = left <= 0 || !isFinite(left) ? t().hint : (lessonLast && left === 1 ? t().kinds.lesson : `${t().hint} · ${lessonLast ? left - 1 : left}`);
+  const offerSolution = !!a && left <= 0;
   $("hint").disabled = s.busy || (!a && left <= 0);
   $("hint").title = !a && left <= 0 ? t().no_hints : "";
-  $("hint").dataset.role = a ? "solution" : "hint";
-  $("hint-label").textContent = a ? t().solution : (left <= 0 || !isFinite(left) ? t().hint : (lessonLast && left === 1 ? t().kinds.lesson : `${t().hint} · ${lessonLast ? left - 1 : left}`));
+  $("hint").dataset.role = offerSolution ? "solution" : "hint";
+  $("hint-label").textContent = offerSolution ? t().solution : hintLabel;
   $("solution").disabled = s.busy || s.hints.some(h => h.kind === "solution");
   $("status").textContent = s.busy ? t().thinking : (a && !solved ? t().answered : "");
 }
@@ -572,21 +581,34 @@ async function poll() {
 // The sidebar floats and hides by itself: with a mouse, it closes a moment after the cursor is neither on
 // it nor on the menu button (also right after opening, if the cursor never comes); on touch screens it
 // stays until a tap outside or Escape.
-const HOVERS = matchMedia("(hover: hover)").matches;
+const FINE = matchMedia("(hover: hover) and (pointer: fine)").matches;   // a real mouse, not a phone's emulation
 let panelLeave = null;
-const armClose = (ms) => { clearTimeout(panelLeave); if (HOVERS) panelLeave = setTimeout(() => setPanel(false), ms); };
-function setPanel(open) { $("panel").hidden = !open; $("more").setAttribute("aria-expanded", String(open)); if (open) armClose(1500); else clearTimeout(panelLeave); }
-$("more").onclick = () => setPanel($("panel").hidden);
+const focusInside = () => [$("panel"), $("more")].some(el => el.contains(document.activeElement));
+const armClose = (ms) => { clearTimeout(panelLeave); if (FINE && !focusInside()) panelLeave = setTimeout(() => { if (!focusInside()) setPanel(false); }, ms); };
+function setPanel(open, byKeyboard) {
+  $("panel").hidden = !open; $("more").setAttribute("aria-expanded", String(open));
+  if (!open) clearTimeout(panelLeave);
+  else if (!byKeyboard) armClose(4000);   // opened with the mouse and never visited: it goes by itself after a while
+}
+$("more").onclick = e => setPanel($("panel").hidden, e.detail === 0);
 for (const el of [$("panel"), $("more")]) {
   el.addEventListener("mouseenter", () => clearTimeout(panelLeave));
   el.addEventListener("mouseleave", () => { if (!$("panel").hidden) armClose(400); });
+  el.addEventListener("focusin", () => clearTimeout(panelLeave));
+  el.addEventListener("focusout", e => { if (!$("panel").hidden && !(e.relatedTarget && [$("panel"), $("more")].some(x => x.contains(e.relatedTarget)))) armClose(400); });
 }
 document.addEventListener("pointerdown", e => { if (!$("panel").hidden && !e.target.closest("#panel, #more")) setPanel(false); });
 $("letters").addEventListener("click", async e => { const b = e.target.closest("button[data-l]"); if (b && !b.disabled) render(await api("/api/answer/" + b.dataset.l)); });
 const pressed = b => { b.disabled = true; $("status").textContent = t().thinking; };
 $("translate").onclick = async () => render(await api("/api/translate/" + (state && state.translation ? "hide" : "show")));
 $("whole-toggle").onclick = () => { scan.showFull = !scan.showFull; applyScan(); };
-$("hint").onclick = async () => { pressed($("hint")); await api($("hint").dataset.role === "solution" ? "/api/solution" : "/api/hint"); poll(); };
+$("hint").onclick = async () => {
+  pressed($("hint"));
+  if ($("hint").dataset.role === "solution") { await api("/api/solution"); return poll(); }
+  const r = await api("/api/hint");
+  if (r.error === "already answered") await api("/api/solution");   // a server that still refuses hints after the answer: the solution, as before
+  poll();
+};
 $("solution").onclick = async () => { pressed($("solution")); await api("/api/solution"); poll(); };
 $("next").onclick = async () => render(await api("/api/next"));
 $("lang-cat").onclick = async () => render(await api("/api/lang/cat"));
