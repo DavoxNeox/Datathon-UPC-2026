@@ -119,8 +119,9 @@ function drawLed(frame) {
 // out of the scan. Pixels are read on a canvas at 2 px cells; words are bridged into lines, lines
 // are grouped into components, and the components are sorted by shape and position.
 const CELL = 2, HGAP = 10;   // cells per step, cells of blank bridged inside a line of text
-const CLEAN = /^[\p{L}\p{N}\s.,:;%°€$'"\/+\-×·()²³½¼¾πσ=<>!?…]+$/u;
-const optionsClean = o => Object.keys(o || {}).length >= 2 && Object.values(o).every(v => CLEAN.test(v));
+// letters, digits, punctuation and the maths the OCR writes (×, √, π, powers, ≤, ∞, braces); shapes such as △ ○ □ are not text
+const CLEAN = /^[\p{L}\p{N}\s.,:;%°€$'"\/+\-=<>!?…×√·—–{}∞≤≥÷*′″＇（）#^_|\[\]~±≠≈π∈→]+$/u;
+const optionsClean = o => Object.keys(o || {}).length >= 2 && Object.values(o).every(v => v.trim() && CLEAN.test(v));
 
 function scanComponents(img) {
   const W = img.naturalWidth, H = img.naturalHeight;
@@ -288,7 +289,8 @@ function tinted(raw) {
   const im = ctx.getImageData(0, 0, c.width, c.height), d = im.data;
   for (let i = 0; i < d.length; i += 4) {
     const r = d[i], g = d[i + 1], b = d[i + 2], mn = Math.min(r, g, b), mx = Math.max(r, g, b);
-    d[i + 3] = Math.min(d[i + 3], 255 - mn);
+    const dark = 255 - mn;   // 0 on white; the scan's faint noise (under 60) goes, lines reach full ink by 170
+    d[i + 3] = Math.min(d[i + 3], dark < 60 ? 0 : Math.min(255, Math.round((dark - 60) * 255 / 110)));
     if (mx - mn < 40) { d[i] = ir; d[i + 1] = ig; d[i + 2] = ib; }
     else if (dark) { d[i] = r + (255 - r) * .4; d[i + 1] = g + (255 - g) * .4; d[i + 2] = b + (255 - b) * .4; }
   }
@@ -335,7 +337,7 @@ function applyScan() {
   const tt = scan.tinted || {figure: "", options: "", pieces: []};
   $("figure").hidden = !tt.figure; setSrc($("img"), tt.figure);
   // small crops (a die, a 5x5 grid) are drawn bigger; the CSS caps them at the column's width
-  $("img").onload = () => { const w = $("img").naturalWidth; $("img").style.width = w && w < 500 ? `${Math.round(w * 1.6)}px` : ""; };
+  $("img").onload = () => { const w = $("img").naturalWidth; $("img").style.width = w ? `${Math.min(400, Math.round(w * (w < 500 ? 1.25 : 1)))}px` : ""; };
   $("strip").hidden = !tt.options; setSrc($("strip-img"), tt.options);
   $("img").alt = t().image; $("strip-img").alt = t().options_image;
   // the answers themselves on the buttons, when the scan had them and the OCR did not
@@ -463,7 +465,7 @@ function render(s) {
   $("start").hidden = s.started; $("app").hidden = !s.started; $("feedback").hidden = !s.started; $("progress").hidden = !s.started;
   $("reset").hidden = !s.started;
   $("who").textContent = s.started ? s.student + (s.level !== null && s.level !== undefined ? ` · ${t().courses[s.level]}` : "") : t().title;
-  drawLed(s.led); renderTimeline(s);
+  drawLed(s.led); renderTimeline(s); renderMastery(s);   // also on the start screen, so a reset empties the map
   if (!s.started) { if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; } return; }
   renderProblem(s.problem); renderAnswer(s); renderHints(s); renderMastery(s); renderTopicProgress(s);
   if (s.answer && !hadAnswer && innerWidth < 1000) setPanel(false);
