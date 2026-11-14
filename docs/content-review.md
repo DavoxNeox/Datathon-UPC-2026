@@ -168,3 +168,31 @@ match the Catalan.
 - `data_curated/demo_set.json` has no reader in `copilot/` yet: the ladder could use its steps
   as rung 3 for these ids (text, never the last step) and its `figure_ca` as the description the
   model lacks.
+
+## 6. The fourth hint: which lesson each script problem receives
+
+`data_curated/lessons.json` holds 14 concept lessons (8 topics, 6 families) and an `overrides`
+map {id: family or topic key} that `get_lesson` reads before the family. Simulated with the
+contract order (override, then family, then topic) and the leak filter against each problem's
+options, in both languages:
+
+| id | topic | family (families.json) | override | lesson shown | leak filter |
+| --- | --- | --- | --- | --- | --- |
+| lvl-1_2024_2 | boards | – | arithmetic | Parts i total | passes |
+| lvl-3_2019_18 | spatial | – | – | El plec és un mirall | passes |
+| lvl-2_2020_4 | arithmetic | money | sharing | La raó: comparar per parts iguals | passes |
+| lvl-4_2010_12 | digits | – | – | Operacions inverses | passes |
+| lvl-3_2021_20 | areas | – | – | L'àrea es conserva | passes |
+| lvl-5_2022_30 | counting | – | – | Producte o suma: tries alhora o tries excloents | passes |
+
+Why the two overrides:
+
+- lvl-2_2020_4 is tagged `money` only because the statement says "buy"; the idea is sharing a
+  quantity into equal groups, so it gets the `sharing` lesson (ratio, equal parts). The
+  `speed_time` lesson (proportional quantities) would also fit; the team can switch it.
+- lvl-1_2024_2 belongs to `boards`, whose lesson is the repeating block (the concept the user
+  asked for on that topic). The grid problem is about a whole split into painted and unpainted
+  parts, so it gets the `arithmetic` lesson "Parts i total". The boards lesson stays for the
+  other board problems.
+
+`tests/test_content.py` checks that every override target is an existing lesson.

@@ -259,6 +259,16 @@ class LessonsTest(unittest.TestCase):
                 self.assertIsNone(re.search(r"\bprimer\b.*\bdespr[eé]s\b", text, re.I | re.S), (tag, key))
                 self.assertIsNone(re.search(r"\bfirst\b.*\bthen\b", text, re.I | re.S), (tag, key))
 
+    def test_overrides_point_to_existing_lessons(self):
+        """`overrides` {id: family or topic key}: every target is a lesson of the file."""
+        overrides = self.data.get("overrides", {})
+        self.assertIsInstance(overrides, dict)
+        families = {x["family"] for x in self.lessons if x.get("family")}
+        topics = {x["key"] for x in self.lessons if not x.get("family")}
+        for pid, target in overrides.items():
+            self.assertRegex(pid, r"^lvl-\d_\d{4}_\d+$", "override keys are M3Kang ids")
+            self.assertIn(target, families | topics, (pid, target))
+
     def test_lessons_never_hold_a_demo_answer(self):
         """No lesson contains the correct value of any script problem (digits or number words)."""
         known = _problems()

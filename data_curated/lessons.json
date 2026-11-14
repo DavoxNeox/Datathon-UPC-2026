@@ -1,9 +1,15 @@
 {
   "_about": "The fourth hint: a short lesson per topic (and per frequent solver family). A lesson is a concept, not a strategy: the idea with the name used in class, why it is true, one tiny example with numbers that belong to no demo problem, and a question to recognise the idea in a new problem. Never steps, never a formula that produces the answer, never the solution. 60 to 110 words per language. Contract in INTERFACES.md ('The fourth hint'). Draft by the content curator; the team validates.",
   "status": "draft",
+  "_overrides_about": "Per-problem choice of lesson, by id: a family key or a topic key. get_lesson reads it before the family (families.json tags lvl-2_2020_4 as money because of the word 'buy'; its idea is sharing into equal parts).",
+  "overrides": {
+    "lvl-2_2020_4": "sharing",
+    "lvl-1_2024_2": "arithmetic"
+  },
   "lessons": [
     {
-      "key": "arithmetic", "family": null,
+      "key": "arithmetic",
+      "family": null,
       "title_ca": "Parts i total",
       "title_en": "Parts and whole",
       "text_ca": "Moltes quantitats d'un problema estan lligades per la relació parts i total: el total és la suma de les parts, i cada part és el total menys les altres. Frases com \"el triple\", \"la meitat\" o \"vuit més que\" descriuen com són les parts entre elles, no el total. Exemple minúscul: la Laia i en Marc tenen 36 cromos i la Laia en té el triple: el total són una part d'en Marc i tres d'iguals de la Laia. Pregunta't: en aquest problema, què és el total i què són les parts?",
@@ -11,7 +17,8 @@
       "strategy_ref": 4
     },
     {
-      "key": "logic", "family": null,
+      "key": "logic",
+      "family": null,
       "title_ca": "La contradicció",
       "title_en": "Contradiction",
       "text_ca": "Una afirmació i el seu contrari no poden ser certes alhora: això és una contradicció, i és el motor de la lògica. Si suposem una cosa i, seguint les pistes, arribem a una contradicció, la suposició era falsa; i si totes les possibilitats menys una porten a contradicció, la que queda és la certa. Exemple minúscul: l'Anna diu que en Biel menteix i en Biel diu que l'Anna i ell diuen la veritat; si en Biel digués la veritat, l'Anna també, però aleshores en Biel mentiria. Contradicció: en Biel menteix. Pregunta't: quina suposició puc posar a prova fins que peti?",
@@ -19,7 +26,8 @@
       "strategy_ref": 2
     },
     {
-      "key": "digits", "family": null,
+      "key": "digits",
+      "family": null,
       "title_ca": "Operacions inverses",
       "title_en": "Inverse operations",
       "text_ca": "Cada operació té una operació inversa que la desfà: sumar i restar són inverses, i multiplicar i dividir també. Si a un nombre li fem una operació i tot seguit la inversa, tornem al nombre inicial, com obrir i tancar una porta. Per això una cadena d'operacions es pot recórrer enrere: el que es va fer en últim lloc és el que es desfà abans. Exemple minúscul: 11 multiplicat per 3 dona 33, i 33 dividit per 3 torna a ser 11. Pregunta't: quines operacions han transformat el nombre que busco, i quina és la inversa de cadascuna?",
@@ -27,7 +35,8 @@
       "strategy_ref": 0
     },
     {
-      "key": "counting", "family": null,
+      "key": "counting",
+      "family": null,
       "title_ca": "Producte o suma: tries alhora o tries excloents",
       "title_en": "Product or sum: choices together or choices apart",
       "text_ca": "Comptar sense repetir ni oblidar depèn d'una distinció: quan un cas es descriu amb tries independents que es fan alhora, el total és el producte, perquè cada opció de la primera tria es combina amb totes les de la segona; quan les tries s'exclouen, una o altra, el total és la suma. Si una tria té l'ordre decidit per les regles, ja no aporta opcions noves. Exemple minúscul: 3 camises i 7 pantalons donen 21 conjunts, però triar una camisa o bé un pantaló són 10 opcions. Pregunta't: les meves tries són alhora, o són una o altra? I n'hi ha alguna que ja vingui decidida?",
@@ -35,7 +44,8 @@
       "strategy_ref": 2
     },
     {
-      "key": "areas", "family": null,
+      "key": "areas",
+      "family": null,
       "title_ca": "L'àrea es conserva",
       "title_en": "Area is conserved",
       "text_ca": "L'àrea d'una figura no canvia quan la talles i en mous els trossos sense estirar-los ni superposar-los: és la conservació de l'àrea. Per això una figura estranya sovint es pot recompondre en un rectangle, i per això un triangle val exactament la meitat del rectangle que el tanca, perquè els trossos que sobren omplen el que falta. El perímetre, en canvi, sí que pot canviar amb els mateixos talls: àrea i contorn són coses diferents. Exemple minúscul: un paral·lelogram inclinat, tallat per una punta i encaixat per l'altra, es converteix en un rectangle de la mateixa base i altura. Pregunta't: en quins trossos coneguts es pot recompondre aquesta figura?",
@@ -43,7 +53,8 @@
       "strategy_ref": 4
     },
     {
-      "key": "angles", "family": null,
+      "key": "angles",
+      "family": null,
       "title_ca": "La suma dels angles d'un triangle",
       "title_en": "The angle sum of a triangle",
       "text_ca": "Els tres angles d'un triangle sumen sempre 180°, siguin com siguin els seus costats. És veritat perquè una recta paral·lela a la base que passa pel vèrtex de dalt reparteix l'angle pla de 180° en tres angles que són exactament els del triangle, copiats per les paral·leles. D'aquí surt la resta: angles sobre una recta, voltes senceres, polígons tallats en triangles. Exemple minúscul: un triangle amb angles de 50° i 60° té el tercer de 70°, perquè és el que falta fins a 180°. Pregunta't: quin triangle de la figura conté l'angle que no conec, i quins altres angles seus ja sé?",
@@ -51,7 +62,8 @@
       "strategy_ref": 0
     },
     {
-      "key": "spatial", "family": null,
+      "key": "spatial",
+      "family": null,
       "title_ca": "El plec és un mirall",
       "title_en": "A fold is a mirror",
       "text_ca": "Quan un full es plega, el plec actua com un mirall: cada punt d'una banda va a parar al punt simètric de l'altra. Per això tot el que passa al paper plegat, un forat o un tall, apareix repetit i reflectit a banda i banda quan es desplega, i cada plec de més duplica les capes i les còpies. Això és la simetria axial: el mirall intercanvia esquerra i dreta, cosa que un gir no fa. Exemple minúscul: un full plegat un cop i retallat sobre el plec s'obre amb un forat simètric al mig. Pregunta't: on és l'eix de simetria, i què hi ha reflectit?",
@@ -59,7 +71,8 @@
       "strategy_ref": 1
     },
     {
-      "key": "boards", "family": null,
+      "key": "boards",
+      "family": null,
       "title_ca": "El bloc que es repeteix",
       "title_en": "The repeating block",
       "text_ca": "Un patró que es repeteix es pot comptar per blocs: hi ha un tros, el període, que torna a aparèixer sempre igual, i tot el patró són còpies senceres d'aquest bloc més, potser, un tros final incomplet. En una fila llarga no cal mirar cada casella: n'hi ha prou amb el bloc, quants n'hi caben i què queda al final. Exemple minúscul: la seqüència vermell, blau, blau es repeteix en una filera de 17 boles: hi caben 5 blocs de 3 i en sobren un parell, vermell i blau. Pregunta't: quin és el bloc que es repeteix, i on acaba l'última còpia sencera?",
@@ -67,7 +80,8 @@
       "strategy_ref": 0
     },
     {
-      "key": "digits", "family": "digit_sum",
+      "key": "digits",
+      "family": "digit_sum",
       "title_ca": "El valor posicional",
       "title_en": "Place value",
       "text_ca": "El valor d'una xifra depèn de la posició que ocupa: un 3 a les desenes val 30 i a les centenes 300, perquè cada posició val deu vegades la de la dreta. Això és el valor posicional, i explica per què la suma de les xifres d'un nombre no és el nombre, i per què intercanviar xifres el canvia en un múltiple de 10 − 1. Exemple minúscul: 53 i 35 tenen les mateixes xifres, però la diferència entre ells és 18, perquè el 5 ha passat de valer cinquanta a valer cinc. Pregunta't: quina posició ocupa cada xifra, i quant val realment?",
@@ -75,7 +89,8 @@
       "strategy_ref": 0
     },
     {
-      "key": "arithmetic", "family": "speed_time",
+      "key": "arithmetic",
+      "family": "speed_time",
       "title_ca": "Magnituds proporcionals",
       "title_en": "Proportional quantities",
       "text_ca": "A velocitat constant, la distància i el temps són magnituds directament proporcionals: el doble de temps, el doble de distància, i la meitat de temps, la meitat de distància. La velocitat és precisament la constant que les lliga, la distància recorreguda en cada unitat de temps, i per això s'escriu amb les unitats de l'una i de l'altra, com quilòmetres per hora. Exemple minúscul: un tren que fa 80 km en una hora en fa 40 en mitja hora i 240 en tres hores. Pregunta't: quina quantitat es manté constant en aquest problema, i quines creixen juntes?",
@@ -83,7 +98,8 @@
       "strategy_ref": 0
     },
     {
-      "key": "arithmetic", "family": "sharing",
+      "key": "arithmetic",
+      "family": "sharing",
       "title_ca": "La raó: comparar per parts iguals",
       "title_en": "Ratio: comparing by equal parts",
       "text_ca": "Quan una quantitat es reparteix de manera desigual, la raó diu quantes parts iguals rep cadascú: \"el triple\" vol dir tres parts contra una, \"tres per cada cinc\" vol dir tres i cinc. La part és la unitat del repartiment, i el total és un nombre sencer de parts. És una idea de proporció: les quantitats canvien, però la raó entre elles es manté. Exemple minúscul: 60 euros repartits a raó de cinc per cada un són sis parts de 10 euros: 50 per a l'una i 10 per a l'altra. Pregunta't: quantes parts iguals rep cadascú, i quantes parts fan el total?",
@@ -91,7 +107,8 @@
       "strategy_ref": 4
     },
     {
-      "key": "arithmetic", "family": "money",
+      "key": "arithmetic",
+      "family": "money",
       "title_ca": "Preu, pagament i canvi",
       "title_en": "Price, payment and change",
       "text_ca": "Amb diners hi ha tres quantitats lligades: el preu del que es compra, el que es paga i el canvi que es torna. El canvi és el pagament menys el preu, i el preu total és la suma dels preus. La trampa habitual són les unitats: un euro són cent cèntims, i només es poden sumar quantitats expressades en la mateixa unitat. Exemple minúscul: tres llibretes a 1,30 euros costen 3,90 euros; pagades amb un bitllet de 10 euros, el canvi és la diferència entre 10 i 3,90. Pregunta't: quina d'aquestes tres quantitats em demanen, i estan totes en la mateixa unitat?",
@@ -99,7 +116,8 @@
       "strategy_ref": 0
     },
     {
-      "key": "arithmetic", "family": "ages",
+      "key": "arithmetic",
+      "family": "ages",
       "title_ca": "La diferència d'edats no canvia",
       "title_en": "The age difference never changes",
       "text_ca": "El temps passa igual per a tothom: si han passat 5 anys, cada persona té 5 anys més. Per això la diferència d'edat entre persones és un invariant, una quantitat que no canvia mai, mentre que la raó entre les edats sí que canvia: una mare pot tenir avui el triple d'anys que la filla i més endavant només el doble. Exemple minúscul: si avui tinc 12 anys i la meva cosina 8, d'aquí a 10 anys tindrem 22 i 18, i la diferència segueix sent la mateixa. Pregunta't: què es manté igual en aquest problema quan passa el temps, i què canvia?",
@@ -107,7 +125,8 @@
       "strategy_ref": 0
     },
     {
-      "key": "arithmetic", "family": "percent",
+      "key": "arithmetic",
+      "family": "percent",
       "title_ca": "El tant per cent és una part d'alguna cosa",
       "title_en": "A percentage is a part of something",
       "text_ca": "Un percentatge no és una quantitat per si sol: és una fracció amb denominador cent d'una altra quantitat, la base. Per això un descompte del 10% i després una pujada del 10% no tornen al preu inicial: la pujada té una base més petita que el descompte, i el resultat queda per sota. Exemple minúscul: una samarreta de 30 euros amb un 10% de descompte costa 27; si després puja un 10%, la pujada és el 10% de 27, no de 30. Pregunta't: de quina quantitat és aquest tant per cent, i aquesta base és la mateixa al llarg de tot el problema?",
