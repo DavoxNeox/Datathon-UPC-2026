@@ -116,8 +116,12 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
         if USE_SOLVERS and image_b64 is None:
             # The extraction reads the whole text: budget it like every other model call (a 766-token
             # exam row would take 78 s on the board), and give it the seconds really left as its timeout.
-            solved, spent, skipped = solvers.solve_within(problem, timeout=max(time_limit - MARGIN, 1.0),
-                                                           budget=min(SOLVER_BUDGET, time_limit - MARGIN) - clock.board_seconds())
+            try:
+                solved, spent, skipped = solvers.solve_within(problem, timeout=max(time_limit - MARGIN, 1.0),
+                                                               budget=min(SOLVER_BUDGET, time_limit - MARGIN) - clock.board_seconds())
+            except (socket.timeout, TimeoutError, urllib.error.URLError) as error:
+                # the extraction never came back (server down, timeout): the normal order answers below
+                solved, spent, skipped = None, [], f"error: {getattr(error, 'reason', error)}"
             if skipped:
                 result["status"] = f"ok (solver skipped: {skipped})"
             for timings in spent:  # counted even when the solver abstains: the board still read the problem
@@ -184,7 +188,7 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
             result["retrieved"] = ";".join(f"{p['id']}:{s:.2f}" for s, p in hits)
             clock.add_embeddings(1)  # the query is embedded once
         if not USE_LETTER_MODEL and image_b64 is None:
-            result["status"] = "ok"
+            # status stays as set above ("ok", or the solver skip note): the fallback letter is still an answer
             result["seconds"] = round(time.perf_counter() - start, 2)
             result["board_seconds"] = round(clock.board_seconds(), 2)
             return result  # answer stays FALLBACK
