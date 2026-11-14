@@ -24,3 +24,11 @@ dev/run/
 
 # App Lab build output (venv, compose files, sketch build), created next to app.yaml
 .cache/
+
+# UI captures that show an M3Kang problem (research-only licence): described in docs/ui/redesign.md, never committed
+docs/ui/*problem*.png
+docs/ui/*answer*.png
+docs/ui/*rung0*.png
+docs/ui/*hints*.png
+docs/ui/*no-picture*.png
+docs/ui/*panel*.png
