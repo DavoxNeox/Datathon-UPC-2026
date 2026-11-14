@@ -177,6 +177,7 @@ organizers' one-letter prompt with the grammar `A-E`.
 | Family solvers, D elsewhere | 281 eng val | 23.1% (65/281): no solver fired on validation | 0 s when no solver fires; 12.6 to 15.9 s *(estimate)* when one does | 15.9 s *(estimate)* |
 | Family solvers, then the middle-value rule, then D (shipped, `MIDDLE_VALUE=1`) | 281 eng val | 27.4% (77/281) | 0 s when no solver fires | same |
 | Same rule on the training set | 1466 eng train | 27.6% (405/1466) against 25.0% for always D | 0 s | 0 s |
+| Brief working by the 0.8B before the letter, every level (`THINK_LEVELS=all`, off by default) | 281 eng / 297 train / 281 cat | 27.0% / 27.6% / 23.5% against 27.4% / 25.3% / 26.0% shipped | 25 s *(estimate)*; 42 s per request | 52 s *(estimate)*, real 0.99 to 1.10 of it on the board |
 
 On 400 training problems the model's own letter scored 20.8% against 27.2% for always D, and its
 confidence ran the wrong way: the quartile where it was most sure was the least accurate (16.9%).
@@ -197,8 +198,16 @@ puts the gain between -2 and +26 problems (95%), with 6% of resamples at or unde
 is well supported, the size is not, and a hidden test can return the gain to zero. Nothing else
 measured beat always D: a bigger model (Qwen3.5 2B, too slow for 60 s on the board), asking for
 the option's value instead of its letter (66/281), or voting over five shifts of the options
-(63/281). The rest of the Reason track stays at the always-D floor; the value of the project is
-the Teach track. [[TODO official run on the board with MIDDLE_VALUE=1, 562 problems]]
+(63/281), or **brief reasoning by the model itself** (`copilot/think.py`, Experiment 6): a few
+lines of English working in one request sized by the board clock, the letter read from the text.
+With the service's `--reasoning-budget 0` the template's thinking block is closed per request, and
+real thinking mode spends 250 tokens before an answer, so the working goes in the content; 60% of
+the workings still hit the 200-token cap that 45 s of board time allow. On every level it scored
+76/281 against the shipped 77 (English validation), 82/297 against 75 (stratified training
+sample) and 66/281 against 73 (the Catalan versions). The one stratum positive on both English
+sets, levels 2 to 5 (+8, +6), lost 3 on the Catalan versions of the same problems, so the flag
+stays off: `THINK_LEVELS` is empty. The rest of the Reason track stays at the always-D floor; the
+value of the project is the Teach track. [[TODO official run on the board with MIDDLE_VALUE=1, 562 problems]]
 
 ### 4.2 Teaching
 
@@ -273,8 +282,10 @@ sample). Catalan costs about 15% more prompt tokens (10.6 s vs 9.1 s mean *(esti
 - **Asking the model for a letter.** Below always-D on 281 problems, and more confident when
   wrong. Correcting the bias with its own log probabilities did not help (17.8%). Asking for the
   option's value with a grammar (23.5%), voting over five shifts of the options (22.4%, and 6
-  problems over 60 s without a time guard), and a 2B model (26% on 50, about 2.6 tokens/s on
-  the board) did not help either: `docs/reason-experiments.md`.
+  problems over 60 s without a time guard), a 2B model (26% on 50, about 2.6 tokens/s on
+  the board), and letting the 0.8B write a few lines of working before the letter (27.0% on
+  281 against the shipped 27.4%, -7 on the Catalan versions, 42 s of board time per request)
+  did not help either: `docs/reason-experiments.md`.
 - **Searching with the Catalan text.** bge-small is English-only: the Catalan query finds
   neighbours on the right topic 43% of the time, the English query 72%. The bridge by `id` fixes
   it at no cost.

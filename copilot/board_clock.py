@@ -50,6 +50,16 @@ def runtime():
     return value
 
 
+# Characters per token of English problem text with numbers, measured with /tokenize on 47 validation
+# prompts: mean 3.2, from 1.7 (digits and symbols) to 4.6. 3.0 is the guess used before a request is sent.
+CHARS_PER_TOKEN = 3.0
+
+
+def guess_tokens(text):
+    """Tokens a text costs to read, guessed from its length without calling the server (hot path)."""
+    return int(len(text) / CHARS_PER_TOKEN) + 1
+
+
 def estimate_tokens(prompt_tokens, output_tokens=0, embeddings=0, python_seconds=0.0):
     """Board seconds for a request of this size. Use it BEFORE trying a prompt."""
     return prompt_tokens / PREFILL_TPS + output_tokens / GEN_TPS + embeddings * EMBED_SECONDS + python_seconds

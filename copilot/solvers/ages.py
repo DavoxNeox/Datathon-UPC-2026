@@ -35,8 +35,8 @@ def matches(text):
     return bool(_MATCH.search(text)) and bool(_SUM.search(text))
 
 
-def extract(problem):
-    return llm.extract_json(problem["text"], GRAMMAR, HINT)
+def extract(problem, timeout=60):
+    return llm.extract_json(problem["text"], GRAMMAR, HINT, timeout=timeout)
 
 
 def compute(params, options):
