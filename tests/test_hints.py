@@ -272,12 +272,12 @@ class DemoSetTest(unittest.TestCase):
 
     def test_the_step_counter_prefix_is_not_checked_for_leaks(self):
         # sample-2: B = 14; sample-1: C = 10. A prefix like "Pas 2 de 4" must never hide a step.
-        steps = [{"text_ca": f"Pas {w}.", "text_en": f"Step {w}."} for w in ("u", "dos", "tres", "quatre")] + [{"text_ca": "Fi: 14.", "text_en": "End: 14."}]
+        steps = [{"text_ca": f"{w}.", "text_en": f"{w}."} for w in ("Mira", "Pensa", "Compta", "Suma")] + [{"text_ca": "Fi: 14.", "text_en": "End: 14."}]
         self.use_file({"problems": [{"id": "sample-2", "steps": steps}]})
         hints.reset("sample-2")
         got = [hints.get_hint("sample-2", 3, "cat") for _ in range(4)]
         self.assertEqual([h["kind"] for h in got], ["demo_steps"] * 4)
-        self.assertEqual(got[1]["text_ca"], "Pas 2 de 4: Pas dos.")
+        self.assertEqual(got[1]["text_ca"], "Pas 2 de 4: Pensa.")
         with mock.patch.object(hints, "problem_for", return_value={"id": "x", "level": 0, "label": "A", "options": {"A": "2"}, "language": "cat"}):
             self.use_file({"problems": [{"id": "x", "steps": steps}]})
             hints.reset("x")
