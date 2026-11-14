@@ -3,9 +3,7 @@
 Owner: A (branch `infra`). Backend chosen by RUNTIME: `sim` prints ASCII and keeps the
 last frame; `board` sends it over the App Lab Bridge. Callers never know which runs.
 """
-import os
-
-from ..config import CONFIG
+from .. import board_clock
 from ..topics import TOPIC_KEYS
 
 ROWS, COLS = 8, 13
@@ -18,7 +16,7 @@ CROSS = [".............", "...##...##...", "....##.##....", ".....###.....",
 
 
 def runtime():
-    return os.environ.get("RUNTIME", CONFIG.get("RUNTIME", "sim"))
+    return board_clock.runtime()  # "auto" detects the board from the device tree
 
 
 def _frame_from_ascii(lines):

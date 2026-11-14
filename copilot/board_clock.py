@@ -20,9 +20,28 @@ GEN_TPS = float(CONFIG.get("BOARD_GEN_TPS", 5.5))
 EMBED_SECONDS = float(CONFIG.get("BOARD_EMBED_SECONDS", 0.25))
 
 
+BOARD_MODEL_FILE = "/proc/device-tree/model"  # reads "Arduino SA,Imola" on the UNO Q
+
+
+def on_board():
+    """True on the Arduino UNO Q: the device tree names it. False on any laptop."""
+    try:
+        with open(BOARD_MODEL_FILE, "rb") as f:
+            return b"Arduino" in f.read()
+    except OSError:
+        return False
+
+
 def runtime():
-    """"sim" on a laptop, "board" on the UNO Q. The environment wins over config.env."""
-    return os.environ.get("RUNTIME", CONFIG.get("RUNTIME", "sim"))
+    """"sim" on a laptop, "board" on the UNO Q.
+
+    RUNTIME in the environment wins, then config.env. The default, "auto", detects the
+    board from the device tree, so the same config.env runs unchanged in both places.
+    """
+    value = os.environ.get("RUNTIME", CONFIG.get("RUNTIME", "auto")).strip().lower()
+    if value in ("", "auto"):
+        return "board" if on_board() else "sim"
+    return value
 
 
 def estimate_tokens(prompt_tokens, output_tokens=0, embeddings=0, python_seconds=0.0):

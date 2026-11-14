@@ -46,3 +46,26 @@ class EstimateTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RuntimeTest(unittest.TestCase):
+    def test_auto_detects_from_device_tree(self):
+        import os, tempfile
+        from copilot import board_clock as bc
+        old_env, old_file = os.environ.get("RUNTIME"), bc.BOARD_MODEL_FILE
+        try:
+            os.environ["RUNTIME"] = "auto"
+            with tempfile.NamedTemporaryFile("wb", delete=False) as f:
+                f.write(b"Arduino SA,Imola\x00")
+            bc.BOARD_MODEL_FILE = f.name
+            self.assertEqual(bc.runtime(), "board")
+            bc.BOARD_MODEL_FILE = f.name + ".missing"
+            self.assertEqual(bc.runtime(), "sim")
+            os.environ["RUNTIME"] = "board"
+            self.assertEqual(bc.runtime(), "board")
+        finally:
+            bc.BOARD_MODEL_FILE = old_file
+            if old_env is None:
+                os.environ.pop("RUNTIME", None)
+            else:
+                os.environ["RUNTIME"] = old_env
