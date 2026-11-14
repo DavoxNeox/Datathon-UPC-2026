@@ -11,7 +11,8 @@ validation id is embedded once by retrieval.query_vector (one embedding, cached)
 chain never costs more than one embedding. The Python part is one dot product per
 same-topic English row of the index.
 
-Nothing here reasons: the chain is a lookup, the student compares the rungs.
+Nothing here reasons: the chain is a lookup. It is an exploration ("look how this idea
+grows"), not a hint: the rungs are further unsolved problems, shown without their answers.
 Reuses copilot.retrieval (its Catalog and query_vector) without changing it.
 """
 from . import retrieval
@@ -23,9 +24,9 @@ LINK_BRIGHTNESS = 3         # a rung of the chain
 CURRENT_BRIGHTNESS = 7      # the level the student is on
 BAR_FLOOR = 0.5             # similarity shown as 0 LEDs; 1.0 is the full row of 13
 # Hand judgement of 74 links on validation (docs/lineage.md): below 0.70 almost no link is the
-# same idea, from 0.75 two out of three are. The signature keeps 0.6 (the contract); the web
-# should pass this one.
-RECOMMENDED_MIN_SIMILARITY = 0.75
+# same idea, from 0.75 two out of three are. bge's cosine scale is compressed: a random
+# same-topic problem already scores 0.65.
+DEFAULT_MIN_SIMILARITY = 0.75
 
 # Fields of a stored problem that a link carries to the student. Never the label.
 _LINK_FIELDS = ("id", "level", "year", "language", "text", "options", "text_only")
@@ -54,7 +55,7 @@ def _link(catalog, pid, lang, score, topic):
     return link
 
 
-def lineage(problem_id, lang="cat", min_similarity=0.6, max_links=5, catalog=None):
+def lineage(problem_id, lang="cat", min_similarity=DEFAULT_MIN_SIMILARITY, max_links=5, catalog=None):
     """The chain of `problem_id` by levels: list of link dicts, easiest level first.
 
     Each link: id, level, year, topic, similarity, text (in `lang`, else English),

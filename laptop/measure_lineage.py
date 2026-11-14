@@ -4,6 +4,7 @@
     python3 laptop/measure_lineage.py                         # tables for docs/lineage.md (ids only)
     python3 laptop/measure_lineage.py --thresholds 0.5,0.6,0.7,0.8 --min-levels 3
     python3 laptop/measure_lineage.py --judge 15 --out /path/outside/the/repo.txt   # chains with texts, to judge by hand
+    python3 laptop/measure_lineage.py --judge 15 --judge-seed 11 --judge-exclude id1,id2 --out ...   # a clean second round
 
 For every English validation problem the chain is built once with max_links=8 (every other
 level that passes the lowest threshold), then cut at each threshold. Reported: the share of
@@ -143,10 +144,13 @@ def cost(problems, chains_by_id, label):
           f"-> board estimate {e * EMBED_SECONDS + statistics.mean(ms) / 1000:.2f} s per chain.")
 
 
-def judge_file(problems, chains_by_id, n, threshold, out, seed=7):
-    """n chains with at least 3 links, spread over the topics, with the texts: for the hand judgement."""
+def judge_file(problems, chains_by_id, n, threshold, out, seed=7, exclude=()):
+    """n chains with at least 3 links, spread over the topics, with the texts: for the hand judgement.
+
+    `exclude` keeps ids judged in an earlier round out, so a second round is a clean sample.
+    """
     rnd = random.Random(seed)
-    good = [r for r in problems if len(cut(chains_by_id[r["id"]][0], threshold)) >= 3]
+    good = [r for r in problems if len(cut(chains_by_id[r["id"]][0], threshold)) >= 3 and r["id"] not in exclude]
     by_topic = defaultdict(list)
     for r in good:
         by_topic[topics.get_topic(r["id"])].append(r)
@@ -184,7 +188,9 @@ def main():
     ap.add_argument("--thresholds", default="0.50,0.60,0.70,0.75,0.80,0.85")
     ap.add_argument("--main", default="0.60,0.75",
                     help="thresholds of the per-topic tables: the signature default and the hand-calibrated one")
-    ap.add_argument("--judge-threshold", type=float, default=0.6, help="threshold of the chains written by --judge")
+    ap.add_argument("--judge-threshold", type=float, default=0.75, help="threshold of the chains written by --judge")
+    ap.add_argument("--judge-seed", type=int, default=7)
+    ap.add_argument("--judge-exclude", default="", help="comma-separated ids judged before (round 1 used seed 7 at 0.6)")
     ap.add_argument("--min-levels", type=int, default=3)
     ap.add_argument("--train-sample", type=int, default=100, help="training ids timed for the 0-embedding cost")
     ap.add_argument("--judge", type=int, default=0, help="write this many chains with texts for the hand judgement")
@@ -212,7 +218,8 @@ def main():
 
     if args.judge:
         out = args.out or os.path.join(os.path.expanduser("~"), "m3kang-data", "judge_lineage.txt")
-        judge_file(val, val_chains, args.judge, args.judge_threshold, out)
+        exclude = {i.strip() for i in args.judge_exclude.split(",") if i.strip()}
+        judge_file(val, val_chains, args.judge, args.judge_threshold, out, args.judge_seed, exclude)
 
 
 if __name__ == "__main__":

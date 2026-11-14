@@ -73,7 +73,7 @@ class LineageTest(unittest.TestCase):
 
     def chain(self, **kw):
         kw.setdefault("lang", "cat")
-        kw.setdefault("min_similarity", 0.6)
+        kw.setdefault("min_similarity", lineage.DEFAULT_MIN_SIMILARITY)
         return lineage.lineage(QUERY, catalog=self.catalog, **kw)
 
     def test_one_link_per_other_level_sorted_easiest_first(self):
@@ -97,7 +97,7 @@ class LineageTest(unittest.TestCase):
             self.assertEqual(link["topic"], "areas")
             self.assertEqual(link["language"], "cat")
             self.assertTrue(link["text"].startswith("cat text of"))
-            self.assertGreaterEqual(link["similarity"], 0.6)
+            self.assertGreaterEqual(link["similarity"], lineage.DEFAULT_MIN_SIMILARITY)
             self.assertLessEqual(link["similarity"], 1.0)
 
     def test_language_falls_back_to_english(self):
@@ -125,6 +125,11 @@ class LineageTest(unittest.TestCase):
         self.assertEqual(lineage.lineage("nobody", catalog=self.catalog), [])
         with mock.patch.object(retrieval, "_catalog", lambda: None):
             self.assertEqual(lineage.lineage("syn-3"), [])
+
+    def test_default_threshold_is_the_calibrated_one(self):
+        self.assertEqual(lineage.DEFAULT_MIN_SIMILARITY, 0.75)
+        self.assertEqual(lineage.lineage(QUERY, catalog=self.catalog),
+                         lineage.lineage(QUERY, catalog=self.catalog, min_similarity=0.75))
 
     def test_embeddings_needed(self):
         self.assertEqual(lineage.embeddings_needed(QUERY, catalog=self.catalog), 0)
