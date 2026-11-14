@@ -22,6 +22,9 @@ const I18N = {
         more: "mostra-ho tot", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
         more_panel: "Menú", board_led: "La placa", timing: "Temps (per al professor)", problem: "Problema",
         theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"}, no_hints: "Ja no queden pistes en aquest problema",
+        read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
+        other_kind: {eng: "En anglès · no compta com a pista", cat: "En català · no compta com a pista"},
+        show_scan: "Mostra l'escaneig sencer", hide_scan: "Amaga l'escaneig",
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", hint: "Hint",
         solution: "Solution", next: "Continue", mastery: "Your progress", close: "Close",
@@ -36,6 +39,9 @@ const I18N = {
         more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
         more_panel: "Menu", board_led: "The board", timing: "Timings (for the teacher)", problem: "Problem",
         theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"}, no_hints: "No hints left on this problem",
+        read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
+        other_kind: {eng: "In English · not counted as a hint", cat: "In Catalan · not counted as a hint"},
+        show_scan: "Show the whole scan", hide_scan: "Hide the scan",
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
 const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
@@ -311,14 +317,15 @@ function extractParts(img, clean) {
 }
 
 // one scan per problem: fetched once, cut once, then reused on every poll
-let scan = {id: null, figure: null, options: null, pieces: null, whole: null};
+let scan = {id: null, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false};
 function loadScan(p, clean) {
-  scan = {id: p.id, figure: null, options: null, pieces: null, whole: null};
+  scan = {id: p.id, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false};
   api("/api/image").then(r => {
     if (!r.image_b64 || scan.id !== p.id) return;
     const img = new Image();
     img.onload = () => {
       if (scan.id !== p.id) return;
+      scan.full = img;
       try { Object.assign(scan, extractParts(img, clean)); }
       catch (e) { scan.whole = img; }   // anything odd: the whole scan, as before
       if (!scan.figure && !scan.options && !scan.pieces && !clean) scan.whole = img;   // nothing found but the options are unreadable: show the scan
@@ -333,10 +340,16 @@ function applyScan() {
   const key = cssVar("--bg");
   if (scan.tintKey !== key) {
     const fig = scan.figure || scan.whole;
-    scan.tinted = {figure: fig ? tinted(fig) : "", options: scan.options ? tinted(scan.options) : "", pieces: (scan.pieces || []).map(tinted)};
+    scan.tinted = {figure: fig ? tinted(fig) : "", options: scan.options ? tinted(scan.options) : "", pieces: (scan.pieces || []).map(tinted), full: ""};
     scan.tintKey = key;
   }
-  const tt = scan.tinted || {figure: "", options: "", pieces: []};
+  const tt = scan.tinted || {figure: "", options: "", pieces: [], full: ""};
+  // the whole scan, one click away (not offered when the page already fell back to it)
+  const canToggle = !!scan.full && !scan.whole;
+  $("whole-toggle").hidden = !canToggle; $("whole-toggle").textContent = scan.showFull ? t().hide_scan : t().show_scan;
+  if (scan.showFull && canToggle && !tt.full) tt.full = tinted(scan.full);
+  $("whole").hidden = !(scan.showFull && canToggle); setSrc($("whole-img"), scan.showFull && canToggle ? tt.full : "");
+  $("whole-img").alt = t().image;
   $("figure").hidden = !tt.figure; setSrc($("img"), tt.figure);
   // small crops (a die, a 5x5 grid) are drawn bigger; the CSS caps them at the column's width
   $("img").onload = () => { const w = $("img").naturalWidth; $("img").style.width = w ? `${Math.min(400, Math.round(w * (w < 500 ? 1.25 : 1)))}px` : ""; };
@@ -380,6 +393,19 @@ function renderProblem(p) {
   $("letters").dataset.lang = lang;
   if (p.has_image) { if (changed || scan.id !== p.id) loadScan(p, clean); else applyScan(); }
   else { scan = {id: p.id}; applyScan(); }
+}
+
+function renderTranslation(s) {
+  // rung 0: the same problem in the other language, under the statement; never its label; no use spent
+  const other = s.other_language, tr = s.translation;
+  $("translate").hidden = !s.translation_available;
+  if (s.translation_available) { $("translate").textContent = tr ? t().hide_other[other] : t().read_in[other]; $("translate").classList.toggle("on", !!tr); }
+  $("other").hidden = !tr;
+  if (!tr) return;
+  $("other-kind").textContent = t().other_kind[tr.language];
+  $("other-text").textContent = (tr.text || "").replace(/^\s*\d+[.)]\s*/, "").replace(/\s*\n\s*/g, " ");
+  const opts = tr.options || {};
+  $("other-options").textContent = "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${tidyOption(opts[l])}`).join("   ");
 }
 
 function renderAnswer(s) {
@@ -470,7 +496,7 @@ function render(s) {
   $("who").textContent = s.started ? s.student + (s.level !== null && s.level !== undefined ? ` · ${t().courses[s.level]}` : "") : t().title;
   drawLed(s.led); renderTimeline(s); renderMastery(s);   // also on the start screen, so a reset empties the map
   if (!s.started) { if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; } return; }
-  renderProblem(s.problem); renderAnswer(s); renderHints(s); renderMastery(s); renderTopicProgress(s);
+  renderProblem(s.problem); renderTranslation(s); renderAnswer(s); renderHints(s); renderMastery(s); renderTopicProgress(s);
   if (s.answer && !hadAnswer && innerWidth < 1000) setPanel(false);
   hadAnswer = !!s.answer;
   if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; }
@@ -484,6 +510,8 @@ function setPanel(open) { $("panel").hidden = !open; $("more").setAttribute("ari
 $("more").onclick = () => setPanel($("panel").hidden);
 $("letters").addEventListener("click", async e => { const b = e.target.closest("button[data-l]"); if (b && !b.disabled) render(await api("/api/answer/" + b.dataset.l)); });
 const pressed = b => { b.disabled = true; $("status").textContent = t().thinking; };
+$("translate").onclick = async () => render(await api("/api/translate/" + (state && state.translation ? "hide" : "show")));
+$("whole-toggle").onclick = () => { scan.showFull = !scan.showFull; applyScan(); };
 $("hint").onclick = async () => { pressed($("hint")); await api("/api/hint"); poll(); };
 $("solution").onclick = async () => { pressed($("solution")); await api("/api/solution"); poll(); };
 $("next").onclick = async () => render(await api("/api/next"));
@@ -510,6 +538,7 @@ document.addEventListener("keydown", e => {
   const k = e.key.toUpperCase();
   if ("ABCDE".includes(k) && k.length === 1) { const b = document.querySelector(`#letters button[data-l="${k}"]`); if (b && !b.disabled) b.click(); }
   else if (k === "P" || k === "H") $("hint").click();
+  else if (k === "T" && !$("translate").hidden) $("translate").click();
   else if (k === "N" || (e.key === "Enter" && !$("next").hidden)) $("next").click();
 });
 applyI18n();

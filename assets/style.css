@@ -82,6 +82,17 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
 .figure.zoomed img { width: 1100px !important; max-width: none; max-height: none; }
 .text { white-space: pre-wrap; font-size: 24px; font-weight: 700; line-height: 1.4; margin: 4px 2px 0; }
 .bul { margin: 6px 0 0; padding-left: 22px; }
+/* rung 0: the statement in the other language, quietly under the text */
+.other { clear: left; margin: 12px 2px 0; padding: 8px 16px; border-left: 3px solid var(--accent); }
+.other .kind { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; }
+.other .other-text { font-size: 19px; font-weight: 600; color: var(--muted); margin-top: 4px; white-space: pre-wrap; }
+.options-text { color: var(--muted); font-size: 16px; font-weight: 600; margin-top: 6px; white-space: pre-wrap; }
+.panel .translate { margin-top: 10px; text-transform: none; letter-spacing: 0; font-size: 14px; }
+.panel .translate.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); box-shadow: 0 4px 0 var(--accent); }
+.scan-tools { display: flex; justify-content: flex-end; margin-top: 4px; }
+.scan-tools .link { font-size: 12px; color: var(--muted); }
+.figure.whole { float: none; max-width: none; margin: 8px 0 0; cursor: default; display: flex; justify-content: center; }
+.figure.whole img { width: 100% !important; max-height: none; }
 .bul li { margin: 4px 0; }
 .hint p, .lesson p { margin: 4px 0 0; }
 

@@ -24,6 +24,8 @@
       <span class="lang" role="group" aria-label="CA / EN"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
       <button class="icon" id="theme" aria-live="polite"><span id="theme-label">◐</span></button>
     </div>
+    <!-- rung 0: the same statement in the other language, under the text; not a hint, no use spent -->
+    <button class="secondary small translate" id="translate" title="esglaó 0" hidden></button>
   </section>
   <section class="panel-block">
     <h2 data-i18n="mastery">El teu progrés</h2>
@@ -69,9 +71,17 @@
   <div class="problem">
     <figure class="figure" id="figure" hidden><img id="img" alt=""></figure>
     <div class="text" id="text"></div>
+    <div class="other" id="other" hidden>
+      <div class="kind" id="other-kind"></div>
+      <div class="other-text" id="other-text"></div>
+      <div class="options-text" id="other-options"></div>
+    </div>
   </div>
   <figure class="figure strip" id="strip" hidden><img id="strip-img" alt=""></figure>
   <div class="letters" id="letters"></div>
+  <!-- the whole scan, one click away, in case a cut goes wrong on the projector -->
+  <div class="scan-tools"><button class="link" id="whole-toggle" hidden></button></div>
+  <figure class="figure whole" id="whole" hidden><img id="whole-img" alt=""></figure>
   <section class="help">
     <div class="hints" id="hints"></div>
     <div class="manip-box" id="manip-box" hidden>

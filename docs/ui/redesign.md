@@ -300,3 +300,23 @@ and a hint button without icons.
 - The review's three fixes (sheet edge in `--control`, phone padding under the sheet, mastery
   map drawn on the start screen so a reset empties it) are on this branch as well as on
   `ui-fixes-3`.
+
+### Rung 0 back, and the whole scan one click away (branch `ui-fixes-4`)
+
+- **Rung 0** is reachable again: "Llegeix-lo en anglès" / "Read it in Catalan" is a button in
+  the Menú sidebar, under CA/EN (which still switches the page's language, apart). It calls
+  `/api/translate/show|hide` as before, so it counts as rung 0 and spends no hint use. The
+  translation appears under the statement as quiet grey text with an accent edge and the
+  label "En anglès · no compta com a pista"; the key T toggles it.
+- **The whole scan, one click away**: a small "Mostra l'escaneig sencer" link under the
+  options shows the full scan (tinted like the crops) below them, for the case a cut goes
+  wrong on the projector; "Amaga l'escaneig" puts it away. The link is not shown when the
+  page already fell back to the whole scan.
+- **When the page falls back to the whole scan by itself**: (1) the cutting code throws (an
+  image that is not a PNG the canvas can read, a zero-sized component list); (2) nothing was
+  found to show, that is no figure, no option strip and no option pieces, while the OCR options
+  are not readable text (a scan made only of pictures the rules did not recognise). In both
+  cases the full scan is shown where the figure goes and the buttons carry the letters only.
+  When the OCR options are readable text and no figure is found, nothing is shown besides the
+  text and the option rows (a text-only problem). A wrong cut that does not throw (a figure
+  trimmed too tight, a label left in) is not detected: that is what the link is for.
