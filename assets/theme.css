@@ -8,7 +8,8 @@
   --card-2: #f1ede6;        /* a quieter surface inside a card */
   --ink: #1f2430;           /* text, 14.6:1 on --card */
   --muted: #5f6673;         /* secondary text, 5.6:1 on --card */
-  --line: #e4ded4;          /* borders */
+  --line: #e4ded4;          /* borders of cards and separators (decorative) */
+  --control: #7f858e;       /* border of a control: 3.7:1 on --card, 3.4:1 on --bg (WCAG 1.4.11 asks 3:1) */
   --accent: #2f5fd6;        /* the one action colour, 5.9:1 on --card */
   --accent-ink: #ffffff;    /* text on an accent button */
   --accent-soft: #e7edfb;   /* accent tint for chips and the chosen option */
@@ -27,7 +28,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #15171c; --card: #1e2128; --card-2: #272b33; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f;
+    --bg: #15171c; --card: #1e2128; --card-2: #272b33; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f; --control: #737a88;
     --accent: #8aa6ff; --accent-ink: #0f1424; --accent-soft: #273153;
     --ok: #8fd9ad; --ok-bg: #1b3326; --bad: #f3a59d; --bad-bg: #44211e; --warn: #f0c070; --warn-bg: #3d3016;
     --focus: #8aa6ff; --figure-bg: #ffffff; --figure-dim: brightness(.86); --shadow: none;
@@ -35,7 +36,7 @@
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #15171c; --card: #1e2128; --card-2: #272b33; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f;
+  --bg: #15171c; --card: #1e2128; --card-2: #272b33; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f; --control: #737a88;
   --accent: #8aa6ff; --accent-ink: #0f1424; --accent-soft: #273153;
   --ok: #8fd9ad; --ok-bg: #1b3326; --bad: #f3a59d; --bad-bg: #44211e; --warn: #f0c070; --warn-bg: #3d3016;
   --focus: #8aa6ff; --figure-bg: #ffffff; --figure-dim: brightness(.86); --shadow: none;

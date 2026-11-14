@@ -44,7 +44,7 @@
 <main id="start">
   <section class="start">
     <h1 data-i18n="welcome">Hola! Com et dius?</h1>
-    <label class="field"><span data-i18n="student">Nom o àlies</span>
+    <label class="field"><span data-i18n="student">Àlies</span>
       <input id="student" maxlength="32" placeholder="per exemple: Mar" autocomplete="off"></label>
     <label class="field"><span data-i18n="course">Curs</span>
       <select id="level"></select></label>
@@ -70,7 +70,8 @@
     <div class="options-text" id="other-options"></div>
   </div>
   <div class="letters" id="letters"></div>
-  <div class="feedback" id="feedback">
+  <div class="topic-progress" id="topic-progress"></div>
+  <div class="feedback" id="feedback" aria-live="polite">
     <div class="verdict" id="verdict"></div>
     <button class="primary" id="next" data-i18n="next" hidden>Següent problema</button>
   </div>
