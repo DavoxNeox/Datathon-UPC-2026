@@ -29,9 +29,9 @@ class LadderTest(unittest.TestCase):
         self.assertIsNone(ladder.middle_letter({"options": {"A": "1", "B": "2", "C": "3", "D": "4"}}))  # four options
         self.assertIsNone(ladder.middle_letter({"options": {"A": "15/4/2015", "B": "1/6/2055", "C": "1/5/2050", "D": "25/5/2015", "E": "15/5/2015"}}))
 
-    def test_pipeline_flag_off_by_default_and_on_with_env(self):
+    def test_pipeline_flag_on_by_default_and_the_rule_abstains_to_the_fallback(self):
         from copilot import pipeline
-        self.assertFalse(pipeline.USE_MIDDLE_VALUE)
+        self.assertTrue(pipeline.USE_MIDDLE_VALUE)
         problem = {"id": "x", "text": "How many?", "options": {"A": "1", "B": "2", "C": "3", "D": "4", "E": "5"}}
         with mock.patch.object(pipeline, "USE_MIDDLE_VALUE", True), mock.patch.object(pipeline, "USE_SOLVERS", False):
             result = pipeline.solve(problem)

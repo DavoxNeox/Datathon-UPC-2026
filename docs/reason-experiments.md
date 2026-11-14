@@ -4,7 +4,15 @@ Goal: a `predict.py` policy that beats the always-D floor (65/281 = 23.1% on the
 validation set) by at least 10 problems, and also beats the most frequent letter of
 whatever set it is scored on, within the rules: 60 s per problem on the UNO Q, RAM next to
 the embeddings and the app, standard library, deterministic, offline. Branch
-`team/reason-predict-0ff6f3`. Every change is behind a flag that is **off** by default.
+`team/reason-predict-0ff6f3`. One change is adopted (`MIDDLE_VALUE=1`, the default since the
+review of 14 Nov); the others stay behind flags that are **off**.
+
+**What the winning rule is, and is not.** The middle-value rule is a prior on how Kangaroo
+distractors are built: the wrong options are made from the right value (one step too many or
+too few, double, half), so the correct value usually has distractors above and below it. It
+is not reasoning about the problem, it reads no text, and it says nothing about the model.
+Its gain on the hidden test can be zero: the paired bootstrap below gives a 95% interval of
+-2 to +26 problems on 281.
 
 Validation = `data/val.jsonl`, English, 281 problems (167 with OCR options); the 50-problem
 sample is `eval.py --limit 50` (its always-D floor is an unusual 34%). Training = 1466
@@ -21,8 +29,9 @@ model runs here.
 | # | experiment | flag | n | accuracy | always D on the set | most frequent letter | board s mean / worst | RAM | verdict |
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
 | 0 | shipped policy: solvers, else D | | 281 | 65 = 23.1% | 23.1% | D 23.1% | 0.8 / 39.3 | 1.06 GB (0.8B) | floor |
-| 1 | middle-value rule, D elsewhere | `MIDDLE_VALUE=1` | 281 | **77 = 27.4%** | 23.1% | D 23.1% | 0.7 / 38.1 | no model | **+12: recommend** |
-| 1 | same, training set | `MIDDLE_VALUE=1` | 1466 | 406 = 27.7% | 25.0% | D 25.0% | 0.9 / 38.5 | no model | +39 |
+| 1 | middle-value rule, D elsewhere | `MIDDLE_VALUE=1` | 281 | **77 = 27.4%** | 23.1% | D 23.1% | 0.7 / 38.1 | no model | **+12: adopted** |
+| 1 | same, training set (rule + D alone) | `MIDDLE_VALUE=1` | 1466 | 405 = 27.6% | 25.0% | D 25.0% | 0.0 / 0.0 | no model | +38 |
+| 1 | same, training set, family solvers on | `MIDDLE_VALUE=1` | 1466 | 406 = 27.7% | 25.0% | D 25.0% | 0.9 / 38.5 | 0.8B for 2 extractions | +39 |
 | 1 | same, the 50-sample | `MIDDLE_VALUE=1` | 50 | 14 = 28.0% | 34.0% | D 34.0% | 1.3 / 38.1 | no model | -3 (D-heavy sample) |
 | 2 | Qwen3.5 2B Q4_K_M, letter | `LLM_PORT=8091 LETTER_MODEL=1` | 50 | 13 = 26.0% | 34.0% | D 34.0% | 39 / 88, 3 over 60 s | 2.74 GB RSS on the Mac | too slow, no signal |
 | 2 | Qwen3.5 2B Q4_K_M, value grammar | `LLM_PORT=8091 VALUE_MODEL=1` | 50 | 10 = 20.0% | 34.0% | D 34.0% | 38 / 88 (scaled) | same | no signal |
@@ -52,7 +61,13 @@ on training and is what `ladder.numeric_options` accepts: one number, an optiona
 to seven letters (or %, €, $, °, cm², km/h), five distinct values. Anything else abstains.
 
 **Validation, one look.** `MIDDLE_VALUE=1 python3 eval.py --limit 0 --languages eng`:
-77/281 = 27.4%, +12 problems over always D. The rule fires on 120 problems: 36 right (30.0%)
+77/281 = 27.4%, +12 problems over always D (4.3 points). **Uncertainty:** a paired bootstrap
+of the 281 problems (10 000 resamples, seed 42, the rule's hits minus D's hits on the same
+resample) gives a 95% interval of **[-2, +26] problems ([-0.7, +9.3] points)**; the gain is
+zero or negative in 6.0% of the resamples (negative in 4.3%). On the 1466 training problems
+the same bootstrap gives [+2, +75], with 2.1% of resamples at or under zero. So the sign is
+well supported by both sets, the size is not: a hidden test of 281 problems can return a
+gain anywhere in that interval, including none. The rule fires on 120 problems: 36 right (30.0%)
 against 24 for D (20.0%) and 28 for the most frequent letter there (A, 23.3%). On the other
 161 problems the answer stays D (41 right, 25.5%, D is their most frequent letter). By level
 on the 120: it wins at levels 0, 1, 3, 5, 6, 7 and loses at levels 2 (1 against 3) and 4
@@ -66,6 +81,13 @@ numeric problems, and `FALLBACK_ANSWER` decides the rest, as today.
 **The 50-sample.** 14/50 against 17 for always D: the sample has 17 D labels (34%), and on
 its 26 numeric problems the rule gets 7 against 10 for D. This is why the decision uses the
 281 and the training set, not the 50.
+
+**Training count, 405 or 406.** The rule with D elsewhere scores 405/1466 (201 of the 662
+numeric problems plus 204 D elsewhere). The `eval.py` run in the table (406) also had the
+family solvers on, as `predict.py` does: two fired (`lvl-6_2018_11`, `digit_count`;
+`lvl-6_2020_6`, `consecutive`), both right, one on a problem the rule would have missed, so
+the shipped policy (solvers, then the rule, then D) scores 406 and the rule alone 405.
+`config.env` and `copilot/ladder.py` quote 405.
 
 **Cost.** None: no model call, no embedding. The worst board estimate (38 s) is the existing
 family solver's extraction on one problem, unchanged.
@@ -142,18 +164,31 @@ Board estimate mean 22.7 s, median 28.3 s, worst 59.1 s: at the limit.
 ties, 44 pluralities of 2, 25 two-way ties at 2, 7 strict majorities of 3, **all 7 wrong**.
 The plurality rule (unique top, any count) would answer 51 problems with 8 right against 12
 for D on them. Board estimate mean 20.0 s, median 27.6 s, worst 73.7 s, **6 problems over
-60 s** (the vote loop has no per-shift time check; it is not worth adding one). Five looks
-at the same problem give the model five positional answers, not one considered answer.
+60 s** in this run, which had no time guard. Five looks at the same problem give the model
+five positional answers, not one considered answer.
 
-## Recommendation
+**Time guard, added after the review.** Both experiments now take a budget in board seconds,
+`EXPERIMENT_BUDGET_SECONDS=50` minus what the problem has already cost: `value_letter` skips
+a problem whose prompt (guessed at 3 characters per token) would pass it, and `vote_letter`
+skips the first shift on the same guess, then stops before any further shift whose cost (the
+previous request's prompt tokens, read again, plus one letter) would pass it; an interrupted
+vote never elects. Whoever turns these flags on gets a policy that respects the 60-second
+rule, and nothing else: they still do not beat always D.
 
-Set `MIDDLE_VALUE=1` in `config.env`. It is the only change that meets the criterion
-(+12 problems on the 281, +39 on the 1466 training problems, nothing to run on the board), it
-answers in Python with no model call, and it abstains on anything that is not five distinct
-numbers, so the rest of the policy (family solvers, then `FALLBACK_ANSWER`) is unchanged.
-Keep `LETTER_MODEL=0`, `VALUE_MODEL=0` and `VOTE_SHIFTS=0`: the 0.8B's choice carries no
-information whether it writes a letter, a value, or five letters, and the 2B is too slow for
-the board and no better.
+## Decision
+
+`MIDDLE_VALUE=1` is the default in `config.env` (review of 14 Nov): it is the only change
+that meets the criterion (+12 problems on the 281, +38 on the 1466 training problems with
+the rule alone, nothing to run on the board), it answers in Python with no model call, and
+it abstains on anything that is not five distinct numbers, so the rest of the policy (family
+solvers first, then `FALLBACK_ANSWER` D) is unchanged; a problem without options, with
+non-numeric options, with OCR noise or with repeated values still gets D. It is a prior on
+the distractors, not reasoning, and the bootstrap says the hidden-test gain can be anything
+from -2 to +26 problems. `LETTER_MODEL=0`, `VALUE_MODEL=0` and `VOTE_SHIFTS=0` stay: the
+0.8B's choice carries no information whether it writes a letter, a value, or five letters,
+and the 2B is too slow for the board and no better. `tests/test_reason_policy.py` checks
+that the Teach modules import none of this and that `predict.py` answers a letter in every
+case (no options, words, noise, duplicates, server down).
 
 ## Reproduce
 

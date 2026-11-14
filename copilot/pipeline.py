@@ -24,17 +24,20 @@ USE_SOLVERS = CONFIG.get("SOLVERS", "1") != "0"
 # 21.7% right, always D 23.1%, and its confidence is anti-correlated with being right, so the
 # default is 0. Turn it on to collect the letter logprobs for analysis.
 USE_LETTER_MODEL = CONFIG.get("LETTER_MODEL", "0") != "0"
-# MIDDLE_VALUE=1: when the five options are distinct numbers, answer the middle value (copilot/ladder.py)
-# instead of the fallback letter. Measured on 281 English validation problems: 27.4% against 23.1% for
-# always D, at no cost. Off by default until the controller adopts it.
-USE_MIDDLE_VALUE = CONFIG.get("MIDDLE_VALUE", "0") != "0"
+# MIDDLE_VALUE=1 (default): when the five options are distinct numbers, answer the middle value
+# (copilot/ladder.py) instead of the fallback letter; every other problem still gets FALLBACK_ANSWER.
+# Measured on 281 English validation problems: 27.4% against 23.1% for always D, at no cost.
+USE_MIDDLE_VALUE = CONFIG.get("MIDDLE_VALUE", "1") != "0"
 # Experiments on the options (copilot/votes.py), off by default. VOTE_SHIFTS=5 asks for a letter once per
 # cyclic shift of the options and takes a strict majority; VALUE_MODEL=1 asks for the option's value with
 # a grammar limited to the five strings. Both run only when the problem has options, after the solvers
-# and before the middle-value rule, and fall through when they abstain.
+# and before the middle-value rule, and fall through when they abstain. Neither beat always D on the 281
+# validation problems, and five shifts put 6 of 281 problems over 60 s, so both skip a problem whose
+# board estimate would pass EXPERIMENT_BUDGET seconds (copilot/votes.py).
 VOTE_SHIFTS = int(CONFIG.get("VOTE_SHIFTS", "0") or 0)
 VOTE_MIN = int(CONFIG.get("VOTE_MIN", "3") or 3)
 USE_VALUE_MODEL = CONFIG.get("VALUE_MODEL", "0") != "0"
+EXPERIMENT_BUDGET = float(CONFIG.get("EXPERIMENT_BUDGET_SECONDS", "50") or 50)
 
 
 def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL,
@@ -75,7 +78,8 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
         remaining = time_limit - (time.perf_counter() - start) - MARGIN
         if VOTE_SHIFTS > 0 and image_b64 is None and len(problem.get("options") or {}) == 5:
             letter, tally, spent = votes.vote_letter(problem, votes.SHIFTS[:VOTE_SHIFTS], timeout=max(remaining, 1.0),
-                                                     url=llm_url, min_votes=VOTE_MIN)
+                                                     url=llm_url, min_votes=VOTE_MIN,
+                                                     budget=EXPERIMENT_BUDGET - clock.board_seconds())
             for timings in spent:
                 clock.add_llm(timings)
                 result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
@@ -86,7 +90,8 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
                 return result
         if USE_VALUE_MODEL and image_b64 is None and problem.get("options"):
             remaining = time_limit - (time.perf_counter() - start) - MARGIN
-            letter, value, timings = votes.value_letter(problem, timeout=max(remaining, 1.0), url=llm_url)
+            letter, value, timings = votes.value_letter(problem, timeout=max(remaining, 1.0), url=llm_url,
+                                                        budget=EXPERIMENT_BUDGET - clock.board_seconds())
             clock.add_llm(timings)
             result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
             result["extra"]["value"] = value

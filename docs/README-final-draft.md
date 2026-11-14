@@ -174,7 +174,9 @@ organizers' one-letter prompt with the grammar `A-E`.
 | Always D | 281 eng val | 23.1% | 0 s | 0 s |
 | Baseline, same 50 ids | 50 eng / 50 cat val | 30.0% / 24.0% | 9.1 s / 10.6 s *(estimate)* | 16.7 s / 21.6 s *(estimate)* |
 | Bias-corrected letter (train-400 prior, alpha 1) | 281 eng val | 17.8% | same request | same |
-| Family solvers, D elsewhere (shipped) | 281 eng val | 23.1% (65/281): no solver fired on validation | 0 s when no solver fires; 12.6 to 15.9 s *(estimate)* when one does | 15.9 s *(estimate)* |
+| Family solvers, D elsewhere | 281 eng val | 23.1% (65/281): no solver fired on validation | 0 s when no solver fires; 12.6 to 15.9 s *(estimate)* when one does | 15.9 s *(estimate)* |
+| Family solvers, then the middle-value rule, then D (shipped, `MIDDLE_VALUE=1`) | 281 eng val | 27.4% (77/281) | 0 s when no solver fires | same |
+| Same rule on the training set | 1466 eng train | 27.6% (405/1466) against 25.0% for always D | 0 s | 0 s |
 
 On 400 training problems the model's own letter scored 20.8% against 27.2% for always D, and its
 confidence ran the wrong way: the quartile where it was most sure was the least accurate (16.9%).
@@ -184,8 +186,19 @@ Solver yield on the 911 English training problems with options: ages classified 
 average 15, 0; consecutive 11, fired 3 (2 right, 1 wrong before the classifier was tightened);
 digit_count 5, fired 1, right. Kangaroo problems are not templated: the family keywords tag a
 heterogeneous bag of puzzles, so parametric solvers add about one point over always D at most.
-The Reason track stays at the always-D floor; the value of the project is the Teach track.
-[[TODO final run on the hidden-test-like setting if anything changes]]
+**The middle-value rule** (`copilot/ladder.py`, `docs/reason-experiments.md`) is a prior on how
+Kangaroo distractors are built, not reasoning: the wrong options are made from the right value
+(one step too many or too few, double, half), so when the five options are distinct numbers the
+correct one usually has distractors above and below it and is rarely an extreme. The rule answers
+the middle value and abstains on everything else (no options, words, OCR noise, repeated values),
+which then gets D as before. Chosen on the training set, checked once on validation: +12 problems
+on 281 (27.4% against 23.1%), +38 on the 1466 training problems. A paired bootstrap on the 281
+puts the gain between -2 and +26 problems (95%), with 6% of resamples at or under zero: the sign
+is well supported, the size is not, and a hidden test can return the gain to zero. Nothing else
+measured beat always D: a bigger model (Qwen3.5 2B, too slow for 60 s on the board), asking for
+the option's value instead of its letter (66/281), or voting over five shifts of the options
+(63/281). The rest of the Reason track stays at the always-D floor; the value of the project is
+the Teach track. [[TODO official run on the board with MIDDLE_VALUE=1, 562 problems]]
 
 ### 4.2 Teaching
 
@@ -258,7 +271,10 @@ sample). Catalan costs about 15% more prompt tokens (10.6 s vs 9.1 s mean *(esti
 ## 6. What didn't work, and what's next
 
 - **Asking the model for a letter.** Below always-D on 281 problems, and more confident when
-  wrong. Correcting the bias with its own log probabilities did not help (17.8%).
+  wrong. Correcting the bias with its own log probabilities did not help (17.8%). Asking for the
+  option's value with a grammar (23.5%), voting over five shifts of the options (22.4%, and 6
+  problems over 60 s without a time guard), and a 2B model (26% on 50, about 2.6 tokens/s on
+  the board) did not help either: `docs/reason-experiments.md`.
 - **Searching with the Catalan text.** bge-small is English-only: the Catalan query finds
   neighbours on the right topic 43% of the time, the English query 72%. The bridge by `id` fixes
   it at no cost.

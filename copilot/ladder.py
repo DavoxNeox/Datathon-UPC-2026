@@ -1,11 +1,14 @@
 """The middle-value rule: when the five options are numbers, answer the one in the middle.
 
-Kangaroo distractors are built around the right answer (one step too many, one too few,
-double, half), so the correct value is rarely the smallest or the largest of the five.
-Measured on the English training problems whose five options parse as distinct numbers
-(650 of 1466): the middle value is right 30.6% of the time, always D 24.0%. On the 281
-English validation problems (the held-out set, used once): 77/281 = 27.4% with this rule
-and D elsewhere, against 65/281 = 23.1% for always D. No model call, no time, no RAM.
+This is a prior on how Kangaroo distractors are built, not reasoning about the problem: the
+wrong options are made from the right value (one step too many, one too few, double, half),
+so the correct value usually has distractors above it and below it and is rarely the
+smallest or the largest of the five. Measured on the English training problems whose five
+options parse as distinct numbers (654 of 1466): the middle value is right 30.4% of the
+time, always D 24.6%. On the 281 English validation problems (the held-out set, used once):
+77/281 = 27.4% with this rule and D elsewhere, against 65/281 = 23.1% for always D; a
+hidden test can return that gain to zero (docs/reason-experiments.md has the bootstrap).
+No model call, no time, no RAM.
 
 A number may carry a short unit ("48 cm", "4 kg", "165 cm²", "25%"); anything else (two
 numbers, words, letters, OCR noise such as "1 10") is not a numeric option and the rule
