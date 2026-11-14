@@ -81,6 +81,18 @@ class SolverBudgetTest(unittest.TestCase):
         self.assertEqual(seen["timeout"], 42.0)
         self.assertEqual(spent, [{"prompt_n": 150, "predicted_n": 20}])
 
+    def test_the_pipeline_passes_the_solver_budget(self):
+        seen = {}
+
+        def fake_within(problem, timeout=60, budget=None):
+            seen.update(timeout=timeout, budget=budget)
+            return None, [], ""
+        with mock.patch.object(solvers, "solve_within", fake_within), mock.patch.object(pipeline, "USE_SOLVERS", True):
+            pipeline.solve({"id": "b", "text": "x", "options": NUMBERS})
+        self.assertEqual(seen["budget"], pipeline.SOLVER_BUDGET)
+        self.assertEqual(seen["timeout"], pipeline.TIME_LIMIT - pipeline.MARGIN)
+        self.assertEqual(pipeline.SOLVER_BUDGET, 42.0)
+
     def test_the_guess_errs_on_the_long_side(self):
         # 3 characters per token is below the measured mean of 3.2, so the guess is never the optimistic one
         self.assertGreaterEqual(board_clock.guess_tokens("x" * 300), 100)

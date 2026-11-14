@@ -38,6 +38,8 @@ VOTE_SHIFTS = int(CONFIG.get("VOTE_SHIFTS", "0") or 0)
 VOTE_MIN = int(CONFIG.get("VOTE_MIN", "3") or 3)
 USE_VALUE_MODEL = CONFIG.get("VALUE_MODEL", "0") != "0"
 EXPERIMENT_BUDGET = float(CONFIG.get("EXPERIMENT_BUDGET_SECONDS", "50") or 50)
+# Estimated board seconds a solver's extraction may cost (its real time ran at 1.33x the estimate on the board).
+SOLVER_BUDGET = float(CONFIG.get("SOLVER_BUDGET_SECONDS", "42") or 42)
 # Brief reasoning by the 0.8B (copilot/think.py): THINK_LEVELS lists the levels on which the model writes a
 # few lines of working before the letter (empty = off, "all" = every level); THINK_TEXT_ONLY=1 keeps it to
 # problems without a figure. It runs after the solvers and before the middle-value rule, only when the
@@ -110,7 +112,7 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
             # The extraction reads the whole text: budget it like every other model call (a 766-token
             # exam row would take 78 s on the board), and give it the seconds really left as its timeout.
             solved, spent, skipped = solvers.solve_within(problem, timeout=max(time_limit - MARGIN, 1.0),
-                                                           budget=time_limit - MARGIN - clock.board_seconds())
+                                                           budget=min(SOLVER_BUDGET, time_limit - MARGIN) - clock.board_seconds())
             if skipped:
                 result["status"] = f"ok (solver skipped: {skipped})"
             for timings in spent:  # counted even when the solver abstains: the board still read the problem
