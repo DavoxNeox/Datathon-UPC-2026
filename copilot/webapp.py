@@ -8,6 +8,7 @@ handler: the hint ladder runs in a thread and the page polls /api/state.
     start()    -> draw the resting LED frame
 """
 import base64
+import importlib
 import json
 import os
 import threading
@@ -98,7 +99,7 @@ class Rung0Stats:
 def _diagnose(problem, letter):
     """The error signature of a wrong answer, or None: module absent, no signature, or low confidence."""
     try:
-        from . import signatures  # optional module (branch innov-error-signatures)
+        signatures = importlib.import_module("copilot.signatures")  # optional module; importlib honours sys.modules
     except ImportError:
         return None
     try:
