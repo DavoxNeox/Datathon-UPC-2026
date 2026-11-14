@@ -74,11 +74,33 @@ curl -s http://127.0.0.1:7002/api/state | head -c 200
 
 Expected: JSON starting with `{"student": ..., "started": false`.
 
-## 5. Clean state (t = 5 min)
+## 5. Clean state: forget every rehearsal alias (t = 5 min)
 
-If the page shows a problem instead of the start screen (someone played before), press
-**Reinicia l'alumne** and confirm: the student is forgotten and the start screen comes back
-(`/api/reset` does the same from the terminal). Then the LED matrix shows the resting frame.
+Every pseudonym played in a rehearsal is still in the board's `data/students.db`, and the
+teacher view lists them all. Two ways to clean, pick one:
+
+- **From the page**, one alias at a time: if a problem is shown, press **Canvia d'alumne**
+  and confirm (the current student is forgotten and the start screen comes back); for every
+  other alias that was used (`Mariona1`, `Guillem`, `Pau`, `prova`, any name typed in
+  rehearsals) type it in the start screen, press `Comença`, then `Canvia d'alumne` and
+  confirm. From the terminal the same is `curl -s http://127.0.0.1:7002/api/start/<alias>/1`
+  followed by `curl -s http://127.0.0.1:7002/api/reset`.
+- **All at once**, with the app stopped (the file is recreated empty on the next start):
+
+```bash
+adb shell 'TMPDIR=/tmp arduino-app-cli app stop user:math-copilot'
+```
+
+```bash
+adb shell rm -f /home/arduino/Datathon-UPC-2026/data/students.db
+```
+
+```bash
+adb shell 'TMPDIR=/tmp arduino-app-cli app start user:math-copilot'
+```
+
+Then wait about 20 s for the page and check the teacher view is empty:
+<http://127.0.0.1:7002/teacher> shows no student row.
 
 ## 6. One full rehearsal on the board (t = 6 to 12 min)
 
@@ -99,18 +121,24 @@ Check three things in its output:
 3. The LED matrix physically shows the tick, then the mastery bars, then the cross. Watch the
    board, not the page.
 
-The script ends with `Reinicia`, so the board is clean again. Then do the same clicks **by
+The script ends with a reset (`/api/reset`, the page's **Canvia d'alumne**), so the board is clean again. Then do the same clicks **by
 hand in the browser once**, with the projector connected, so V3 knows where every button is
 at 150% zoom.
 
-## 7. The student and the state before the jury arrives
+## 7. The student and the state before the jury arrives (t = 15 min)
 
-- Pseudonym **`Mariona1`**, course **6è de primària (nivell 1)**, typed in the start screen
-  but **not** started: the first click of the demo is `Comença`. (The pseudonym gives the
-  chain in `demo-problems.md`; `Comença` resets it, so earlier rehearsals do not matter.)
-- Language buttons: **CA** selected.
-- The LED matrix is dark except the resting frame; V1 holds the board with the matrix towards
-  the jury and the USB cable with slack.
+1. **Warm-up click.** The first `Pista` of a session loads the retrieval index from
+   `data/index.db` (0.2 s on the laptop, longer on the board's SD card); do it now, not on
+   stage: type any alias (for example `escalfament`), `Comença`, `Pista` once, wait for the
+   card, then `Canvia d'alumne` and confirm. The index stays in memory while the app runs.
+   From the terminal: `curl -s http://127.0.0.1:7002/api/start/escalfament/1`, then
+   `curl -s http://127.0.0.1:7002/api/hint`, wait 2 s, then `curl -s http://127.0.0.1:7002/api/reset`.
+2. Pseudonym **`Mariona1`**, course **6è de primària (nivell 1)**, typed in the start screen
+   but **not** started: the first click of the demo is `Comença`. (The pseudonym gives the
+   chain in `demo-problems.md`; `Comença` resets it, so earlier rehearsals do not matter.)
+3. Language buttons: **CA** selected.
+4. The LED matrix is dark except the resting frame; V1 holds the board with the matrix
+   towards the jury and the USB cable with slack.
 
 ## 8. Tabs, in this order, nothing else open
 
@@ -136,7 +164,7 @@ signals time. Nobody touches the board's cable.
 curl -s http://127.0.0.1:7002/api/reset > /dev/null
 ```
 
-Leave the board on for the jury's questions (they may ask to type a problem's answer
+Leave the board on for the jury's questions (afterwards, clean the aliases again as in step 5 if there is a second slot) (they may ask to type a problem's answer
 themselves: any pseudonym and course works). Shut down only at the end of the day:
 
 ```bash
