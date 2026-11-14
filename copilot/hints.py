@@ -384,7 +384,7 @@ def _rung3(problem, state, lang):
 
 _UNIT_SQ = re.compile(r"(?<=\d)\s*(cm|dm|mm|km|m)\s*(?:²|2)\s*\d?(?![A-Za-z0-9])", re.IGNORECASE)
 _UNIT_CU = re.compile(r"(?<=\d)\s*(cm|dm|mm|km|m)\s*(?:³|3)\s*\d?(?![A-Za-z0-9])", re.IGNORECASE)
-_OPERATOR = re.compile(r"[/:+\-×x·*=]")
+_OPERATOR = re.compile(r"[/:+\-×x·*=,;{(]")   # numbers joined by one of these are a value, not OCR noise
 
 
 def display_value(raw):

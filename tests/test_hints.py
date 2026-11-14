@@ -201,7 +201,8 @@ class DisplayValueTest(unittest.TestCase):
     def test_units_and_superscripts(self):
         cases = {"4cm²2": "4 cm²", "27cm2": "27 cm²", "80 cm2": "80 cm²", "165 cm²": "165 cm²", "48cm": "48 cm",
                  "24 cm": "24 cm", "3m3": "3 m³", "10%": "10%", "1/2": "1/2", "0,5": "0,5", "18": "18",
-                 "x = 4": "x = 4", "2 + 3": "2 + 3", "15:30": "15:30", "hexagon": "hexagon", " 12 ": "12"}
+                 "x = 4": "x = 4", "2 + 3": "2 + 3", "15:30": "15:30", "hexagon": "hexagon", " 12 ": "12",
+                 "{2,3,5,7}": "{2,3,5,7}", "(3, 4)": "(3, 4)", "56km/h": "56 km/h", "9km.": "9 km"}
         for raw, want in cases.items():
             self.assertEqual(hints.display_value(raw), want, raw)
 
