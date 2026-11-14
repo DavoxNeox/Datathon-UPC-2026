@@ -270,3 +270,49 @@ keep 60 and say so in the note.
 
 **Still open**: P1 (the hand is 181x272 px at 1280 now, so the tall-figure cap was relaxed:
 closed), the pieces' `alt` text, the two controls under 44 px in the settings popup.
+
+## Addendum 5: thirteenth round, grey patches (`ui-fixes-8`, `origin/main` at 5dbcef0)
+
+Re-measured with the method of addendum 4 on the six demo problems in sim (port 7018) at
+1280x800, light and dark: every neutral pixel of the raw crop classed by its level (black under
+40, mid grey 40 to 200, light grey 200 to 235) and followed into the tinted image (black under
+60, grey 60 to 200, lifted grey 200 to 216, ink 216 to 240, white over 245, transparent); zooms of
+the triangles and the hand; `tinted()` timed per crop; crop sizes compared with addendum 3.
+304 tests OK, 1 skipped.
+
+**G1 closed.** `lvl-3_2021_20`, dark: of the 4,168 mid-grey pixels (the triangles' anti-aliased
+edges and grain), 2,742 come out as lifted grey (the cap of 210), 286 as grey under 200 and 1,140
+as the ink rim: 3,028 grey against 28 before. Of the 10,018 light-grey pixels (the triangles'
+body, 200 to 235 in the scan), 9,668 come out grey at 210, 144 darker grey, 206 transparent, none
+as ink. Light theme: 2,800 + 206 of the mid greys and 7,720 + 2,068 of the light greys stay grey,
+1,162 go to the black rim. The zooms show the triangles as a smooth grey surface in both themes,
+not a speckle; the UI's own counts (3,060 / 2,944 of 4,104) agree with mine within the class
+boundaries.
+
+**Black never white, still.** The square's 11,024 black pixels: 9,136 black and 1,888 ink rim in
+dark, all black in light; no white pixel in any figure in either theme.
+
+**G2 closed.** The hand (`lvl-5_2022_30`, fill at 217): in dark 16,952 of its 17,341 light-grey
+pixels come out at 210 and the hand reads as a grey surface with a light outline; in light they
+stay at 217 on the 244 page, a faint but visible fill (14,553 in the 216-240 band). The ring
+bands stay black (129 of 432 black pixels; the rest is rim).
+
+**Thin lines.** The grid's 6,732 black and 7,395 anti-aliased pixels: light ink in dark (98%),
+black in light; the zooms are crisp. The folded sheet likewise.
+
+**Cuts unchanged.** 232x232 and five pieces of 72/76/92/70/72 by 66 (square), 328x216 (grid),
+460x140 (sheet), 154x232 (hand), nothing for the two text-only problems: identical to addendum 3,
+so the statement-continuation and two-row-option changes did not move the demo's crops.
+
+**Cost.** 1 to 11 ms per crop (the 5x5 window pass: grid 11 ms in light, 3.5 ms in dark; square 3
+to 5 ms; pieces 1 to 2 ms). Once per problem and theme change; nothing a phone would notice.
+
+**Two remarks.**
+- **H1 (MINOR).** In dark the grey patch is capped at 210 and the ink is 231: a gap of 21 lum
+  levels between a shaded area and its rim. It reads, but on a projector with a washed-out
+  dark theme it will be subtle. Capping at 195 keeps the patch clearly below the ink and still
+  above the page (lum 23).
+- **H2 (MINOR).** The automatic whole-scan fallback is now drawn untinted (`fig.toDataURL` when
+  `scan.figure` is null): the only place a white paper background can still appear, under the
+  "Escaneig original" caption. None of the six demo problems triggers it; worth a sentence in the
+  round's notes since the brief was "no white background anywhere".
