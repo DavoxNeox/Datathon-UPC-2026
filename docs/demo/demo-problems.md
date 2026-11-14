@@ -52,20 +52,20 @@ promises what the next problem will be.
   rung 3 is also a strategy card.
 - **Answer on stage:** the correct one (in the speaker notes). Tick on the LED, mastery of
   boards 0 → 2.
-- **Clicks:** `Comença` → `Pista` → `Pista` → the correct letter → wait for the tick (3 s) →
-  `Següent problema`.
+- **Clicks:** `Comença` → `Pista` (action sheet at the bottom) → `Pista` → the correct letter → wait for the tick (3 s) →
+  `Continua` (or Enter).
 
 ### 2. `lvl-3_2019_18`, level 3, spatial (Raonament espacial), figure
 
 - **Why:** a paper-folding problem where the picture does the explaining. The neighbour is
   `lvl-2_2019_9` (level 2, similarity 0.914, with its picture): the same action one step
   simpler. Rung 2 is the strategy card with the **"Gira i volteja" manipulative** button, the
-  only rung that opens a dialog, good on camera.
+  only rung with something that moves on screen (it opens under the hints), good on camera.
 - **Rungs shown:** 1 (neighbour with image), 2 (strategy with manipulative; open it only if
   the demo is ahead of time).
 - **Answer on stage:** a wrong letter on purpose (in the speaker notes). This shows the cross
   on the LED, the correction message, mastery of spatial at 1.
-- **Clicks:** `Pista` → `Pista` → (`Gira i volteja` → `Tanca`, optional) → the wrong letter →
+- **Clicks:** `Pista` → `Pista` → (`Gira i volteja`, opens under the hints, optional) → the wrong letter →
   wait 3 s → `Vista del professor` in the second tab.
 
 ### 3. `lvl-2_2020_4`, level 2, arithmetic (Aritmètica i problemes), text
@@ -77,7 +77,7 @@ promises what the next problem will be.
 - **Rungs shown:** 1 (neighbour, text only), 2 (strategy card of arithmetic).
 - **Answer on stage:** the correct one. Tick, mastery of arithmetic 0 → 2.
 - **Clicks:** `Comença` (Guillem, 1r d'ESO) → `Pista` → `Pista` → the correct letter →
-  wait 3 s → `Següent problema`.
+  wait 3 s → `Continua` (or Enter).
 
 ### 4. `lvl-4_2010_12`, level 4, digits (Xifres i nombres), text
 
@@ -116,7 +116,7 @@ and `... Guillem 2 A B --hints 2 --hints2 1`, then the same clicks by hand in th
 | Pista 1 (later calls) | 0.00 | 0.0 |
 | Pista 2 (strategy) | 0.00 | 0.0 |
 | Resposta (correction, LED frame) | 0.00 | 0.0 |
-| Següent problema | 0.00 | 0.0 |
+| Continua (next problem) | 0.00 | 0.0 |
 | Vista del professor | 0.00 | – |
 | reset (`/api/reset`, the page's `Canvia d'alumne`) | 0.00 | – |
 
