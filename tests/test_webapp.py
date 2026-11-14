@@ -242,3 +242,45 @@ class TeacherReportTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HintCapTest(unittest.TestCase):
+    """The hint button works at most HINT_MAX_USES times per problem; rung 0 and the solution do not count."""
+
+    def setUp(self):
+        self.s = webapp.Session()
+        self.s.start("cap-test", "auto")
+        self.assertIsNotNone(self.s.problem)
+
+    def _hint(self):
+        # Run the hint synchronously: call the handler, then the worker it would have started
+        with mock.patch.object(webapp.threading, "Thread") as thread:
+            result = self.s.hint()
+        if result.get("ok"):
+            rung = thread.call_args.kwargs.get("args", thread.call_args[1].get("args"))[0]
+            self.s._compute_hint(rung)
+        return result
+
+    def test_three_hints_then_refused(self):
+        self.assertEqual(self.s.state()["hints_left"], webapp.HINT_MAX_USES)
+        for n in range(webapp.HINT_MAX_USES):
+            self.assertTrue(self._hint().get("ok"), f"hint {n + 1} should be accepted")
+        self.assertEqual(self.s.state()["hints_left"], 0)
+        refused = self._hint()
+        self.assertEqual(refused.get("error"), "no hints left")
+        self.assertIn("pistes", self.s.state()["message"]["ca"])
+        self.assertEqual(len(self.s.hints), webapp.HINT_MAX_USES)
+
+    def test_rung_0_and_solution_do_not_count(self):
+        self.s.translate("show")
+        self.assertEqual(self.s.state()["hints_left"], webapp.HINT_MAX_USES)
+        with mock.patch.object(webapp.threading, "Thread"):
+            self.assertTrue(self.s.solution().get("ok"))
+        self.assertEqual(self.s.state()["hints_left"], webapp.HINT_MAX_USES)
+
+    def test_cap_resets_on_the_next_problem(self):
+        for _ in range(webapp.HINT_MAX_USES):
+            self._hint()
+        self.s.answer_letter("A")
+        self.s.next()
+        self.assertEqual(self.s.state()["hints_left"], webapp.HINT_MAX_USES)

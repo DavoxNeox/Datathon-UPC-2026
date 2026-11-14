@@ -15,7 +15,7 @@ import time
 
 from . import hints, topics, trainer
 from .board_clock import estimate_tokens
-from .config import ROOT
+from .config import CONFIG, ROOT
 from .hal import led
 
 RESULT_SECONDS = 3.0        # the tick or cross stays this long, then the mastery map comes back
@@ -27,6 +27,9 @@ RUNG0_FILE = os.path.join(ROOT, "data", "rung0.json")
 
 def _empty_counts():
     return {"uses": 0, "problems": 0, "with": {"answers": 0, "correct": 0}, "without": {"answers": 0, "correct": 0}}
+
+
+HINT_MAX_USES = int(CONFIG.get("HINT_MAX_USES", 3))  # hint-button uses per problem; rung 0 and the solution do not count
 
 
 class Rung0Stats:
@@ -103,6 +106,7 @@ class Session:
         self.problem = None          # the Problem dict as served (with its label, never sent)
         self.rung = 0                # highest rung used on this problem
         self.hints = []              # hint results shown, in order
+        self.hint_uses = 0           # times the hint button was accepted on this problem (max HINT_MAX_USES)
         self.answer = None           # {"letter", "correct", ...} after answering
         self.busy = False
         self.message = {"ca": "", "en": ""}
@@ -162,6 +166,7 @@ class Session:
         self.problem = trainer.next_problem(self.student)
         hints.register_problem(self.problem)
         self.rung, self.hints, self.answer = 0, [], None
+        self.hint_uses = 0
         self.translation_shown, self.rung0_uses = False, 0
         self.message = {"ca": "Tria una resposta, o demana una pista.", "en": "Choose an answer, or ask for a hint."}
         hints.prefetch(self.problem["id"], self.lang)
@@ -182,6 +187,7 @@ class Session:
                 "translation": translation if self.translation_shown else None,
                 "rung0": {"uses": self.rung0_uses, "session": self.rung0.session},
                 "rung": self.rung, "hints": self.hints, "answer": self.answer, "busy": self.busy,
+                "hints_left": max(0, HINT_MAX_USES - self.hint_uses), "hints_max": HINT_MAX_USES,
                 "message": self.message, "timeline": self.timeline, "mastery": self.mastery,
                 "led": led.last_frame(), "llm_allowed": bool(self.problem) and
                 hints.llm_allowed(self.problem.get("topic") or topics.get_topic(self.problem["id"]), self.lang),
@@ -233,6 +239,7 @@ class Session:
             if done:
                 self.rung0.forget(self.student)
             self.problem, self.rung, self.hints, self.answer = None, 0, [], None
+            self.hint_uses = 0
             self.translation_shown, self.rung0_uses = False, 0
             self.started, self.level = False, None
             self.message = {"ca": "", "en": ""}
@@ -314,6 +321,13 @@ class Session:
                 return {"error": "busy" if self.busy else "no problem"}
             if self.answer:
                 return {"error": "already answered"}
+            if self.hint_uses >= HINT_MAX_USES:
+                # The ladder is capped: three hints per problem, then the student answers or asks
+                # for the solution on purpose. Rung 0 (the other language) does not count.
+                self.message = {"ca": f"Ja has fet servir les {HINT_MAX_USES} pistes d'aquest problema. Prova-ho, o demana la solució.",
+                                "en": f"You have used the {HINT_MAX_USES} hints for this problem. Give it a try, or ask for the solution."}
+                return {"error": "no hints left", "hints_left": 0}
+            self.hint_uses += 1
             rung = min(3, self.rung + 1)
             self.busy = True
             self.message = {"ca": "Pensant una pista…", "en": "Thinking of a hint…"}
