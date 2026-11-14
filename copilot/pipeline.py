@@ -7,7 +7,7 @@ import socket
 import time
 import urllib.error
 
-from . import bias, solvers
+from . import bias, ladder, solvers
 from .board_clock import Clock
 from .config import CONFIG
 from .llm import URL, answer_letter, letter_scores
@@ -24,6 +24,10 @@ USE_SOLVERS = CONFIG.get("SOLVERS", "1") != "0"
 # 21.7% right, always D 23.1%, and its confidence is anti-correlated with being right, so the
 # default is 0. Turn it on to collect the letter logprobs for analysis.
 USE_LETTER_MODEL = CONFIG.get("LETTER_MODEL", "0") != "0"
+# MIDDLE_VALUE=1: when the five options are distinct numbers, answer the middle value (copilot/ladder.py)
+# instead of the fallback letter. Measured on 281 English validation problems: 27.4% against 23.1% for
+# always D, at no cost. Off by default until the controller adopts it.
+USE_MIDDLE_VALUE = CONFIG.get("MIDDLE_VALUE", "0") != "0"
 
 
 def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL,
@@ -38,7 +42,8 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
     image_b64 and llm_url send the problem image to a vision server.
 
     Order: a family solver when one applies (the model only copies numbers, Python
-    computes, the value must match exactly one option), else the letter model below.
+    computes, the value must match exactly one option), then the middle-value rule when
+    MIDDLE_VALUE=1 and the options are numbers, else the letter model below.
 
     With a letter-bias calibration (data_curated/letter_prior.json) the model is
     asked once for the log probabilities of A to E and the answer is the letter
@@ -48,7 +53,8 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
     start = time.perf_counter()
     clock = Clock()
     result = {"answer": FALLBACK, "status": "ok", "prompt_tokens": 0, "retrieved": "", "examples": [],
-              "board_seconds": 0.0, "raw_letter": "", "margin": None, "family": "", "letter_logprobs": None}
+              "board_seconds": 0.0, "raw_letter": "", "margin": None, "family": "", "letter_logprobs": None,
+              "rule": ""}
     try:
         if USE_SOLVERS and image_b64 is None:
             solved, spent = solvers.solve_with_timings(problem)
@@ -58,6 +64,12 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
             if solved is not None:
                 result.update(answer=solved["answer"], family=solved["family"],
                               seconds=round(time.perf_counter() - start, 2), board_seconds=round(clock.board_seconds(), 2))
+                return result
+        if USE_MIDDLE_VALUE and image_b64 is None:
+            middle = ladder.middle_letter(problem)
+            if middle is not None:
+                result.update(answer=middle, rule="middle_value", seconds=round(time.perf_counter() - start, 2),
+                              board_seconds=round(clock.board_seconds(), 2))
                 return result
         examples = []
         if index is not None and k > 0:

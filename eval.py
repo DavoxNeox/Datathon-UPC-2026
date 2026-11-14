@@ -74,7 +74,7 @@ def main():
         writer = csv.writer(out)
         writer.writerow(["id", "language", "level", "has_options", "label", "answer",
                          "correct", "seconds", "board_seconds", "status", "prompt_tokens", "retrieved",
-                         "raw_letter", "margin", "family", "letter_logprobs"])
+                         "raw_letter", "margin", "family", "letter_logprobs", "rule"])
         for n, problem in enumerate(problems, 1):
             result = solve(problem, index=index, k=args.rag, exclude_id=problem["id"])
             if args.simulate_latency and result["board_seconds"] > result["seconds"]:
@@ -86,7 +86,8 @@ def main():
                              problem["label"], result["answer"], int(correct), result["seconds"],
                              result["board_seconds"], result["status"], result["prompt_tokens"], result["retrieved"],
                              result.get("raw_letter", ""), result.get("margin", ""), result.get("family", ""),
-                             json.dumps(result["letter_logprobs"]) if result.get("letter_logprobs") else ""])
+                             json.dumps(result["letter_logprobs"]) if result.get("letter_logprobs") else "",
+                             result.get("rule", "")])
             out.flush()
             running = 100 * sum(r["correct"] for r in rows) / len(rows)
             print(f"[{n}/{len(problems)}] {problem['id']} {problem['language']}: "
@@ -119,6 +120,12 @@ def main():
               f"{sum(r['correct'] for r in solved)}/{len(solved)} correct, by family "
               f"{dict(Counter(r['family'] for r in solved))}")
 
+    ruled = [r for r in rows if r.get("rule")]
+    if ruled:
+        print(f"Rules: {len(ruled)}/{len(rows)} problems answered by a rule, {sum(r['correct'] for r in ruled)}/{len(ruled)} "
+              f"correct ({100 * sum(r['correct'] for r in ruled) / len(ruled):.1f}%), always {CONFIG['FALLBACK_ANSWER']} on them "
+              f"{sum(r['label'] == CONFIG['FALLBACK_ANSWER'] for r in ruled)}/{len(ruled)}, by rule "
+              f"{dict(Counter(r['rule'] for r in ruled))}")
     for field, title in (("language", "By language"), ("level", "By level"),
                          ("has_options", "By whether OCR found the options")):
         groups = defaultdict(list)
