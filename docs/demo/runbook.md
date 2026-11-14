@@ -79,10 +79,10 @@ Expected: JSON starting with `{"student": ..., "started": false`.
 Every pseudonym played in a rehearsal is still in the board's `data/students.db`, and the
 teacher view lists them all. Two ways to clean, pick one:
 
-- **From the page**, one alias at a time: if a problem is shown, press **Canvia d'alumne**
+- **From the page**, one alias at a time: if a problem is shown, open the menu (three-bar icon, top left) and press **Canvia d'alumne**
   twice (the first press asks in line, the second confirms; no pop-up): the current student is forgotten and the start screen comes back; for every
   other alias that was used (`Mariona1`, `Guillem`, `Pau`, `prova`, any name typed in
-  rehearsals) type it in the start screen, press `Comença`, then `Canvia d'alumne` twice. From the terminal the same is `curl -s http://127.0.0.1:7002/api/start/<alias>/1`
+  rehearsals) type it in the start screen, press `Comença`, then menu → `Canvia d'alumne` twice. From the terminal the same is `curl -s http://127.0.0.1:7002/api/start/<alias>/1`
   followed by `curl -s http://127.0.0.1:7002/api/reset`.
 - **All at once**, with the app stopped (the file is recreated empty on the next start):
 
@@ -122,7 +122,7 @@ Check three things in its output:
 
 The script ends with a reset (`/api/reset`, the page's **Canvia d'alumne**), so the board is clean again. Then do the same clicks **by
 hand in the browser once**, with the projector connected, so V3 knows where every button is
-at 150% zoom: the letters under the problem, **Pista** and **Solució** in the action sheet at the
+at 150% zoom: the answer buttons under the problem (they show the option's value, no letter; the keys A to E also answer), **Pista** and **Solució** in the action sheet at the
 bottom, **Continua** after the verdict (Enter also works), the manipulative opening under the hints.
 
 ## 7. The student and the state before the jury arrives (t = 15 min)
@@ -130,13 +130,13 @@ bottom, **Continua** after the verdict (Enter also works), the manipulative open
 1. **Warm-up click.** The first `Pista` of a session loads the retrieval index from
    `data/index.db` (0.2 s on the laptop, longer on the board's SD card); do it now, not on
    stage: type any alias (for example `escalfament`), `Comença`, `Pista` once, wait for the
-   card, then `Canvia d'alumne` twice. The index stays in memory while the app runs.
+   card, then menu → `Canvia d'alumne` twice. The index stays in memory while the app runs.
    From the terminal: `curl -s http://127.0.0.1:7002/api/start/escalfament/1`, then
    `curl -s http://127.0.0.1:7002/api/hint`, wait 2 s, then `curl -s http://127.0.0.1:7002/api/reset`.
 2. Pseudonym **`Mariona1`**, course **6è de primària (nivell 1)**, typed in the start screen
    but **not** started: the first click of the demo is `Comença`. (The pseudonym gives the
    chain in `demo-problems.md`; `Comença` resets it, so earlier rehearsals do not matter.)
-3. Language buttons: **CA** selected; nothing expanded on the page.
+3. Language buttons: **CA** selected; the side menu closed (move the cursor away or press Escape), nothing expanded on the page.
 4. The LED matrix is dark except the resting frame; V1 holds the board with the matrix
    towards the jury and the USB cable with slack.
 
@@ -155,7 +155,7 @@ The terminal stays open behind the browser with the `adb forward` already done, 
 
 ## 9. During the pitch
 
-V3 follows the click column of `pitch.md`; V1 shows the matrix at every letter click; V4
+V3 follows the click column of `pitch.md`; V1 shows the matrix at every answer click; V4
 signals time. Nobody touches the board's cable.
 
 ## 10. After the pitch

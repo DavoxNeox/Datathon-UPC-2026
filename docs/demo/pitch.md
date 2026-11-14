@@ -50,10 +50,10 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | 9 | L'alumna es diu Mariona i fa sisè. Comencem. | clic **Comença** |
 | 13 | Primer problema, de taulers i patrons. La Mariona no ho veu clar i, en lloc d'arriscar, demana una pista. | clic **Pista** |
 | 21 | Pista u: el copilot busca dins la placa, amb embeddings, un problema semblant del mateix tema, un nivell més fàcil, amb la seva figura. Cap resposta, cap model que raoni. | assenyala la targeta "Un problema semblant" |
-| 34 | Pista dos: una estratègia del tema. Ara sí: respon. | clic **Pista**; després clic **C** |
+| 34 | Pista dos: una estratègia del tema. Ara sí: respon. | clic **Pista**; després clic al valor correcte (notes locals; els botons mostren el valor, no la lletra; la tecla de la lletra també val) |
 | 40 | Tick a la LED, la fulla es tenyeix de verd, i la barra de taulers s'omple dos segments de cinc: encerta amb pistes. | V1 gira la placa cap al jurat; V3 assenyala la barra de progrés de dalt |
 | 47 | Continuem: el diagnòstic puja dos cursos. Raonament espacial. Pista u, el problema germà amb la seva imatge; pista dos, l'estratègia "gira i volteja". | clic **Continua** (o Enter); clic **Pista** a la fulla d'accions de baix; clic **Pista** |
-| 60 | Avui la Mariona s'equivoca. Les pistes no li han dit la resposta; la correcció arriba només ara. Creu a la LED, un sol segment a espacial. Quan acabi el diagnòstic, aquest tema li arribarà més fàcil. | clic **A**; V1 mostra la creu; la fulla es tenyeix de vermell; V3 assenyala la barra de dalt |
+| 60 | Avui la Mariona s'equivoca. Les pistes no li han dit la resposta; la correcció arriba només ara. Creu a la LED, un sol segment a espacial. Quan acabi el diagnòstic, aquest tema li arribarà més fàcil. | clic a un valor equivocat (notes locals); V1 mostra la creu; la fulla es tenyeix de vermell; V3 assenyala la barra de dalt |
 | 75 | I el professor ho veu tot: progrés per tema i alumne, encerts per nivell. Cada pas ha trigat menys d'un segon dins la placa. | clic **Vista del professor** (pestanya 2) |
 | 84 | *(V3 torna a la pestanya 1 i parla)* | |
 
@@ -110,10 +110,10 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | 9 | The student is Mariona, sixth grade. Let's begin. | click **Comença** |
 | 13 | First problem, boards and patterns. Mariona is not sure and, instead of guessing, asks for a hint. | click **Pista** |
 | 21 | Hint one: the copilot searches on the board, with embeddings, for a similar problem of the same topic, one level easier, with its figure. No answer, no model reasoning. | point at the "Un problema semblant" card |
-| 34 | Hint two: a strategy for the topic. Now she answers. | click **Pista**; then click **C** |
+| 34 | Hint two: a strategy for the topic. Now she answers. | click **Pista**; then click the correct value (local notes; the buttons show the value, not the letter; the letter key also works) |
 | 40 | A tick on the LED, the sheet turns green, and the boards bar fills two segments of five: correct with hints. | V1 turns the board to the jury; V3 points at the progress bar at the top |
 | 47 | We continue: the diagnostic climbs two grades. Spatial reasoning. Hint one, the sister problem with its picture; hint two, the strategy "rotate and flip". | click **Continua** (or Enter); click **Pista** on the bottom action sheet; click **Pista** |
-| 60 | Today Mariona gets it wrong. The hints never told her the answer; the correction comes only now. A cross on the LED, one segment on spatial. Once the diagnostic ends, this topic will come easier. | click **A**; V1 shows the cross; the sheet turns red; V3 points at the bar at the top |
+| 60 | Today Mariona gets it wrong. The hints never told her the answer; the correction comes only now. A cross on the LED, one segment on spatial. Once the diagnostic ends, this topic will come easier. | click a wrong value (local notes); V1 shows the cross; the sheet turns red; V3 points at the bar at the top |
 | 75 | And the teacher sees everything: progress by topic and student, hits by level. Every step took under a second on the board. | click **Vista del professor** (tab 2) |
 | 84 | *(V3 returns to tab 1 and speaks)* | |
 
@@ -147,7 +147,12 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 - The page (Duolingo-style redesign, no modal windows): **Pista** and **Solució** sit in a fixed
   action sheet at the bottom that turns green or red with the verdict; the next problem is
   **Continua** (Enter works too); the manipulative opens under the hints, the picture enlarges in
-  place, and `Canvia d'alumne` confirms in line with a second press. The progress bar of the
+  place, and `Canvia d'alumne` (in the side menu: the three-bar icon fixed at the top left opens a
+  floating sidebar that hides when the cursor leaves it, or with Escape) confirms in line with a
+  second press. The answer buttons show only the option's value, centred, no letter: the click
+  script says the value (in `docs/demo/local/demo-notes.md`), and the keys A to E still answer.
+  `Solució` scrolls to its card and leaves only `Continua`; a small underlined footer under the
+  options opens the original scan. The progress bar of the
   current topic (its name and five segments, one per mastery point) is always at the top of the
   page: at 40 s it shows two segments (mastery 2, correct with hints), at 60 s one segment
   (mastery 1). No click is needed to show it.
@@ -158,7 +163,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 - The clicks are instant (under 0.5 s measured on the board, no model time), so the
   narration sets the pace. The demo block has about 12 s of slack for the clicks and the LED; the whole script is about 169 s spoken.
 - The tick or cross stays 3 s on the LED, then the progress map returns. V1 turns the board
-  towards the jury the moment V3 clicks the letter.
+  towards the jury the moment V3 clicks an answer.
 - After two answers the diagnostic is still running (it needs three): Mariona1's third problem
   is level 5, areas. Do not promise what the page does not show; the script says "once the
   diagnostic ends".
