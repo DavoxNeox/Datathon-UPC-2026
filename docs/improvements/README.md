@@ -1,83 +1,97 @@
 # Improvements: the consolidated list
 
-**Status: PROVISIONAL. Round 1 (eight area explorers) is complete; round 2 (three cross-cutting
-integrators: wrong-answer flow and rung 3, demo robustness and the 60 s budget, trainer and retrieval
-policy) is in progress and will update this file in a separate commit.**
+Written 14 Nov 2026 against `origin/main` **d8f9c66** (284 tests, 1 skipped on macOS). Two rounds of exploration,
+nothing implemented: eight area explorers read, ran and measured, then three integrators resolved the cross-cutting
+themes and checked every claim again on the current main.
 
-Written 14 Nov 2026 against `origin/main` **d8f9c66** (284 tests, 1 skipped on macOS). The eight area
-reports were written at `5cc2ded`; main moved 50 commits since, so every proposal below carries a status
-checked against the current files:
-
-- **open**: nothing on main does it;
-- **done** (commit): main does it; do not redo;
-- **partly** (commit): a piece landed, the rest is open;
-- **superseded**: main decided otherwise or the premise is gone.
-
-Nothing here was implemented by the explorers: they read, ran, measured and wrote. Each report says
-what it verified by running and what it only read.
-
-| area | report | proposals |
+| round | report | what it holds |
 | --- | --- | --- |
-| hint ladder and pedagogy | [hints-pedagogy.md](hints-pedagogy.md) | 11 |
-| adaptive trainer and mastery | [trainer.md](trainer.md) | 9 |
-| retrieval, topics, embeddings | [retrieval-topics.md](retrieval-topics.md) | 8 |
-| web app and App Lab app | [web-app.md](web-app.md) | 11 |
-| board and deployment | [board-deploy.md](board-deploy.md) | 11 |
-| Reason track and evaluation | [reason-eval.md](reason-eval.md) | 8 |
-| tests and code quality | [tests-quality.md](tests-quality.md) | 11 |
-| data, licence, reproducibility | [data-licence.md](data-licence.md) | 10 |
+| 1 | [hints-pedagogy.md](hints-pedagogy.md) | the ladder on all 281 validation problems, the leak filter corpus, the cards (11 proposals) |
+| 1 | [trainer.md](trainer.md) | mastery rules, cold start, review, the simulator on the real bank (9) |
+| 1 | [retrieval-topics.md](retrieval-topics.md) | neighbour quality, the 24% topic disagreement, cost on the board (8) |
+| 1 | [web-app.md](web-app.md) | robustness in the demo, silent errors, threads, polling, LED, usability (11) |
+| 1 | [board-deploy.md](board-deploy.md) | boot, relay, units, calibration, a fresh board (11) |
+| 1 | [reason-eval.md](reason-eval.md) | the jury contract, determinism, 60 s, the middle-value rule recounted (8) |
+| 1 | [tests-quality.md](tests-quality.md) | what is untested, fragile tests, the board and CI (11) |
+| 1 | [data-licence.md](data-licence.md) | leak risk over the whole history, reproducibility, pins, the public README (10) |
+| 2 | [cross-rung3-wrong-answer.md](cross-rung3-wrong-answer.md) | what the student sees after a miss and what rung 3 holds, end to end; the leak filter as the prerequisite |
+| 2 | [cross-demo-robustness.md](cross-demo-robustness.md) | one `Deadline` for the 60 s rule, the degradation table, demo day as code, night-before / morning-of / never |
+| 2 | [cross-trainer-retrieval.md](cross-trainer-retrieval.md) | one problem-selection policy, the near-duplicate constant, the demo re-pick procedure, the measurement harness |
 
-The explorers also read the independent review of main (`docs/reviews/review-main-2026-11-14.md` on
-`origin/team/review-22fa88`) and build on it. One correction to it: its C1 counts eight tool trailers on
-`origin/main`; those eight commits are the organizers' (`upstream/main`, author `mpous`), not the team's.
-The team's own trailers are on three stale public branches (`origin/data`, `origin/hints-app`,
-`origin/trainer`) and in `data_curated/hint_quality.json:40` (data-licence P1).
+The area reports were written at `5cc2ded`; main moved 50 commits since, so every item carries a status checked against
+the current files: **open** (nothing on main does it), **partly** (a piece landed), **done** (do not redo),
+**superseded** (main decided otherwise). The explorers also read the independent review of main
+(`docs/reviews/review-main-2026-11-14.md` on `origin/team/review-22fa88`) and build on it. One correction to it: its C1
+counts eight tool trailers on `origin/main`; those commits are the organizers' (`upstream/main`, author `mpous`). The
+team's own trailers are on three stale public branches (`origin/data`, `origin/hints-app`, `origin/trainer`) and in
+`data_curated/hint_quality.json:40`.
 
 ## Top 15, by impact over effort
 
-"Merges" names the area proposals folded into the item. "Safe before the demo" is the explorers' current
-judgement; round 2 refines it. Effort: S under 1 h, M 1-2 h, L more.
+"Merges" names the proposals folded into the item (area report: P-number; cross report: X-number). Effort: S under
+1 h, M 1-2 h, L more. "Before the demo" is round 2's verified verdict: **yes** (the stage flow is unchanged, suite
+green), **rehearsal slot** (changes something the pitch shows or depends on: only with a full re-run of both chains, never
+the morning of), **after** (changes the rehearsed chains or needs a push to the board).
 
-| # | item | merges | impact | effort | depends on | safe before demo | status on main |
+| # | item | merges | impact | effort | depends on | before the demo | status on main |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | **A wrong answer does not reveal the letter: one more try, hints still open; `/api/solution` only after an attempt or rung 3, with a confirmation** (reviewer C2, C3) | web P4, web P5, hints P3 | high | M | 2 for the signature text | yes with the two tests and one rehearsal of the wrong-then-hint path; the demo script answers wrong on purpose on problem 2, so re-time that scene | **open**: `webapp.py:302` still says "La resposta correcta era la X" on the first miss; `solution()` (`:371`) has no gate; the signature (merged in `c1238ec`) is shown only after the reveal |
-| 2 | **Leak filter v2**: compound number words in three languages, dozen/half/pair/double, expressions, Roman numerals, ordinals, option positions, glued units (`12cm`), the lower-case letter; language-aware words so `set`, `nou`, `deu`, `un/una`, `once` stop blocking harmless hints; one test corpus (110 adversarial, 40 harmless, every real option value of val and train) | hints P6, hints P7, tests P8 | high | M | none; prerequisite of every new text source (1, 3, demo steps, lessons) | yes | **open**: `copilot/leak_filter.py` unchanged since the reports; 75/110 adversarial strings pass, 35/339 real correct values with a glued unit pass |
-| 3 | **Rung 3 without the LLM on every problem**: option-derived sanity questions (units, magnitude, common factor, step, parity as a question), the error signature after a wrong attempt, the solver trace on the English twin on the Catalan page | hints P4, hints P3, hints P1 | high | M | 1, 2 | yes for P4 and P1 (deterministic, 0 s); P3 only with 1 | **partly**: demo-set steps are read first at rung 3 and 4 (`1b85037`) and the fourth press is a lesson (`6af15f0`), so the demo ids are covered; on the other 275 val ids rung 3 is still a second card; the Catalan solver path still classifies 0/281 |
-| 4 | **The student survives "Comença"**: `start()` resets a pseudonym only when it is unknown or the level selector changed; a blank name is an error, not `demo`; `/api/reset` stays the only reset | web P6 | high | S | the demo chains rely on the reset (see round 2: reset via the runbook's `/api/reset` or when the level is chosen) | yes, only together with the runbook step that forgets the rehearsal aliases (`78e4eb1` already adds it) | **open**: `webapp.py:225` `or "demo"`, `:231-234` unconditional `start_student` |
-| 5 | **The page never freezes and never crashes**: a 20 s budget for the hint thread (prefetch join and own call) with the reason in the fallback card, answer buttons enabled while busy; `app.js` handles `{"error"}`, a 4 s fetch timeout, back-off and a "la placa no respon" banner | web P1, web P2, hints P8 (close the LLM gate on n >= 10, one call) | high | M | none | yes | **open**: `hints.quality()` still accepts `n` >= 1 (`:274`), `_llm_langs` still makes two calls; `app.js` was redesigned (`43ff1e3`) but `render()` still assumes a state object: re-verify on the new file |
-| 6 | **`predict.py` cannot die and holds 60 s by construction**: catch-all per problem, tolerant `id`/`text`/`options`, `SOLVERS=1` in `config.env` so `SOLVERS=0` works (reviewer I9), the remaining budget threaded into the solver extraction, skip a call that cannot fit, accumulate `prompt_tokens` | reason P1, reason P2, board P7 | high | S-M | none | yes (the app does not call `predict.py`) | **open**: `pipeline.py:137-143` catches only timeouts and `URLError`; `predict.py:45` `problem["id"]`; `SOLVERS` absent from `config.env` (`pipeline.py:21` reads it); the solver path still gets `timeout=60` |
-| 7 | **Evidence and labels in the public tree**: `docs/runs/` with the ids-only eval CSVs and `ablations.csv` (reviewer I11), `.gitignore` for `*.jsonl`/images/parquet everywhere, the 13-row id -> answer table out of `docs/content-review.md`, a test that no doc pairs an id with a letter, delete the three stale branches with tool trailers, fix `hint_quality.json:40` | reason P5, data P7, data P2 (+addendum), data P1 | high | S | none | yes | **partly**: option values and labels left `docs/demo/` (`8db6754`); `docs/content-review.md` still holds 19 rows with a letter column; no `docs/runs/`; `.gitignore` still only `data/*` and `results/*`; `hint_quality.json:40` unchanged; branches still on origin |
-| 8 | **One mastery sentence and no endless repeat**: `derive_mastery` is the single source (no 0 -> 1 after rung 4, no one-answer review penalty, INTERFACES/legend aligned: reviewer I7, M7); `_least_recent` picks the problem whose latest answer is oldest (today the first answer, forever) | trainer P2, trainer P5 | high | S | none | yes (the demo flow is unchanged) | **open**: `trainer.py:548-550`, `:451` |
-| 9 | **The suite is harmless and runs everywhere**: `tests/__init__.py` redirects `STUDENTS_DB` to a temp dir (today a run writes `Mar`, `Pau`, `student-test`, `test-webapp` into the demo database), mock the one network test, `board/07_run_tests.sh`, a GitHub Actions matrix on 3.13 and 3.14 with no data (exact yaml in the report), honest test counts in the docs (284 today, "125" in two docs) | tests P1, P2, P3, P4; reason P8 | medium | S | none | yes | **open**: `tests/__init__.py` empty; no `.github/`; "125 tests" still in `docs/results-A.md:74` and the README draft |
-| 10 | **Demo-day health check and units that survive memory pressure**: `board/07_demo_check.sh` (units, `/health` on loopback and `docker0`, data counts, `students.db` ownership, one timed real completion against the 60 s budget, app page without `label`, RAM, Wi-Fi state); `OOMScoreAdjust`/`Nice`/`Restart=always` in the three units; relay accept-loop guard, keepalive, a clear message when `docker0` is missing, `target_port` so the relay test runs on macOS | board P9, board P4, board P2, board P3 | high | M | none | yes on the rehearsal day, not the morning of | **open**: `board/` unchanged since the reports |
-| 11 | **Honest neighbours**: skip near-duplicates (>= 0.97: the same problem one level down, 32/1466 train ids), gate rung 1 on similarity 0.75 with a fallback chain and honest wording (expected precision 44% -> 63%), no invented `sample-4` when the index is missing, hand labels override `topics.json` (the 50 that exist are not read today) | retrieval P2, P1, P4, P3 (code part) | high | S+M | check the six demo ids' similarities first (`dev/demo_pick.py` already filters < 0.95) | duplicates/fallback/hand labels yes; the 0.75 gate only after checking the demo ids | **open**: `retrieval.py` has no `skip_duplicates`, no gate, `_fallback` for any id; `topics._load` never opens `topics_manual.json` |
-| 12 | **Teacher report a teacher can use**: seconds per problem (stored at `record_answer`), hints per right answer, per-topic trend, last failed problems (ids), the diagnostic's outcome, `by_topic` rendered on the teacher page, plus `difficulty.report()` (merged in `014bf37`) | trainer P6, difficulty branch | high | M | none | yes (additive keys, same migration pattern as `start_level`) | **open** (the `difficulty` module is on main but not on the page) |
-| 13 | **Problem selection that respects the chosen course**: diagnostic L, L+1, L-1 when a level is chosen, exact level before topic rotation, chain restarts at the student's level (reviewer I6); 2-up-1-down staircase with mastery 4 = 3 of the last 4 right without hints (measured: accuracy 47% -> 60%, guessers capped at 2); review spaced in answers (3/5/8/13/21) | trainer P3, P1, P4 | high | M-L | 11 (duplicates) | **no**: every change here re-picks the deterministic demo chains (`docs/demo/demo-problems.md`); do it after the demo or re-run `dev/demo_pick.py` and the rehearsal | **open**: `DIAGNOSTIC_LEVELS = (0, 2, 4, 6, 7)`, `REVIEW_RATE = 0.2` coin |
-| 14 | **Measured, reproducible, pinned**: `laptop/measure_ladder.py` and the ladder table (rung-3 sources on val before/after), the retrieval and topic figures in `results-A.md`, the M3Kang revision `e772e61` pinned in `prepare_m3kang.py` with a committed text-free manifest, `requirements.txt` pinned with Python 3.11-3.12 stated, `calibrate_speed.py --write` writing the per-request embed figure (today per text: 0.05 instead of 0.12), the stale header of `results-A.md`, the simulator table published | hints P11, retrieval P7, data P5, data P6a, data P10, board P1, reason P8, trainer P8 | medium | S each | none | yes | **open** (results-A gained the middle-value board run in `d8f9c66`, nothing else) |
-| 15 | **The public README's data and licence section**: where M3Kang comes from (not gated, revision, 393 MB shard, 38 min OCR, 36 s index), Python versions, "not in this repository", MIT for the code, the stale `[[TODO add LICENSE]]`, the organizers' guide kept as credited setup doc, the root README swapped once the TODOs close | data P9, data P4 | high | M | 7, 14 | yes; the root swap after the demo | **open** |
+| 1 | **Leak filter v2**: a space between a glued digit and its unit (`12cm`), digit-carrying units stripped from the option before reading values (`cm2` is not a 2), number words 0-999 in three languages, dozen/half/pair/double, expressions, Roman numerals, ordinals, option positions, the lower-case letter; `lang` so `set`, `nou`, `deu`, `un/una`, `once` stop blocking harmless hints; one corpus (110 adversarial, 40 harmless, every real option value of val and train, every demo step and lesson with raw options) | hints P6, P7; tests P8; rung3 X1 | high | M (75 min) | none; prerequisite of 2, 3, 4 | **yes** | **open**: `leak_filter.py` unchanged; 75/110 adversarial pass, 12/40 harmless fail, 35/339 real glued values pass, and with raw options the filter would wrongly drop 2 demo steps and 4 fields of `lvl-1_2024_8` |
+| 2 | **Rung 3 filtered and honest**: the demo steps pass `leak_reason` at runtime with `lang` and "Pas i de n" counts the survivors (reviewer M4); the solver trace runs on the English row so it can fire on the Catalan page; rung 4 puts the figure description first; `demo_steps`, `lesson`, `fallback_reason` enter INTERFACES | hints P1, P2 (remainder); rung3 X2 | medium | S (30 min) | 1 | **yes** (all six demo ids' steps pass today, so the stage text is identical) | **partly**: demo steps read at rung 3/4 (`1b85037`) and the lesson on the fourth press (`6af15f0`) are done; the steps are not filtered at runtime; `solvers.classify` is 0/281 on Catalan text |
+| 3 | **A wrong answer does not reveal the letter**: two attempts, label private until the problem is closed, hints still open after a miss (a miss neither resets nor consumes a press), exactly one `record_answer` (attempt 1), attempt 2 in the timeline and an `AttemptStats` counter file, rung 4 pushed automatically after the second miss, `/api/solution` only after an attempt or rung 3 with a confirmation (reviewer C2, C3) | web P4, P5; rung3 X3 | high | M (60 min) | 1 | **rehearsal slot**: the pitch at second 60 and `contingency.md:40` assume the letter appears; `demo-problems.md` steps 2 and 4 and `dev/demo_rehearse.py` take a second letter | **open**: `webapp.py:302` names the letter on the first miss, `hint()` answers `already answered`, `solution()` has no gate |
+| 4 | **The one diagnosis that may precede the reveal**: `hints.note_attempt` and, after a miss, the `statement_number` signature ("your answer is a number written in the statement") at rung 3; every relation signature stays after the close, because with its direction it pins the correct option in 95/95 validation pairs (51/75 without) | hints P3 (narrowed); rung3 X4 | medium | S (30 min) | 3 | **yes** (fires on stage only if the presenter clicks the statement distractor of `lvl-4_2010_12`) | **partly**: `signatures.py` merged and shown after the reveal (`c1238ec`, `9513842`); nothing before it |
+| 5 | **`board_clock.Deadline`**: one budget per student step (`HINT_BUDGET_SECONDS`) and per `predict.py` problem (`TIME_LIMIT_SECONDS` minus a margin), passed to `llm.post`, `extract_json`, `letter_scores`, `embed`, `hints.llm_hint`, `_prefetched`, consulted before every model call (`fits()`), a running prefetch never doubled, `finally: busy = False`, the reason in the fallback card; the LLM gate needs `n >= 10` and one call in the shown language | reason P2; web P1; hints P8; tests P7; reviewer M2, M3; demo X1 | high | M (2 h) | none | **yes** (suite green, the hang test, one rehearsal; the Catalan gate is closed so the demo never enters the LLM branch) | **open**: a hung server keeps the page busy 1x or 2x the limit (3.0 s and 6.1 s measured at a 3 s limit), the solver path gets `timeout=60`, `quality()` accepts `n` >= 1, `_llm_langs` makes two calls |
+| 6 | **`predict.py` never dies, `SOLVERS=0` works**: a catch-all per problem, tolerant `id`/`text`/`options`, a last-resort row `D, 0.0, error`, `SOLVERS=1` in `config.env` (reviewer I9), `prompt_tokens` accumulated | reason P1; board P7; demo X2 | high | S | none | **yes** | **open**: a row without `id` kills the run (`KeyError`, header only); `pipeline.py:137-143` catches timeouts and `URLError` only; `SOLVERS` absent from `config.env` |
+| 7 | **The page never crashes**: `api()` turns `{"error"}` into a status line, 4 s fetch timeout, self-rescheduling polls with back-off, a "la placa no respon" banner after three failed polls, the letters usable while a hint is pending, no exception text from `hal/web.py` | web P2, P8 (part); demo X3 | high | M | none | **yes** (one browser check) | **open**: `render()` throws on `{"error": "already answered"}`, a double click or a second tab triggers it; `/api/led/path/abc` returns the exception text |
+| 8 | **The student survives "Comença", the bank never loops**: `start()` resets only when a course was chosen or the pseudonym is new ("auto" on a known pseudonym continues), a blank name is an error instead of `demo`; `_least_recent` picks the problem whose latest answer is oldest | web P6; trainer P5; demo X5; trainer-retrieval X6a | high | S | none | **yes** (every demo chain names a course, so "Comença" on stage still resets; `demo_rehearse.py` once) | **open**: `webapp.py:225` `or "demo"`, unconditional `start_student`; a blank start wiped `demo` (answers 1 -> 0); `trainer.py:451` `ORDER BY id LIMIT 1` |
+| 9 | **Degrade, never invent**: `neighbors()` never raises (embed server down) and never returns `sample-4` for a real id (index missing), hand labels override `topics.json` (the 50 that exist are not read), ties rounded before sorting, `Bridge.call` guarded, a startup health thread logging `servers: llm ok / embed ok` and `servers` in `/api/state` | retrieval P3 (code), P4, P8; web P7 (guard); board P8; demo X4; trainer-retrieval X7 | medium-high | M | none | **yes** (the four chain problems and neighbours are training ids; the 50 labels leave the chains unchanged, verified by re-picking) | **open**: `INDEX_DB` missing shows `sample-4` as an easier neighbour; `EMBED_PORT=1` raises `URLError` out of `get_hint` on a validation id; `topics._load` never opens `topics_manual.json` |
+| 10 | **One near-duplicate constant, 0.95**: `NEAR_DUPLICATE` in `retrieval.py`, `neighbors(..., skip_duplicates=True)`, inherited by rung 1 and the trainer, imported by `dev/demo_pick.py`; the trainer records the similarity it served and does **not** gate weak neighbours (31% of its wrong-branch steps are below 0.75; a gate would hand them to an unranked bank pick) | retrieval P2; trainer-retrieval X1, X2 | medium | S | none | **yes** (no hit >= 0.95 in any demo list; max 0.935) | **open**: 32/1466 training ids get the same problem one level down as their neighbour (all the same year, 12 the same label); 7 of 345 simulated adaptive steps served one |
+| 11 | **Evidence and labels in the public tree**: `docs/runs/` with the ids-only eval CSVs and `ablations.csv` (reviewer I11), `.gitignore` for `*.jsonl`/images/parquet everywhere, the 19-row id -> answer table out of `docs/content-review.md` and the letter out of `contingency.md:40`, a test that no doc pairs an id with a letter, the three stale branches with tool trailers deleted, `hint_quality.json:40` reworded | reason P5; data P1, P2 (+addendum), P7; rung3 X7 | high | S | none | **yes** | **partly**: `docs/demo/demo-problems.md` scrubbed (`8db6754`); `content-review.md` and `contingency.md` still state demo answers; no `docs/runs/`; `.gitignore` only `data/*` and `results/*`; branches and the judge string unchanged |
+| 12 | **Demo day as code**: `board/07_demo_check.sh` (units, `/health` on loopback and `docker0`, data counts, index rows, `students.db` ownership, one timed real letter call against the 60 s rule, app page without `label`, RAM, disk, Wi-Fi), `tests/__init__.py` redirecting `STUDENTS_DB` (today a suite run writes four test pupils into the demo database), an honest `05_smoke_test.sh`, two asserts in `demo_rehearse.py` (no invented neighbour, no `fallback_reason`); units with `OOMScoreAdjust` 500/200/-200 and `Restart=always`, no `Nice`, no `MemoryMax` | board P9, P4; tests P1, P2; demo X6, X7 | high | M | 5 (for `fallback_reason`) | **yes**; the units on the rehearsal day only, then `calibrate_speed.py` within 5% | **open**: `board/` and `tests/__init__.py` unchanged |
+| 13 | **One mastery sentence**: `derive_mastery` is the single source (no 0 -> 1 after rung 4, no one-answer review penalty that the next wrong answer undoes; reviewer I7, M7), INTERFACES and the teacher legend aligned ("1 ha començat") | trainer P2; trainer-retrieval order step 5 | high | S | none | **yes** (the demo's tick 0 -> 2 and cross 0 -> 1 are unchanged) | **open**: `trainer.py:548-550` |
+| 14 | **Problem selection that respects the chosen course** (after the demo): diagnostic `(L, L+1, L-1)` with the exact level before topic rotation and the chain restarting at the base level (reviewer I6); two rights to go up, one wrong to go down, mastery 4 = 3 of the last 4 right without hints (measured: accuracy 47% -> 60%, guessers capped at 2); review due in answers (3/5/8/13/21); base level follows the median of the last ten; `trainer.diagnostic_plan` shared with `dev/demo_pick.py`; the harness (`--start-level`, wrapped neighbours with counters, guessers test, the before/after table in `results-A.md`) | trainer P1, P3, P4, P7, P8; retrieval P6 (the word, not the map); trainer-retrieval X3, X4, X5, X6b, X8 | high | M-L | 10 | **after**: problem 2 of every chain changes (re-picked: `lvl-2_2019_24`, `lvl-3_2017_15`, `lvl-4_2024_23`); the re-pick procedure takes about one hour and is written in the cross report; the harness and its "before" table can land now | **open**: `DIAGNOSTIC_LEVELS = (0, 2, 4, 6, 7)`, `REVIEW_RATE = 0.2` coin, base level frozen |
+| 15 | **Measured, pinned, written down**: `laptop/measure_ladder.py` and the ladder table (rung-3 sources on val before/after), the retrieval and topic figures in `results-A.md`, the M3Kang revision `e772e61` pinned in `prepare_m3kang.py` with a committed text-free manifest, `requirements.txt` pinned with Python 3.11-3.12 stated, `calibrate_speed.py --write` writing the per-request embed figure (today per text: 0.05 for 0.12), the stale header of `results-A.md`, "125 tests" -> the real count, the simulator table published, and the public README's data and licence section (where M3Kang comes from, not gated, 38 min OCR, 36 s index, Python versions, MIT for the code, the stale `[[TODO add LICENSE]]`) | hints P11; retrieval P7; data P5, P6a, P9, P10; board P1; reason P8; trainer P8; rung3 X7 | medium-high | S each, M in all | 11 | **yes**; the root README swap after the demo | **open** (`results-A.md` gained the middle-value board run in `d8f9c66`, nothing else) |
 
-### Not in the top 15 but worth doing after the demo
+### Worth doing after the demo, not in the top 15
 
-- Rung 1 as a faded worked example (hints P5, L): the student answers the neighbour first, then sees its
-  answer and the card. The strongest pedagogical change; touches the page, the server and INTERFACES.
-- LED "thinking" chaser and rung marker, `Bridge.call` guarded (web P7); polling with a version number
-  and the neighbour image by id (web P10, reviewer M6); state-changing endpoints as POST (web P3, needs one
-  test of the brick on the board); readable sizes and child words on the page (web P9); the endpoint table
-  (web P11).
-- Strategy cards: two risky facts (`angles/4`, `spatial/2`), eight missing Kangaroo moves, the topic in the
-  card header (hints P9); the rung-1 board clock and school-year wording (hints P10).
-- Base level that follows the student (trainer P7), related-topic second pass for thin cells (retrieval P6),
-  validation vectors precomputed into the index (retrieval P5), platform-stable ties (retrieval P8), SQLite
-  hardening (trainer P9).
-- Board: thread oversubscription measured before choosing `EMBED_THREADS` (P5), `id -un` in the scripts (P6),
-  host fallback to the default gateway plus a startup health log (P8), the fresh-board gaps in
-  `deploy-board.md` (P10), idempotence edges (P11).
-- Tests: stdlib guard gaps (3.14-only names and syntax, dynamic imports: P5), INTERFACES signatures checked
-  (P6), pipeline and 60 s tests (P7), web error paths and `hal/web.py` (P9), `predict.py` determinism (P10),
-  the `sample-1` fixture out of board code (P11, reason P4).
-- Data: the near-verbatim statement in `tests/test_solvers.py:89` and the repo-wide text-leak test (P3),
-  commit e-mail (P8), `rapidocr>=3` migration (P6b, after the demo: it changes OCR output).
-- Reason: precise determinism statement and test (P6), "copied, not invented" check in the solvers (P7).
+- Option-derived sanity questions as a rung-3 source (units, magnitude, progression, factor, parity as a question):
+  rung 3 stops being a second card on 119/281 Catalan validation problems with no model and no content hour (hints P4,
+  rung3 X5).
+- Rung-1 gate at 0.75 with a same-level fallback and honest wording: expected precision 44% -> 63%; five of six demo ids
+  pass, the reserve `lvl-5_2022_30` (0.729) would switch neighbour (retrieval P1, rung3 X6). Behind
+  `RUNG1_MIN_SIMILARITY=0` until then.
+- Rung 1 as a faded worked example (hints P5, L), the strongest pedagogical change; it collides with the two-attempt
+  letter buttons, so after the datathon.
+- Validation vectors precomputed into `index.db` so no embedding call remains in the loop (retrieval P5, needs a push);
+  the 394 hand labels of levels 0-2 (retrieval P3 people part; changes every cell); the `RELATED` topic map once the
+  labels make the topics trustworthy (retrieval P6).
+- Teacher report a teacher can use: seconds per problem, hints per right answer, per-topic trend, last failed ids, the
+  diagnostic's outcome, `by_topic` on the page, plus `difficulty.report()` (merged in `014bf37`) (trainer P6).
+- Web: state-changing endpoints as POST after one `adb forward` test of the brick (web P3); version-based polling and the
+  neighbour image by id (web P10, reviewer M6); the LED "thinking" chaser and rung marker (web P7); readable sizes and
+  child words (web P9); the endpoint table and the favicon (web P11).
+- Strategy cards: two risky facts (`angles/4`, `spatial/2`), eight missing Kangaroo moves, the topic in the card header
+  (hints P9); the rung-1 board clock and school-year wording (hints P10).
+- Board: thread oversubscription measured before choosing `EMBED_THREADS` (P5), `id -un` in the scripts (P6), the
+  fresh-board gaps in `deploy-board.md` (P10), idempotence edges and the `ExecStart` drift test (P11), relay hardening
+  (P2, P3).
+- Tests: stdlib guard gaps (3.14-only names and syntax, dynamic imports: P5), INTERFACES signatures checked (P6), web
+  error paths and `hal/web.py` (P9), `predict.py` determinism (P10), the `sample-1` fixture out of board code (P11,
+  reason P4), CI on GitHub Actions with the exact yaml (P4), `board/07_run_tests.sh` (P3).
+- Data: the near-verbatim statement in `tests/test_solvers.py:89` and a repo-wide text-leak test (P3), the real example
+  problem in `data/README.md` (P4), commit e-mail and `.mailmap` (P8), `rapidocr>=3` migration (P6b: changes OCR output).
+- Reason: a precise determinism statement and test (P6), a "copied, not invented" check in the solvers (P7).
+- SQLite hardening (trainer P9), platform-stable ties (retrieval P8, folded into 9 above).
+
+## Demo day: when each item lands
+
+From [cross-demo-robustness.md](cross-demo-robustness.md) §3 and [cross-trainer-retrieval.md](cross-trainer-retrieval.md) §2.
+
+| when | do | never |
+| --- | --- | --- |
+| **Now, no stage effect** | 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15; the harness half of 14; the night-before items of 12 | |
+| **Rehearsal slot** (full re-run of both chains, then `demo_rehearse.py`) | 3 (update `pitch.md` second 60, `contingency.md:40`, `demo-problems.md` steps 2 and 4); the three units of 12, then `calibrate_speed.py` within 5% of 11.4 / 5.6 | `calibrate_speed.py --write`; `config.env` edits other than `HINT_BUDGET_SECONDS` |
+| **Morning of** | power on, `adb devices`, `./board/07_demo_check.sh`, `adb forward`, one `demo_rehearse.py Mariona1 1 C A`, `/api/reset`, type the pseudonym and course | tests, `git pull`, `app stop/start` unless the check fails, any `board/01-06` script |
+| **After the demo** | 14 with the re-pick; option checks; the rung-1 gate; POST; polling; the 394 labels; a new `index.db`; the root README swap | |
 
 ## Done on main since the reports were written (do not redo)
 
@@ -85,46 +99,60 @@ judgement; round 2 refines it. Effort: S under 1 h, M 1-2 h, L more.
 | --- | --- | --- |
 | reason P3 (middle-value rule) | `MIDDLE_VALUE=1` default, measured on the board: 150/562 = 26.7% | `199f6ab`, `d8f9c66` |
 | reason "Discarded: merge votes.py" | superseded: `votes.py` merged behind `VOTE_SHIFTS=0`, `VALUE_MODEL=0` | `7d8a8d9`, `a94194d` |
-| hints P2 (demo steps at rung 3 and 4) | `hints._demo_steps`, rung 3 walks them (never the last), rung 4 shows all; six script problems in `demo_set.json` | `1b85037`, `8343a2a` |
-| hints P2 (step count, reviewer M4) | partly: the count follows the demo steps; the trace path is unchanged | `1b85037` |
+| hints P2 (demo steps at rung 3 and 4) | `hints._demo_steps`, rung 3 walks them (never the last), rung 4 shows all; the six script problems in `demo_set.json` (19 entries, all draft) | `1b85037`, `8343a2a` |
 | web (hint cap) | the fourth press is a short lesson (`hints.get_lesson`), `HINT_MAX_USES=4` | `6af15f0`, `c6b27ee`, `f15e8f1` |
-| hints P3 premise | `signatures.py` merged; shown only after the answer, never as a hint, with a confidence flag | `c1238ec`, `9513842`, `6257246` |
+| hints P3 premise | `signatures.py` merged; shown only after the answer, with a confidence flag and its own pin measurement (1176/1381) | `c1238ec`, `9513842`, `6257246` |
 | data P2 addendum (`docs/demo`) | option values, labels and descriptions moved to the ignored `docs/demo/local/` | `8db6754` |
-| web P6 (demo side) | runbook forgets the rehearsal aliases and warms the index with a first Pista | `78e4eb1` |
+| web P6 (demo side) | the runbook forgets the rehearsal aliases and warms the index with a first Pista | `78e4eb1` |
 | hints P9 (wording, reviewer M8) | Catalan fixes and the 15-word cap on the cards; `tests/test_content.py` | `179b96e`, `daf1997` |
 | web P9 (part) | one-column page, 3:1 control borders, progress under the letters, dark mode | `43ff1e3`, `adb83af` |
 | trainer "Discarded: DIFFICULTY_ADJUST" | merged as decided: flag off, `report()` recommended, read once per step | `014bf37`, `e481120`, `1d51483` |
 | retrieval P1 constant | `lineage.py` merged with `min_similarity` 0.75 as exploration, not a hint | `95c41c7`, `fcd28ab` |
 
+## Contradictions between reports, resolved in round 2
+
+- **Near-duplicate threshold 0.97 (retrieval P2) vs 0.95 (`dev/demo_pick.py`)**: 0.95. All 32 training ids whose
+  neighbour scores >= 0.95 are the same year at the adjacent level, including the 13 in [0.95, 0.97); [0.90, 0.95) is
+  mixed and holds the opening demo neighbour (0.935).
+- **The 0.75 similarity gate**: rung 1 only (a hint called "semblant" must be the same idea); the trainer skips duplicates
+  but keeps weak neighbours and records their similarity.
+- **The error signature as rung-3 content (hints P3) vs after the reveal (main)**: main is right for every relation key;
+  only `statement_number` says nothing about the correct value and may precede the reveal.
+- **Two attempts (web P4) vs one `record_answer` per problem (trainer contract)**: attempt 1 is graded; attempt 2 is a
+  timeline row and a counter file, never a trainer call.
+- **`start()` must not reset (web P6) vs deterministic demo chains**: reset when a course was chosen or the pseudonym is
+  new; every chain names a course.
+- **`warm` as default prefetch (hints P8) vs bounded `full` (web P1)**: with `Deadline` the join is bounded and a running
+  prefetch is never doubled, so `full` stays; the one-call and `n >= 10` rules of P8 stay.
+- **`Nice=5` on the LLM unit (board P4) vs calibration**: dropped before the demo; `OOMScoreAdjust` and `Restart=always`
+  are worth the rehearsal-day re-calibration.
+- **Reviewer C1 (rewrite `origin/main`)**: the eight trailers are upstream's; delete the three stale team branches instead.
+
 ## Discarded: they contradict a project rule
 
-- LLM-written worked solutions, LLM translation of hints into Catalan, LLM in the trainer or in mastery:
-  the LLM never reasons; one hint is 28 s of board time; its Catalan is the failure mode.
-- Elimination hints that state a property of the answer ("it is even", "not A or E"), and the middle-value
+- LLM-written worked solutions or rung-4 explanations, LLM translation of hints into Catalan, LLM in the trainer or in
+  mastery: the LLM never reasons; one hint is 28 s of board time; its Catalan is the failure mode.
+- Elimination hints that state a property of the answer, any relation signature before the reveal, and the middle-value
   rule as a hint: they leak bits of the label before the student answers.
 - Qwen3.5 2B on the board: 5 of 281 prompts over 60 s, about 1.6 GB RAM, no gain.
-- numpy or `math.sumprod` for the dot products: numpy is not stdlib; `sumprod` was slower; the pure-Python
-  cost is 4.6 ms per rung-1 pool.
-- `MemoryMax` on the LLM unit: a flat RSS plus a cgroup limit turns a spike into a certain kill.
-- Wall-clock spaced repetition: sessions last 10-30 minutes; counting answers keeps the idea.
-- Storing age or class to set the start level: minors, no personal data.
-- Rewriting `origin/main` history for the eight trailers: they are the organizers' commits.
-- Committing `val.jsonl` "ids only", the OCR cache, or problem images for the Project Hub: research-only
-  licence.
-- A `--board` test flag, pytest or coverage on the board: the suite already self-gates on data; the board
-  has no pip.
+- numpy or `math.sumprod` for the dot products: numpy is not stdlib; `sumprod` was slower; 4.6 ms per rung-1 pool in pure
+  Python.
+- `MemoryMax` on the LLM unit; killing the hint thread or the in-flight request (urllib cannot; the `Deadline` bounds what
+  the page waits for instead).
+- Gating the trainer's neighbour at 0.75; skipping near-duplicates of the whole history (0.5 s per step on the board for a
+  case the simulation never showed).
+- Wall-clock spaced repetition; storing age or class; per-tab sessions.
+- Rewriting `origin/main` history; committing `val.jsonl` "ids only", the OCR cache or problem images.
+- A `--board` test flag, pytest or coverage on the board; a `/api/health` proxy for the page.
 
 ## Dependencies in one picture
 
 ```
-2 leak filter v2 ──> 1 wrong answer / solution gate ──> 3 rung-3 sources
-                 └─> (demo steps, lessons, signature texts all pass through it)
-11 duplicates + hand labels ──> 13 trainer policy (after the demo; re-pick the chains)
-7 evidence + 14 measurements ──> 15 README
-4 start() ──┐
-5 budget   ─┼─> 10 demo check script (round 2 writes the day plan)
+1 leak filter v2 ──> 2 rung 3 filtered ──> 3 two attempts ──> 4 statement_number diagnosis
+                 └─> (demo steps, lessons, signature texts, option checks all pass through it)
+5 Deadline ──> 12 demo check (fallback_reason, honest smoke test)
 6 predict  ─┘
+10 duplicate constant ──> 14 trainer policy (after the demo; re-pick the chains)
+9 degrade-never-invent (hand labels, no fake fallback) ──> 14
+11 evidence + 15 measurements ──> the public README
 ```
-
-Round 2 will replace the "safe before demo" column with a verified day plan (night before, morning of,
-never on demo day) and the exact re-pick procedure for the trainer changes.
