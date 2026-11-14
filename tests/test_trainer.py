@@ -218,6 +218,71 @@ class TrainerDbTest(unittest.TestCase):
         self.assertEqual(sum(v["answers"] for v in ana["by_topic"].values()), 10)
         self.assertEqual(len(report["topics"]), 8)
 
+    def test_start_student_level_sets_the_diagnostic_and_the_base_level(self):
+        self.assertEqual(trainer.start_student("s", level=4), {k: 0 for k in TOPIC_KEYS})
+        self.assertEqual(trainer.next_problem("s")["level"], 4)
+        self.assertEqual(trainer.teacher_report("s")["students"][0]["base_level"], 4)
+        log = self.play("s", 3, self.threshold(5))        # 4 ok, 6 wrong, 7 wrong: diagnostic done
+        self.assertEqual([p["level"] for p, _ in log], [4, 6, 7])
+        report = trainer.teacher_report("s")["students"][0]
+        self.assertTrue(report["diagnostic_done"])
+        self.assertEqual(report["base_level"], 4)
+        self.assertEqual(report["start_level"], 4)
+        self.assertEqual(trainer.diagnostic_levels(5), (5, 7, 7, 7, 7))
+        self.assertEqual(trainer.diagnostic_levels(None), trainer.DIAGNOSTIC_LEVELS)
+
+    def test_start_student_without_level_behaves_as_before(self):
+        trainer.start_student("s")
+        log = self.play("s", 3, self.threshold(7))
+        self.assertEqual([p["level"] for p, _ in log], [0, 2, 4])
+        self.assertIsNone(trainer.teacher_report("s")["students"][0]["start_level"])
+
+    def test_start_level_failing_everything_drops_one_level(self):
+        trainer.start_student("s", level=3)
+        self.play("s", 3, self.threshold(-1))
+        self.assertEqual(trainer.teacher_report("s")["students"][0]["base_level"], 2)
+        trainer.start_student("zero", level=0)
+        self.play("zero", 3, self.threshold(-1))
+        self.assertEqual(trainer.teacher_report("zero")["students"][0]["base_level"], 0)
+
+    def test_reset_student_forgets_everything_and_allows_seen_problems_again(self):
+        first = [p["id"] for p, _ in self.play("s", 8, self.threshold(3))]
+        self.assertNotEqual(trainer.mastery_map("s"), {k: 0 for k in TOPIC_KEYS})
+        trainer.reset_student("s")
+        self.assertEqual(trainer.mastery_map("s"), {k: 0 for k in TOPIC_KEYS})
+        self.assertEqual(trainer.teacher_report("s")["students"], [])
+        again = [p["id"] for p, _ in self.play("s", 8, self.threshold(3))]
+        self.assertEqual(first, again)
+        trainer.reset_student("never-seen")   # must not raise
+
+    def test_start_student_restarts_an_existing_student(self):
+        self.play("s", 6, self.threshold(3))
+        pending = trainer.next_problem("s")
+        trainer.start_student("s", level=2)
+        self.assertEqual(trainer.teacher_report("s")["students"][0]["answers"], 0)
+        self.assertNotEqual(trainer.next_problem("s")["id"], pending["id"])
+        self.assertEqual(trainer.next_problem("s")["level"], 2)
+
+    def test_start_student_is_deterministic(self):
+        trainer.REVIEW_RATE = self.review_rate
+        trainer.start_student("s", level=3)
+        first = [p["id"] for p, _ in self.play("s", 25, self.threshold(4))]
+        trainer.start_student("s", level=3)
+        self.assertEqual([p["id"] for p, _ in self.play("s", 25, self.threshold(4))], first)
+
+    def test_old_database_without_start_level_is_migrated(self):
+        import sqlite3
+        old = os.path.join(self.tmp.name, "old.db")
+        db = sqlite3.connect(old)
+        db.execute("CREATE TABLE students (student_id TEXT PRIMARY KEY, created_at REAL NOT NULL, "
+                   "base_level INTEGER NOT NULL DEFAULT 0, diagnostic_done INTEGER NOT NULL DEFAULT 0)")
+        db.execute("INSERT INTO students VALUES ('old', 0, 3, 1)")
+        db.commit()
+        db.close()
+        trainer.configure(db_path=old, problems=self.problems, neighbors_fn=make_synthetic_neighbors(self.problems))
+        self.assertEqual(trainer.teacher_report("old")["students"][0]["start_level"], None)
+        self.assertEqual(trainer.start_student("old", level=1), {k: 0 for k in TOPIC_KEYS})
+
     def test_no_personal_data_columns(self):
         import sqlite3
         trainer.next_problem("s")
