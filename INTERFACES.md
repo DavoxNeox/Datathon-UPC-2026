@@ -302,6 +302,50 @@ and the `data/images/<id>_<lang>.png` miniature when the topic is visual, the cu
 problem's step highlighted; clicking a step opens that problem read-only (no label), and
 the LED shows `led_frame(chain, level)`.
 
+### `copilot/signatures.py` (innovation: error signatures)
+
+**POST-ANSWER EXPLANATION ONLY, NEVER A HINT.** A signature states the relation between
+the chosen value and the correct one (double, one too many, "the 12 of the statement was
+not added"): with the options still in front of them a student inverts it and finds the
+correct option in one step, and the leak filter cannot see it because no text writes the
+value (every signature except `statement_number` pins the correct option this way: 85%
+of the signed distractors, 1176/1381). So the
+web calls `diagnose()` only once the problem is closed, the answer recorded and "La
+resposta era C" shown, and displays the text as the explanation of the error next to the
+solution. Never while the options are enabled, never as a hint rung.
+
+```python
+diagnose(problem: dict, chosen_letter: str) -> dict | None
+    # -> {"signature": "plus_one",                     # one of SIGNATURE_KEYS below
+    #     "confidence": "high" | "low",                # low: correct value < 10, or two signatures fit, or "none"
+    #     "text_ca": "...", "text_en": "...",          # explanation for the student, never the value or the letter
+    #     "evidence": {"chosen_letter": "D", "chosen_value": "19", "correct_value": "18", "difference": "1",
+    #                  "ratio": "19/18", "statement_numbers": ["1", "3", "10"],
+    #                  "candidates": ["plus_one"], "dropped_by_leak_filter": [], ...}}
+SIGNATURE_KEYS = ["sum_vs_product", "product_vs_sum", "statement_number", "digits_swapped", "sign",
+                  "times_10", "div_10", "double", "half", "plus_one", "minus_one",
+                  "missing_add", "missing_subtract", "none"]
+```
+
+`None` when there is nothing to diagnose: the answer is right, the letter is not an
+option, or the chosen or the correct option is not a single number (pictures, sets,
+ratios, OCR noise). `"none"` when both are numbers but no signature fits. Pure stdlib;
+every text passes `copilot/leak_filter.py` (a matching signature whose text would name
+the correct value is dropped and the next one is tried). The web shows the text only when
+`confidence` is `"high"`; the teacher page may list every row. `evidence` holds the
+correct value and the difference for logs and the teacher page.
+
+Measured (val + train, 938 problems with a numeric correct option): 39% of the numeric
+distractors get a signature, 16% with high confidence; a null model with the design
+removed estimates that about three in four signatures below 10 and one in two above 10
+(high confidence included) would also fire on a random option of the same size. Details,
+order of the signatures and the manual judgement in `docs/error-signatures.md`.
+
+Web wiring (controller): after `record_answer` returns `correct: False` and the solution
+panel is drawn, `d = signatures.diagnose(problem, letter)`; if `d` and
+`d["confidence"] == "high"`, show `d["text_ca"]` as a "Per què m'he equivocat?" line under
+"La resposta era C". Nothing changes in the hint ladder or in mastery.
+
 ## Phase 0 stubs
 
 Every module above exists as a stub that returns fixed test data and raises nothing.
