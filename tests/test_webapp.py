@@ -361,6 +361,14 @@ class HintCapTest(unittest.TestCase):
             self.assertTrue(self.s.solution().get("ok"))
         self.assertEqual(self.s.state()["hints_left"], webapp.HINT_MAX_USES)
 
+    def test_hints_still_allowed_after_the_answer(self):
+        # the page offers a hint after a wrong answer: the student may want to retry by themselves
+        self.s.answer_letter("A")
+        self.assertIsNotNone(self.s.answer)
+        self.assertTrue(self._hint().get("ok"))
+        self.assertEqual(self.s.state()["hints_left"], webapp.HINT_MAX_USES - 1)
+        self.assertEqual(self.s.answer["letter"], "A")   # the answer stands
+
     def test_cap_resets_on_the_next_problem(self):
         for _ in range(webapp.HINT_MAX_USES):
             self._hint()
