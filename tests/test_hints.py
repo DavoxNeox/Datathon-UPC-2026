@@ -113,11 +113,12 @@ class LlmHintTest(unittest.TestCase):
         return {"id": "fake-1", "language": "eng", "level": 0, "text": "3 bags of 4 apples, 2 eaten. Left?",
                 "options": OPTIONS, "label": "C"}
 
-    def test_two_call_mode_accepts_a_clean_hint(self):
-        answers = iter([("Count all the apples first.", {"prompt_n": 50, "predicted_n": 7}),
-                        ("Compta totes les pomes primer.", {"prompt_n": 30, "predicted_n": 8})])
+    def test_two_calls_catalan_then_english_accept_a_clean_hint(self):
+        answers = iter([("Compta totes les pomes primer.", {"prompt_n": 50, "predicted_n": 8}),
+                        ("Count all the apples first.", {"prompt_n": 30, "predicted_n": 7})])
         with mock.patch.object(hints, "_call", side_effect=lambda *a, **k: next(answers)):
-            r = hints.llm_hint(self.problem(), "cat", mode="two")
+            r = hints.llm_hint(self.problem(), "cat")
+        self.assertEqual(r["text_ca"], "Compta totes les pomes primer.")
         self.assertTrue(r["ok"])
         self.assertEqual(r["attempts"], 1)
         self.assertEqual(r["prompt_n"], 80)
@@ -134,29 +135,52 @@ class LlmHintTest(unittest.TestCase):
             return "Subtract what she ate.", {"prompt_n": 10, "predicted_n": 6}
 
         with mock.patch.object(hints, "_call", side_effect=fake):
-            r = hints.llm_hint(self.problem(), "cat", mode="two")
+            r = hints.llm_hint(self.problem(), "cat")
         self.assertTrue(r["ok"])
         self.assertEqual(r["attempts"], 2)
         self.assertEqual(r["rejected"], ["value:10"])
-        self.assertIn("Do NOT write '10'", calls[2])
+        self.assertIn("gave the answer away", calls[2])
 
     def test_two_leaks_give_up(self):
         with mock.patch.object(hints, "_call", return_value=("The answer is C.", {"prompt_n": 1, "predicted_n": 5})):
-            r = hints.llm_hint(self.problem(), "cat", mode="two")
+            r = hints.llm_hint(self.problem(), "cat")
         self.assertFalse(r["ok"])
         self.assertEqual(r["attempts"], 2)
         self.assertEqual(len(r["rejected"]), 2)
 
-    def test_one_call_mode_parses_json(self):
-        raw = '{"en": "Count the total first.", "ca": "Compta primer el total."}'
-        with mock.patch.object(hints, "_call", return_value=(raw, {"prompt_n": 60, "predicted_n": 20})):
-            r = hints.llm_hint(self.problem(), "cat", mode="one")
-        self.assertTrue(r["ok"])
-        self.assertEqual(r["text_ca"], "Compta primer el total.")
+    def test_prompt_puts_the_problem_before_the_last_user_message(self):
+        msgs = hints._messages(self.problem(), "cat")
+        self.assertEqual([m["role"] for m in msgs], ["system", "user", "assistant", "user"])
+        self.assertIn("3 bags", msgs[1]["content"])
+        self.assertIn("C (10)", msgs[3]["content"])
+        self.assertIn("Catalan", msgs[3]["content"])
+        # the warm-up prompt is exactly the Catalan hint prompt
+        self.assertEqual(hints._messages(self.problem(), "cat"), msgs)
+
+    def test_grammar_allows_no_digit_of_any_alphabet(self):
+        import re
+        allowed = re.search(r"\[(.+)\]\+", hints.HINT_GRAMMAR).group(1)
+        for ch in "0123456789٣٦³⁶½ƒ？":
+            self.assertNotIn(ch, allowed)
+        for ch in "àèéíïòóúüç·?":
+            self.assertIn(ch, allowed)
+
+    def test_full_prefetch_result_is_used_by_rung_3(self):
+        hints.reset("sample-4")
+        fake = {"ok": True, "text_ca": "Quants en tenia al principi?", "text_en": "How many at first?",
+                "estimated_board_seconds": 9.0}
+        with mock.patch.object(hints, "llm_allowed", return_value=True), \
+                mock.patch.object(hints, "llm_hint", return_value=fake) as llm, \
+                mock.patch.object(hints, "PREFETCH", "full"):
+            hints.prefetch("sample-4", "cat")
+            h = hints.get_hint("sample-4", 3, "cat")
+        self.assertEqual(h["kind"], "llm")
+        self.assertEqual(h["text_ca"], "Quants en tenia al principi?")
+        llm.assert_called_once()  # written ahead by prefetch, not again by get_hint
 
     def test_server_down_is_not_ok_and_does_not_raise(self):
         with mock.patch.object(hints, "_call", side_effect=OSError("down")):
-            r = hints.llm_hint(self.problem(), "cat", mode="two")
+            r = hints.llm_hint(self.problem(), "cat")
         self.assertFalse(r["ok"])
         self.assertTrue(r["rejected"][0].startswith("error:"))
 
