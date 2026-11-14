@@ -24,9 +24,9 @@ from copilot.pipeline import solve  # noqa: E402
 from copilot.rag import Index  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LLM = f"http://127.0.0.1:{CONFIG['LLM_PORT']}"
-EMBED = f"http://127.0.0.1:{CONFIG['EMBED_PORT']}"
-VISION = f"http://127.0.0.1:{CONFIG['VISION_PORT']}"
+LLM = f"http://{CONFIG['LLM_HOST']}:{CONFIG['LLM_PORT']}"
+EMBED = f"http://{CONFIG['EMBED_HOST']}:{CONFIG['EMBED_PORT']}"
+VISION = f"http://{CONFIG['LLM_HOST']}:{CONFIG['VISION_PORT']}"
 # Reading an image takes the board much longer than reading text
 VISION_TIME_LIMIT = 300
 

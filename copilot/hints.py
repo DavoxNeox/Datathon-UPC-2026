@@ -41,7 +41,7 @@ MAX_TOKENS = int(CONFIG.get("HINT_MAX_TOKENS", 40))
 # A leaking hint is retried once only if the first attempt cost less than this (board seconds):
 # a cold retry on a long problem would push rung 3 past the 60 s limit (measured max 92.5 s on val)
 RETRY_BUDGET = float(CONFIG.get("HINT_RETRY_BUDGET", 30))
-LLM_URL = f"http://127.0.0.1:{CONFIG['LLM_PORT']}/v1/chat/completions"
+LLM_URL = f"http://{CONFIG['LLM_HOST']}:{CONFIG['LLM_PORT']}/v1/chat/completions"
 LLM_TIMEOUT = float(CONFIG.get("TIME_LIMIT_SECONDS", 60))
 # What prefetch() does in its thread: "full" writes the hint ahead, "warm" only reads the prompt, "off" nothing
 PREFETCH = CONFIG.get("HINT_PREFETCH", "full")
