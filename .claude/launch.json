@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "copilot-sim",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["app/python/main.py"],
+      "port": 7001
+    }
+  ]
+}

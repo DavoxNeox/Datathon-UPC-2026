@@ -7,8 +7,9 @@
         prompt_n and board seconds with and without prefetch, rung 1 and 2 latency.
     python3 laptop/judge_hints.py judge --judge "your name"
         Shows the hints one at a time (problem, image path, correct answer, hint) and records
-        good/bad + reason in data_curated/hint_quality.json: only ids, topic, verdict and the
-        percentage per topic. No problem text is written there.
+        good/bad for the Catalan and the English hint + a reason in data_curated/hint_quality.json:
+        only ids, topic, verdicts and the percentages per topic (`percent` = Catalan, what the
+        student sees by default; `percent_en` = English). No problem text is written there.
     python3 laptop/judge_hints.py report
         The quality table per topic, and which topics the ladder may ask the LLM for.
 
@@ -165,7 +166,9 @@ def save_quality(data):
     for key, row in data["topics"].items():
         row["n"] = len(row["judgements"])
         row["good"] = sum(1 for j in row["judgements"] if j["verdict"] == "good")
+        row["good_en"] = sum(1 for j in row["judgements"] if j.get("verdict_en", j["verdict"]) == "good")
         row["percent"] = round(100 * row["good"] / row["n"], 1) if row["n"] else 0
+        row["percent_en"] = round(100 * row["good_en"] / row["n"], 1) if row["n"] else 0
     data["min_percent"] = hints.QUALITY_MIN
     data["updated"] = datetime.date.today().isoformat()
     with open(hints.QUALITY_FILE, "w", encoding="utf-8") as f:
@@ -185,7 +188,8 @@ def judge(args):
     data = load_quality()
     data["judge"] = args.judge
     done = {(t, j["id"]) for t, row in data["topics"].items() for j in row["judgements"]}
-    print(f"Judging {path}. Keys: g = good (helps without giving it away), b = bad, s = skip, q = quit.")
+    print(f"Judging {path}. For each hint, first the Catalan then the English one: "
+          "g = good (helps without giving it away), b = bad, s = skip this problem, q = quit.")
     count = {}
     for row in rows:
         if not row["ok"] or (row["topic"], row["id"]) in done or count.get(row["topic"], 0) >= args.per_topic:
@@ -204,18 +208,22 @@ def judge(args):
         print(f"   correct: {row['label']} ({row['value']})")
         print(f"   HINT ca: {row['text_ca']}")
         print(f"   HINT en: {row['text_en']}")
-        while True:
-            answer = input("   good / bad / skip / quit [g/b/s/q]: ").strip().lower()
-            if answer in ("g", "b", "s", "q"):
+        verdicts = []
+        for which in ("ca", "en"):
+            while True:
+                answer = input(f"   {which} hint: good / bad / skip / quit [g/b/s/q]: ").strip().lower()
+                if answer in ("g", "b", "s", "q"):
+                    break
+            if answer in ("q", "s"):
                 break
+            verdicts.append("good" if answer == "g" else "bad")
         if answer == "q":
             break
-        if answer == "s":
+        if len(verdicts) < 2:
             continue
         reason = input("   reason (short): ").strip()
-        verdict = "good" if answer == "g" else "bad"
         data["topics"].setdefault(row["topic"], {"judgements": []})["judgements"].append(
-            {"id": row["id"], "verdict": verdict, "reason": reason})
+            {"id": row["id"], "verdict": verdicts[0], "verdict_en": verdicts[1], "reason": reason})
         count[row["topic"]] = count.get(row["topic"], 0) + 1
         save_quality(data)
     save_quality(data)
@@ -226,14 +234,16 @@ def report(_args):
     data = load_quality()
     print(f"\nHint quality by topic (data_curated/hint_quality.json, judge: {data.get('judge', '?')}, "
           f"updated {data.get('updated', '?')}, LLM allowed from {hints.QUALITY_MIN:.0f}%)")
-    print(f"{'topic':12s} {'n':>3s} {'good':>5s} {'percent':>8s}  LLM")
+    print(f"{'topic':12s} {'n':>3s} {'good ca':>8s} {'% ca':>6s} {'good en':>8s} {'% en':>6s}  LLM ca / en")
     for key in topics.TOPIC_KEYS:
         row = data["topics"].get(key)
         if row and row.get("n"):
-            allowed = "yes" if row["percent"] >= hints.QUALITY_MIN else "no"
-            print(f"{key:12s} {row['n']:3d} {row['good']:5d} {row['percent']:7.0f}%  {allowed}")
+            ca = "yes" if row["percent"] >= hints.QUALITY_MIN else "no"
+            en = "yes" if row.get("percent_en", 0) >= hints.QUALITY_MIN else "no"
+            print(f"{key:12s} {row['n']:3d} {row['good']:8d} {row['percent']:5.0f}% {row.get('good_en', 0):8d} "
+                  f"{row.get('percent_en', 0):5.0f}%  {ca} / {en}")
         else:
-            print(f"{key:12s}   0     -        -  no (not judged)")
+            print(f"{key:12s}   0        -      -        -      -  no (not judged)")
 
 
 def main():

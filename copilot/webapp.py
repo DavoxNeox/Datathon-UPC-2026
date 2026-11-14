@@ -87,7 +87,7 @@ class Session:
                 "rung": self.rung, "hints": self.hints, "answer": self.answer, "busy": self.busy,
                 "message": self.message, "timeline": self.timeline, "mastery": self.mastery,
                 "led": led.last_frame(), "llm_allowed": bool(self.problem) and
-                hints.llm_allowed(self.problem.get("topic") or topics.get_topic(self.problem["id"])),
+                hints.llm_allowed(self.problem.get("topic") or topics.get_topic(self.problem["id"]), self.lang),
             }
 
     def set_student(self, student):
