@@ -1,8 +1,8 @@
 """Dependency guard: code that runs on the board imports only the Python standard library.
 
 The UNO Q has no pip. Everything outside laptop/, dev/ and tests/ must import stdlib
-modules (sqlite3 included) or our own packages. The App Lab app under app/ may also use
-what App Lab's Python provides: arduino.* and numpy.
+modules (sqlite3 included) or our own packages. The App Lab entry point under python/ may
+also use what App Lab's Python provides: arduino.* and numpy.
 """
 import ast
 import os
@@ -11,9 +11,9 @@ import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LAPTOP_ONLY = {"laptop", "dev", "tests", ".venv", ".git", "__pycache__", "node_modules"}
-OURS = {"copilot", "explorer", "app"}
+OURS = {"copilot", "explorer"}
 APP_LAB_PROVIDES = {"arduino", "numpy"}
-# The HAL board backends are the only places outside app/ that may touch App Lab, inside try/except
+# The HAL board backends are the only places outside python/ (the App Lab entry point) that may touch App Lab
 EXCEPTIONS = {os.path.join("copilot", "hal", "led.py"): {"arduino"},
               os.path.join("copilot", "hal", "web.py"): {"arduino"}}
 
@@ -44,7 +44,7 @@ class StdlibOnlyTest(unittest.TestCase):
         for path in board_files():
             rel = os.path.relpath(path, ROOT)
             allowed = set(sys.stdlib_module_names) | OURS
-            if rel.split(os.sep)[0] == "app":
+            if rel.split(os.sep)[0] == "python":
                 allowed |= APP_LAB_PROVIDES
             allowed |= EXCEPTIONS.get(rel, set())
             for module, line in imported_modules(path):

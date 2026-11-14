@@ -72,17 +72,24 @@ and the estimate from the token counts side by side: after calibration they shou
 
 ## 4. The App Lab app (student page, teacher view, LED matrix)
 
-App Lab apps live in `/home/arduino/ArduinoApps/<name>/`. Ours is `app/` inside the
-repository, because `app/python/main.py` imports the `copilot` package from the repository
-root. Link it in, then start it:
+App Lab apps live in `/home/arduino/ArduinoApps/<name>/`, and App Lab mounts **only that
+folder** inside the app's Python container (as `/app`, on its own Docker network). That is why
+the repository root is the app: `app.yaml`, `python/`, `assets/` and `sketch/` sit next to
+`copilot/`, `config.env`, `data/` and `data_curated/`. Link the repository in, then start it:
 
 ```bash
-ln -s ~/Datathon-UPC-2026/app ~/ArduinoApps/math-copilot
+ln -s ~/Datathon-UPC-2026 ~/ArduinoApps/math-copilot
 ```
 
 ```bash
-arduino-app-cli app start user:math-copilot
+TMPDIR=/tmp arduino-app-cli app start user:math-copilot
 ```
+
+Verified on our board: App Lab lists the symlinked folder as `user:math-copilot`. The
+`TMPDIR=/tmp` matters when you run this over `adb shell`, whose environment sets
+`TMPDIR=/data/local/tmp` (an Android path that does not exist on the board); without it
+the sketch build stops at "Generating function prototypes" with `stat /data/local/tmp: no
+such file or directory`. Over SSH the default is fine.
 
 ```bash
 arduino-app-cli app logs /home/arduino/ArduinoApps/math-copilot --all
@@ -91,10 +98,9 @@ arduino-app-cli app logs /home/arduino/ArduinoApps/math-copilot --all
 The `web_ui` brick serves the page on port 7000. From the laptop over USB:
 `adb forward tcp:7000 tcp:7000`, then <http://127.0.0.1:7000> (teacher view at `/teacher`).
 Only one App Lab app runs at a time, and the sketch compiles on first start (about a minute).
-**To verify on the board:** that App Lab accepts a symlinked app folder (else copy `app/` and
-`copilot/` into `~/ArduinoApps/math-copilot/` and adjust `ROOT` in `main.py`), and the RAM with
-everything running: `free -m` should keep a few hundred MB available next to the two servers
-(about 1.1 GB) and the App Lab containers.
+**Still to verify on the board:** the RAM with everything running: `free -m` should keep a few
+hundred MB available next to the two servers (1059 MB + 75 MB measured) and the App Lab
+containers.
 
 ## 5. Demo mode
 

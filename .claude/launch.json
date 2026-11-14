@@ -4,7 +4,7 @@
     {
       "name": "copilot-sim",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["app/python/main.py"],
+      "runtimeArgs": ["python/main.py"],
       "port": 7001
     }
   ]

@@ -1,12 +1,16 @@
 # Math copilot app (App Lab)
 
+The repository root is the App Lab app: `app.yaml`, `python/`, `assets/` and `sketch/` live
+at the root because App Lab mounts only the app folder inside its Python container, and the
+app needs `copilot/`, `config.env`, `data/` and `data_curated/` next to it.
+
 The student's web page, the teacher view and the LED matrix around the copilot.
 The logic lives in `copilot/webapp.py` and `copilot/hints.py`; `python/main.py` only wires them.
 
 ## Run it on the laptop (sim)
 
 ```bash
-python3 app/python/main.py
+python3 python/main.py
 ```
 
 Open <http://127.0.0.1:7001> (port `SIM_WEB_PORT` in `config.env`). The teacher view is

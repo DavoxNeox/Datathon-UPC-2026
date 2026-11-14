@@ -21,3 +21,6 @@ __pycache__/
 # Laptop servers started by dev/start_servers.sh
 dev/logs/
 dev/run/
+
+# App Lab build output (venv, compose files, sketch build), created next to app.yaml
+.cache/
