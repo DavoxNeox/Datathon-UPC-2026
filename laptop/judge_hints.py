@@ -44,6 +44,8 @@ def parse_args():
     g.add_argument("--prefetch-per-topic", type=int, default=3,
                    help="on this many problems per topic, measure prompt_n again after a prefetch")
     g.add_argument("--name", default=None, help="results/hints_<name>.jsonl; default: the input's basename")
+    g.add_argument("--topics-json", default=None,
+                   help="a data_curated/topics.json ({'topics': {id: topic}}) to use instead of copilot.topics")
     j = sub.add_parser("judge")
     j.add_argument("--name", default=None)
     j.add_argument("--judge", default=os.environ.get("USER", "team"))
@@ -61,8 +63,11 @@ def load_problems(path, lang):
     return same or rows
 
 
+_TOPIC_OVERRIDE = {}
+
+
 def topic_of(problem):
-    return problem.get("topic") or topics.get_topic(problem["id"])
+    return _TOPIC_OVERRIDE.get(problem["id"]) or problem.get("topic") or topics.get_topic(problem["id"])
 
 
 def results_path(name, input_path=None):
@@ -76,6 +81,9 @@ def quiet(fn, *args, **kwargs):
 
 
 def generate(args):
+    if args.topics_json:
+        with open(args.topics_json, encoding="utf-8") as f:
+            _TOPIC_OVERRIDE.update(json.load(f).get("topics", {}))
     problems = load_problems(args.input, args.lang)
     by_topic = {}
     for p in problems:
@@ -90,8 +98,9 @@ def generate(args):
     out_path = results_path(args.name, args.input)
     rows, seen_prefetch = [], {}
     for i, p in enumerate(chosen, 1):
+        p = dict(p, topic=topic_of(p))  # the ladder reads problem["topic"] when present
         hints.register_problem(p)
-        topic = topic_of(p)
+        topic = p["topic"]
         t = time.perf_counter(); hints.reset(p["id"]); r1 = quiet(hints.get_hint, p["id"], 1, "cat"); ms1 = (time.perf_counter() - t) * 1000
         t = time.perf_counter(); r2 = quiet(hints.get_hint, p["id"], 2, "cat"); ms2 = (time.perf_counter() - t) * 1000
         # cold: the slot holds the previous problem's prompt, as on the board without prefetch
