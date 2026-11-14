@@ -412,7 +412,8 @@ of a filled shape (dark pixels with dark neighbours 3 px away in every direction
 colour: "the black square" stays black, inside a light rim that shows where it is; grey stays
 grey. This replaces the white card of the fifth round and keeps the reviewer's point (black is
 never shown as white). Checked on `lvl-3_2021_20` (black corner squares, grey triangles) and
-`lvl-5_2022_30` (the hand) in both themes.
+`lvl-5_2022_30` (the hand) in both themes. The one exception is the original scan, which the
+user asked to keep as paper (eleventh round).
 
 ### Tenth round: options from the other language's OCR
 
@@ -427,6 +428,13 @@ show. `lvl-7_2008_3` in Catalan now shows 110 / 121 / 115,5 / 119 / 242 as text.
 The original scan (the "veure l'escaneig original" link, and the fallback when nothing could
 be cut) is shown as it is, white paper included, on a white card with soft corners; only the
 cuts (figure, option strip, pieces) are tinted and transparent.
+
+This is deliberate and it is the only place where white paper can appear on the page. The
+user asked for no white backgrounds on the cuts (ninth round) and, separately, for the
+original scan to keep its background ("L'escaneig original no hauria de tindre el fons
+borrat"): a scan shown as a scan, not as a drawing. The automatic fallback to the whole scan,
+when nothing could be cut, is the same picture through the same path, so it is shown untinted
+on purpose. The caption under it says it is the original scan.
 
 Problems the page can serve today (the trainer's bank, `data/train.jsonl` and `data/val.jsonl`):
 1747 problems, each in Catalan and English (3494 versions): 1466 from train and 281 from val;
