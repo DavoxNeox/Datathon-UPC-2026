@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Learn the option prior (copilot/prior.py) on the training problems and write data_curated/option_prior.json.
 
-    python3 laptop/learn_prior.py                         # learn on data/train.jsonl (English), print the tables, write the json
+    python3 laptop/learn_prior.py                         # learn on data/train.jsonl (English) with the committed list of
+                                                          # stratifications, print the tables; --force to overwrite the json
     python3 laptop/learn_prior.py --cv 5                  # 5-fold cross-validation INSIDE train of several stratifications
     python3 laptop/learn_prior.py --validate              # also score the learned policy ONCE on data/val.jsonl, with a bootstrap
     python3 laptop/learn_prior.py --strata level,picture,kind --min-gain 10
@@ -33,6 +34,9 @@ RANKS = ["min", "second_smallest", "middle", "second_largest", "max"]
 RULES = list(LETTERS) + RANKS + ["none_option"]
 FALLBACK = CONFIG.get("FALLBACK_ANSWER", "D")
 MAIN = "level,picture,kind"
+# The twelve stratifications the committed table was learned with, finest first (experiment 5)
+COMMITTED = ("level,picture,kind;level,kind;picture,kind;level;kind;picture;kind,order;kind,fraction;"
+             "kind,pi_root;kind,none_text;kind,distinct;language,kind")
 # The stratifications the cross-validation compares (each alone and the hierarchy of all of them)
 CANDIDATES = [MAIN, "level,kind", "picture,kind", "level", "kind", "picture", "kind,order", "kind,fraction",
               "kind,pi_root", "kind,none_text", "kind,distinct", "language,kind"]
@@ -143,8 +147,11 @@ def main():
     p.add_argument("--val", default=os.path.join(ROOT, "data", "val.jsonl"))
     p.add_argument("--languages", default="eng", help="comma-separated; empty = all")
     p.add_argument("--min-gain", type=int, default=prior.MIN_GAIN)
-    p.add_argument("--strata", default=MAIN, help='stratifications, finest first, e.g. "level,picture,kind;kind,order"')
+    p.add_argument("--strata", default=COMMITTED,
+                   help='stratifications, finest first, e.g. "level,picture,kind;kind,order"; the default is the list the '
+                        "committed table was learned with (docs/reason-experiments.md, experiment 5)")
     p.add_argument("--out", default=os.path.join(ROOT, prior.DEFAULT_PATH))
+    p.add_argument("--force", action="store_true", help="overwrite an existing --out (the measured table is committed)")
     p.add_argument("--cv", type=int, default=0, metavar="FOLDS", help="cross-validate the candidate stratifications inside train")
     p.add_argument("--validate", action="store_true", help="score the learned policy on --val (the one look)")
     p.add_argument("--resamples", type=int, default=1000)
@@ -217,6 +224,10 @@ def main():
         output["validation"] = {"file": os.path.basename(args.val), "n": len(val), "policy_hits": v_hits,
                                 "default_hits": v_default, "bootstrap": boot, "fired": fired}
     output["stratifications"] = table["stratifications"]
+    if os.path.exists(args.out) and not args.force:
+        print(f"Not written: {os.path.relpath(args.out, ROOT)} exists (the measured table). Pass --force to overwrite it, "
+              "or --out for another file.")
+        return
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=1, ensure_ascii=False)
