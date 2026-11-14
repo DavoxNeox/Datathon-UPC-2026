@@ -30,7 +30,7 @@ from .config import CONFIG
 from .llm import SYSTEM, URL, format_problem
 
 LETTERS = "ABCDE"
-CHARS_PER_TOKEN = 3.0  # a pessimistic guess for English problem text with numbers, used before any request
+CHARS_PER_TOKEN = board_clock.CHARS_PER_TOKEN  # the guess used before any request (copilot/board_clock.py)
 VALUE_SYSTEM = ("You solve multiple-choice math competition problems for school students. "
                 "Read the problem and the options, then reply with the value of the correct option, exactly as written.")
 SHIFTS = ["ABCDE", "BCDEA", "CDEAB", "DEABC", "EABCD"]

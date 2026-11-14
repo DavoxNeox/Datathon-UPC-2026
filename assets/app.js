@@ -12,7 +12,7 @@ const I18N = {
   cat: {title: "Copilot de mates", student: "Àlies", teacher: "Vista del professor", hint: "Pista",
         solution: "Solució", next: "Continua", mastery: "El teu progrés", close: "Tanca",
         level: "Nivell", topic: "Tema", thinking: "Un moment…", kinds: {neighbour: "Un problema semblant",
-        strategy: "Una estratègia", trace: "Un pas de la solució", llm: "Pista del model", solution: "Solució", lesson: "Lliçó"}, lesson_sub: "una idea per pensar-hi",
+        strategy: "Una estratègia", trace: "Un pas de la solució", demo_steps: "Un pas, pensat per a tu", llm: "Pista del model", solution: "Solució", lesson: "Lliçó"}, lesson_sub: "una idea per pensar-hi",
         manip: {rotate: "Gira i volteja", paths: "Comptador de camins", dice: "El dau"},
         time: "temps", laptop: "portàtil", board: "placa (estimat)", action: "acció", load: "temps de càrrega",
         over: "supera els 60 s", image: "Figura del problema", options_image: "Les opcions", answered: "Ja has respost. Si vols, mira la solució.",
@@ -21,15 +21,16 @@ const I18N = {
         confirm_reset: "Segur? Esborra el progrés",
         more: "mostra-ho tot", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
         more_panel: "Menú", board_led: "La placa", timing: "Temps (per al professor)", problem: "Problema", option: "opció",
-        theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"}, no_hints: "Ja no queden pistes en aquest problema",
+        no_hints: "Ja no queden pistes en aquest problema",
         read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
         other_kind: {eng: "En anglès · no compta com a pista", cat: "En català · no compta com a pista"},
         show_scan: "veure l'escaneig original", hide_scan: "amagar l'escaneig", original_scan: "Escaneig original",
+        no_hints_after: "Aquest servidor no dona pistes després de respondre.",
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", hint: "Hint",
         solution: "Solution", next: "Continue", mastery: "Your progress", close: "Close",
         level: "Level", topic: "Topic", thinking: "One moment…", kinds: {neighbour: "A similar problem",
-        strategy: "A strategy", trace: "A step of the solution", llm: "Model hint", solution: "Solution", lesson: "Lesson"}, lesson_sub: "an idea to think with",
+        strategy: "A strategy", trace: "A step of the solution", demo_steps: "A step, written for you", llm: "Model hint", solution: "Solution", lesson: "Lesson"}, lesson_sub: "an idea to think with",
         manip: {rotate: "Rotate and flip", paths: "Path counter", dice: "The die"},
         time: "time", laptop: "laptop", board: "board (estimated)", action: "action", load: "load time",
         over: "over 60 s", image: "Problem figure", options_image: "The options", answered: "Already answered. Have a look at the solution if you like.",
@@ -38,13 +39,13 @@ const I18N = {
         confirm_reset: "Sure? Erase the progress",
         more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
         more_panel: "Menu", board_led: "The board", timing: "Timings (for the teacher)", problem: "Problem", option: "option",
-        theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"}, no_hints: "No hints left on this problem",
+        no_hints: "No hints left on this problem",
         read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
         other_kind: {eng: "In English · not counted as a hint", cat: "In Catalan · not counted as a hint"},
         show_scan: "see the original scan", hide_scan: "hide the scan", original_scan: "Original scan",
+        no_hints_after: "This server gives no hints after an answer.",
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
-const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
 let lang = "cat", state = null, lastProblem = null, hadAnswer = false, loadReported = false;
 const t = () => I18N[lang];
 const txt = (obj, key) => obj[key + "_" + (lang === "cat" ? "ca" : "en")] ?? obj[key + "_ca"] ?? "";
@@ -74,7 +75,6 @@ function applyI18n() {
   sel.innerHTML = `<option value="auto">${esc(t().auto)}</option>` + t().courses.map((c, i) => `<option value="${i}">${esc(c)} (${t().levelName.toLowerCase()} ${i})</option>`).join("");
   sel.value = keep || "auto";
   renderDropdown();
-  renderTheme();
 }
 
 // The course dropdown: a button and a list that opens in the flow of the page (no popup, no native menu).
@@ -99,13 +99,6 @@ $("level-list").addEventListener("keydown", e => {
   else if (e.key === "Escape" || e.key === "Tab") { renderDropdown(false); if (e.key === "Escape") $("level-button").focus(); }
 });
 document.addEventListener("click", e => { if (!e.target.closest(".dropdown") && !$("level-list").hidden) renderDropdown(false); });
-
-function renderTheme() {
-  const mode = window.Theme ? Theme.get() : "auto";
-  $("theme-label").textContent = THEME_GLYPH[mode];
-  $("theme").title = t().theme[mode];
-  $("theme").setAttribute("aria-label", t().theme[mode]);
-}
 
 function drawLed(frame) {
   const c = $("led"), ctx = c.getContext("2d");
@@ -190,9 +183,17 @@ function classifyParts(comps, W, H, clean, ink, cw, ch) {
   const hs = comps.filter(c => c.h >= 12 && c.h <= 64 && c.w >= 0.05 * W).map(c => c.h).sort((a, b) => a - b);
   const lineH = hs.length ? hs[hs.length >> 1] : 30;
   const textlike = c => c.h >= 0.45 * lineH && c.h <= 1.8 * lineH;
+  // the statement's long lines at the margin come first: option rows live under them, never inside them
+  const longAtMargin = comps.filter(c => textlike(c) && c.w >= 0.2 * W);
+  const marginLeft = longAtMargin.length ? Math.min(...longAtMargin.map(c => c.x0)) : 0;
+  const stmtBottom = Math.max(0, ...longAtMargin.filter(c => c.x0 <= marginLeft + 2 * lineH).map(c => c.y1));
+  // the first big thing on the right is the figure: its labels ("A", "6 cm", "B") never join an option row
+  const bigRight = comps.filter(c => !textlike(c) && c.h > 1.8 * lineH && c.x0 > 0.45 * W);
+  const figLeft = bigRight.length ? Math.min(...bigRight.map(c => c.x0)) : W;
+  const inRows = c => textlike(c) && c.y0 >= stmtBottom - 0.3 * lineH && c.x1 <= figLeft - 0.5 * lineH;
   // option rows: bands of at least three options with wide gaps, spread across the page
   const bands = [];
-  for (const c of comps.filter(textlike).sort((a, b) => a.y0 - b.y0)) {
+  for (const c of comps.filter(inRows).sort((a, b) => a.y0 - b.y0)) {
     const b = bands.find(b => c.y0 < b.y1 - 0.3 * lineH && c.y1 > b.y0 + 0.3 * lineH);
     if (b) { b.items.push(c); b.y0 = Math.min(b.y0, c.y0); b.y1 = Math.max(b.y1, c.y1); } else bands.push({y0: c.y0, y1: c.y1, items: [c]});
   }
@@ -206,11 +207,17 @@ function classifyParts(comps, W, H, clean, ink, cw, ch) {
   };
   const opt = new Set(), pieces = [];   // the options one by one, in reading order, for the buttons
   const optBands = bands.filter(isOptions).sort((a, b) => a.y0 - b.y0);
+  // "D) ... E) ..." on a second row: two text-like pieces right under an option row, starting where it starts
+  for (const b of bands) {
+    if (optBands.includes(b) || b.items.length < 2) continue;
+    const above = optBands.find(o => b.y0 - o.y1 >= 0 && b.y0 - o.y1 <= 1.5 * lineH && Math.abs(Math.min(...b.items.map(c => c.x0)) - Math.min(...o.items.map(c => c.x0))) <= lineH);
+    if (above && b.items.every(textlike)) { optBands.push(b); optBands.sort((x, y) => x.y0 - y.y0); }
+  }
   for (const b of optBands) {
     b.items.forEach(c => opt.add(c));
     // a numerator, a superscript or a unit that the band missed: anything small whose middle lies on the row
     for (const c of comps) {
-      if (opt.has(c) || c.w >= 0.3 * W || c.h >= 3 * lineH) continue;
+      if (opt.has(c) || c.w >= 0.3 * W || c.h >= 3 * lineH || c.x1 > figLeft - 0.5 * lineH) continue;
       const mid = (c.y0 + c.y1) / 2;
       if (mid >= b.y0 - 0.6 * lineH && mid <= b.y1 + 0.6 * lineH && c.x0 >= b.items[0].x0 - 2 * lineH) { b.items.push(c); opt.add(c); b.y0 = Math.min(b.y0, c.y0); b.y1 = Math.max(b.y1, c.y1); }
     }
@@ -224,10 +231,9 @@ function classifyParts(comps, W, H, clean, ink, cw, ch) {
   // the text column: its left margin from the long lines, its right limit from the first big thing on the right
   const longLines = comps.filter(c => textlike(c) && c.w >= 0.25 * W && !opt.has(c));
   const textLeft = longLines.length ? Math.min(...longLines.map(c => c.x0)) : 0;
-  const bigRight = comps.filter(c => !textlike(c) && !opt.has(c) && c.h > 1.8 * lineH && c.x0 > 0.45 * W);
-  const figLeft = bigRight.length ? Math.min(...bigRight.map(c => c.x0)) : W;
-  const paragraph = c => c.x0 <= textLeft + lineH && c.w >= 0.35 * W && c.h <= 6 * lineH && c.x1 <= figLeft;
-  const stmt = new Set(comps.filter(c => !opt.has(c) && ((textlike(c) && c.x0 <= textLeft + lineH && c.w >= 0.08 * W) || paragraph(c))));
+  const margin = textLeft + 2 * lineH;   // wrapped lines sit after the problem's number: up to two letters in
+  const paragraph = c => c.x0 <= margin && c.w >= 0.35 * W && c.h <= 6 * lineH && c.x1 <= figLeft;
+  const stmt = new Set(comps.filter(c => !opt.has(c) && ((textlike(c) && c.x0 <= margin && c.w >= 0.08 * W) || paragraph(c))));
   let grew = true;
   while (grew) {   // pieces of a justified line, and short last lines, that belong to the statement
     grew = false;
@@ -236,7 +242,7 @@ function classifyParts(comps, W, H, clean, ink, cw, ch) {
       let sameRow = false, nextLine = false;
       for (const s of stmt) {
         if (c.y0 < s.y1 - 0.2 * lineH && c.y1 > s.y0 + 0.2 * lineH && c.x0 >= s.x1 - lineH) sameRow = true;
-        if (c.x0 <= textLeft + lineH && c.y0 - s.y1 >= 0 && c.y0 - s.y1 <= 1.5 * lineH) nextLine = true;
+        if (c.x0 <= margin && c.y0 - s.y1 >= 0 && c.y0 - s.y1 <= 1.5 * lineH) nextLine = true;
       }
       if (sameRow || nextLine) { stmt.add(c); grew = true; }
     }
@@ -292,42 +298,54 @@ function cropPart(img, box, masks) {
   return c;
 }
 
-// The scans are black on white. On the page the white goes: every pixel becomes ink with the
-// alpha of its darkness, so lines and shading sit on the page's own background in both themes;
-// a saturated colour keeps its hue (lightened in the dark theme).
+// The scans are black on white. On the page the white goes: every pixel becomes ink with the alpha of its
+// darkness. Strokes and the edges of shapes take the page's ink colour; a flat grey area (a shaded
+// triangle, a shaded hand) keeps its grey level, smoothed; a saturated colour keeps its hue. Black ink on
+// the warm page, no white card anywhere.
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-const COLOUR_WORDS = /\b(negr[ea]s?|blan[cq]u?[ae]?s?|gris(os|a|es)?|fosc[sa]?|fosques|clar[sa]?|ombrejad[ae]s?|ombrejat|pintad[ae]s?|black|white|gr[ae]y|dark|light|shaded|painted)\b/i;
-// A figure with filled areas cannot be turned into light ink on a dark page: "the black square" would read
-// white. Interior pixels (dark with dark neighbours 3 px away in every direction) tell fills from lines.
-function hasFills(raw) {
-  const w = raw.width, h = raw.height, d = raw.getContext("2d").getImageData(0, 0, w, h).data;
-  const dark = (x, y) => { const i = 4 * (y * w + x); return Math.min(d[i], d[i + 1], d[i + 2]) < 110; };
-  let interior = 0, total = 0;
-  for (let y = 4; y < h - 4; y += 2) for (let x = 4; x < w - 4; x += 2) {
-    total++;
-    if (dark(x, y) && dark(x - 3, y) && dark(x + 3, y) && dark(x, y - 3) && dark(x, y + 3)) interior++;
-  }
-  return total > 0 && interior / total > 0.004;
-}
-function isDarkTheme() { const [br, bg, bb] = hexRgb(cssVar("--bg") || "#ffffff"); return br * 299 + bg * 587 + bb * 114 < 128000; }
-// the figure as it is, on a white card (the dark theme's safe route for fills and colour questions)
-function onCard(raw) { return raw.toDataURL("image/png"); }
-function tinted(raw) {
-  const [ir, ig, ib] = hexRgb(cssVar("--ink") || "#1f2430"), [br, bg, bb] = hexRgb(cssVar("--bg") || "#ffffff");
-  const dark = br * 299 + bg * 587 + bb * 114 < 128000;
-  const c = document.createElement("canvas"); c.width = raw.width; c.height = raw.height;
+const tinted = raw => tintedCanvas(raw).toDataURL("image/png");
+function tintedCanvas(raw) {
+  const [ir, ig, ib] = hexRgb(cssVar("--ink") || "#1f2430");
+  const w = raw.width, h = raw.height;
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
   const ctx = c.getContext("2d"); ctx.drawImage(raw, 0, 0);
-  const im = ctx.getImageData(0, 0, c.width, c.height), d = im.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], g = d[i + 1], b = d[i + 2], mn = Math.min(r, g, b), mx = Math.max(r, g, b);
-    const dark = 255 - mn;   // 0 on white; the scan's faint noise (under 60) goes, lines reach full ink by 170
-    d[i + 3] = Math.min(d[i + 3], dark < 60 ? 0 : Math.min(255, Math.round((dark - 60) * 255 / 110)));
-    if (mx - mn < 40) { d[i] = ir; d[i + 1] = ig; d[i + 2] = ib; }
-    else if (dark) { d[i] = r + (255 - r) * .4; d[i + 1] = g + (255 - g) * .4; d[i + 2] = b + (255 - b) * .4; }
+  const im = ctx.getImageData(0, 0, w, h), d = im.data;
+  const lvl = new Uint8Array(w * h), neutral = new Uint8Array(w * h);   // the darkest channel, and whether the pixel is grey
+  for (let p = 0, i = 0; p < w * h; p++, i += 4) { const mn = Math.min(d[i], d[i + 1], d[i + 2]); lvl[p] = mn; neutral[p] = Math.max(d[i], d[i + 1], d[i + 2]) - mn < 40 ? 1 : 0; }
+  const at = (x, y) => x >= 0 && y >= 0 && x < w && y < h ? y * w + x : -1;
+  // a grey patch: no solid ink (nothing under 25) within one pixel, and around it (two pixels) a grey mean rather
+  // than paper, with white specks (the scan's grain in a shaded area) at most three fifths of the window; the
+  // pixel takes the window's mean over its non-ink pixels, which also smooths the grain. Pixels right next
+  // to a line stay edges, in ink: the rim of the shape
+  const win = (x, y) => {
+    let sum = 0, n = 0, white = 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const p = at(x + dx, y + dy); if (p < 0 || !neutral[p]) return null;
+      const v = lvl[p];
+      if (v < 25) { if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return null; continue; }   // solid ink; the grain's dark specks are lighter
+      if (v > 240) white++; sum += v; n++;
+    }
+    return n >= 12 ? {mean: sum / n, white: white / n} : null;
+  };
+  const out = new Uint8ClampedArray(d.length);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const p = y * w + x, i = 4 * p, r = d[i], g = d[i + 1], b = d[i + 2], mn = lvl[p], mx = Math.max(r, g, b);
+    if (neutral[p] && mn >= 40 && mn <= 245) {
+      const k = win(x, y);
+      if (k && k.mean >= 55 && k.mean <= 228 && k.white <= 0.6) {
+        out[i] = out[i + 1] = out[i + 2] = Math.round(k.mean); out[i + 3] = 255; continue;
+      }
+    }
+    const darkness = 255 - mn;   // 0 on white; the scan's faint noise (under 60) goes, ink reaches full by 170
+    const a = darkness < 60 ? 0 : Math.min(255, Math.round((darkness - 60) * 255 / 110));
+    out[i + 3] = Math.min(d[i + 3], a);
+    if (!a) continue;
+    if (mx - mn < 40) { out[i] = ir; out[i + 1] = ig; out[i + 2] = ib; }   // strokes, edges and fills in the page's ink
+    else { out[i] = r; out[i + 1] = g; out[i + 2] = b; }                    // a coloured piece keeps its colour
   }
-  ctx.putImageData(im, 0, 0);
-  return c.toDataURL("image/png");
+  im.data.set(out); ctx.putImageData(im, 0, 0);
+  return c;
 }
 
 function extractParts(img, clean) {
@@ -342,10 +360,10 @@ function extractParts(img, clean) {
 
 const toCanvas = img => { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext("2d").drawImage(img, 0, 0); return c; };
 // one scan per problem: fetched once, cut once, then reused on every poll
-let scan = {id: null, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false, colours: false};
+let scan = {id: null, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false};
 function loadScan(p, clean) {
   scan = {id: p.id, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false,
-          colours: COLOUR_WORDS.test([p.text, p.text_cat, p.text_eng].filter(Boolean).join(" "))};
+        };
   api("/api/image").then(r => {
     if (!r.image_b64 || scan.id !== p.id) return;
     const img = new Image();
@@ -362,23 +380,19 @@ function loadScan(p, clean) {
 }
 const setSrc = (img, url) => { if (!url) img.removeAttribute("src"); else if (img.getAttribute("src") !== url) img.src = url; };
 function applyScan() {
-  // tinted once per theme, then reused on every poll
-  const key = cssVar("--bg");
-  if (scan.tintKey !== key) {
+  // tinted once per scan, then reused on every poll
+  if (!scan.tinted) {
     const fig = scan.figure || scan.whole;
-    // dark theme: a card for figures with fills or for colour questions; light theme: always the tint
-    const card = isDarkTheme() && (scan.colours || [fig, scan.options, ...(scan.pieces || [])].some(r => r && hasFills(r)));
-    const draw = card ? onCard : tinted;
-    scan.tinted = {figure: fig ? draw(fig) : "", options: scan.options ? draw(scan.options) : "", pieces: (scan.pieces || []).map(draw), full: "", card};
-    scan.tintKey = key;
+    // the original scan (the link, or the fallback) is shown as it is, white paper included
+    scan.tinted = {figure: fig ? (scan.figure ? tinted(fig) : fig.toDataURL("image/png")) : "", options: scan.options ? tinted(scan.options) : "", pieces: (scan.pieces || []).map(tinted), full: ""};
   }
-  const tt = scan.tinted || {figure: "", options: "", pieces: [], full: "", card: false};
-  document.querySelectorAll("#figure, #strip, #letters").forEach(e => e.classList.toggle("card", !!tt.card));
+  const tt = scan.tinted || {figure: "", options: "", pieces: [], full: ""};
   $("fig-cap").hidden = !scan.whole;   // the whole scan stands in for a figure: say so
+  $("figure").classList.toggle("original", !!scan.whole);
   // the whole scan, one click away (not offered when the page already fell back to it)
   const canToggle = !!scan.full && !scan.whole;
   $("whole-toggle").hidden = !canToggle; $("whole-toggle").textContent = scan.showFull ? t().hide_scan : t().show_scan;
-  if (scan.showFull && canToggle && !tt.full) tt.full = (tt.card ? onCard : tinted)(scan.full);
+  if (scan.showFull && canToggle && !tt.full) tt.full = scan.full.toDataURL("image/png");
   $("whole").hidden = !(scan.showFull && canToggle); setSrc($("whole-img"), scan.showFull && canToggle ? tt.full : "");
   $("whole-img").alt = t().image;
   $("figure").hidden = !tt.figure; setSrc($("img"), tt.figure);
@@ -403,12 +417,9 @@ const tintCache = new Map();
 function tintedHintImage(key, b64) {
   if (tintCache.has(key)) return tintCache.get(key);
   tintCache.set(key, "");
-  const img = new Image(); img.onload = () => { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext("2d").drawImage(img, 0, 0);
-    tintCache.set(key, isDarkTheme() && (scan.colours || hasFills(c)) ? "card:" + onCard(c) : tinted(c)); }; img.src = "data:image/png;base64," + b64;
+  const img = new Image(); img.onload = () => tintCache.set(key, tinted(toCanvas(img))); img.src = "data:image/png;base64," + b64;
   return "";
 }
-function retint() { tintCache.clear(); scan.tintKey = null; if (state && state.started) { applyScan(); renderHints(state); } }
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retint);
 
 // The figure never grows past the question: its height is the text's height (and at most a third of the
 // window, and at most 1.25 times its own size); the CSS keeps it under 30 % of the column. On a phone it
@@ -437,8 +448,13 @@ function renderProblem(p) {
   lastProblem = p;
   // the scan's line breaks go; a blank line stays a paragraph; the problem's number goes (the page is not a paper)
   const text = ((lang === "eng" && p.text_eng) || (lang === "cat" && p.text_cat) || p.text || "").replace(/^\s*\d+[.)]\s*/, "").replace(/\n{2,}/g, "\u2029").replace(/\s*\n\s*/g, " ").replace(/\u2029/g, "\n\n");
-  const raw = (lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options || {};
-  const options = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, tidyOption(v)]));
+  // the options as text: this language's OCR, or the other language's when it is clean and has no words
+  // (numbers and units do not change language, and one version of a scan often reads better than the other)
+  const tidy = o => Object.fromEntries(Object.entries(o || {}).map(([k, v]) => [k, tidyOption(v)]));
+  const mine = tidy((lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options);
+  const others = [p.options, p.options_eng, p.options_cat].filter(o => o && o !== ((lang === "eng" && p.options_eng) || (lang === "cat" && p.options_cat) || p.options)).map(tidy);
+  const wordless = o => Object.values(o).every(v => !/\p{L}{3,}/u.test(v));
+  const options = optionsClean(mine) ? mine : (others.find(o => optionsClean(o) && wordless(o)) || mine);
   const clean = optionsClean(options);
   $("meta").textContent = `${t().level} ${p.level} · ${t().courses[p.level] || ""} · ${lang === "cat" ? p.topic_name_ca : p.topic_name_en}`;
   $("problem-id").textContent = `${t().problem}: ${p.id}`;
@@ -474,7 +490,14 @@ function renderAnswer(s) {
     b.classList.toggle("right", !!a && b.dataset.l === a.label);
     b.classList.toggle("wrong", !!a && b.dataset.l === a.letter && !a.correct);
   });
-  $("verdict").textContent = txt(s.message, "text") || (lang === "cat" ? s.message.ca : s.message.en) || "";
+  // the verdict is captured when the answer arrives and stays on the sheet while the problem is open, whatever
+  // the server's message does afterwards (a hint in progress, a lesson, a refusal); those go to the status line
+  const pid = s.problem && s.problem.id, say = m => (m && (txt(m, "text") || (lang === "cat" ? m.ca : m.en))) || "";
+  if (!a) verdictKept = {id: null, message: null};
+  else if (verdictKept.id !== pid) verdictKept = {id: pid, message: s.message};
+  const msg = say(s.message), kept = a ? say(verdictKept.message) : "";
+  $("verdict").textContent = a ? (kept || msg) : msg;
+  const aside = a && msg && msg !== kept && !s.busy ? msg : "";   // e.g. "no hints left", said after the verdict
   $("feedback").className = "sheet " + (a ? (a.correct ? "ok" : "bad") : "");
   const solved = s.hints.some(h => h.kind === "solution");
   $("next").hidden = !(a || solved);
@@ -489,11 +512,12 @@ function renderAnswer(s) {
   $("hint").dataset.role = offerSolution ? "solution" : "hint";
   $("hint-label").textContent = offerSolution ? t().solution : hintLabel;
   $("solution").disabled = s.busy || s.hints.some(h => h.kind === "solution");
-  $("status").textContent = s.busy ? t().thinking : (a && !solved ? t().answered : "");
+  $("status").textContent = s.busy ? t().thinking : (aside || (a && !solved ? t().answered : ""));
 }
 
 const expanded = new Set();   // "mostra-ho tot" pressed, by problem and hint index
 let scrolledSolution = null;   // the problem whose solution the page already scrolled to
+let verdictKept = {id: null, message: null};   // the verdict captured when the answer arrived, in both languages
 let hintsSig = "";
 function renderHints(s) {
   const pid = s.problem ? s.problem.id : "";
@@ -522,7 +546,7 @@ function hintsHtml(s, pid) {
       const np = h.problem, opts = np.options || {}, long = (np.text || "").length > 160 && !expanded.has(pid + ":" + i);
       body += `<div class="neighbour ${long ? "clamped" : ""}">${esc((np.text || "").replace(/\s*\n\s*/g, " "))}${Object.keys(opts).length ? "\n" + "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${esc(opts[l])}`).join("   ") : ""}</div>` +
         ((np.text || "").length > 160 ? `<button class="more" data-more="${i}">${esc(long ? t().more : t().less)}</button>` : "") +
-        (np.image_b64 && tintedHintImage(np.id || h.rung, np.image_b64) ? `<div class="neighbour pic ${tintedHintImage(np.id || h.rung, np.image_b64).startsWith("card:") ? "card" : ""}"><img src="${tintedHintImage(np.id || h.rung, np.image_b64).replace(/^card:/, "")}" alt=""></div>` : "");
+        (np.image_b64 && tintedHintImage(np.id || h.rung, np.image_b64) ? `<div class="neighbour pic"><img src="${tintedHintImage(np.id || h.rung, np.image_b64)}" alt=""></div>` : "");
     }
     if (h.kind === "solution" && h.trace && h.trace.length) {
       body += `<ol>${h.trace.map(step => `<li>${esc(txt(step, "text"))}</li>`).join("")}</ol>`;
@@ -596,7 +620,7 @@ $("hint").onclick = async () => {
   pressed($("hint"));
   if ($("hint").dataset.role === "solution") { await api("/api/solution"); return poll(); }
   const r = await api("/api/hint");
-  if (r.error === "already answered") await api("/api/solution");   // a server that still refuses hints after the answer: the solution, as before
+  if (r.error === "already answered") $("status").textContent = t().no_hints_after;   // an old server: say so, never show the solution unasked
   poll();
 };
 $("solution").onclick = async () => { pressed($("solution")); await api("/api/solution"); poll(); };
@@ -610,14 +634,14 @@ let resetArmed = null;
 $("reset").onclick = async () => {
   if (!resetArmed) { resetArmed = setTimeout(() => { resetArmed = null; $("reset").classList.remove("confirm"); $("reset").textContent = t().reset; }, 4000); $("reset").classList.add("confirm"); $("reset").textContent = t().confirm_reset; return; }
   clearTimeout(resetArmed); resetArmed = null; $("reset").classList.remove("confirm"); $("reset").textContent = t().reset;
-  lastProblem = null; $("manip-box").hidden = true; render(await api("/api/reset"));
+  lastProblem = null; $("manip-box").hidden = true; setPanel(false);   // back to the start screen, popup closed
+  render(await api("/api/reset"));
 };
 $("hints").addEventListener("click", e => { const b = e.target.closest("button[data-more]"); if (!b || !state) return; const key = (state.problem ? state.problem.id : "") + ":" + b.dataset.more; if (expanded.has(key)) expanded.delete(key); else expanded.add(key); renderHints(state); });
-$("manip").onclick = () => { const m = $("manip").dataset.m; $("manip-title").textContent = t().manip[m]; $("manip-frame").src = `manip/${m}.html?lang=${lang}${window.Theme ? Theme.query() : ""}`; $("manip-box").hidden = false; $("manip-box").scrollIntoView({behavior: "smooth", block: "nearest"}); };
+$("manip").onclick = () => { const m = $("manip").dataset.m; $("manip-title").textContent = t().manip[m]; $("manip-frame").src = `manip/${m}.html?lang=${lang}`; $("manip-box").hidden = false; $("manip-box").scrollIntoView({behavior: "smooth", block: "nearest"}); };
 $("manip-close").onclick = () => { $("manip-box").hidden = true; $("manip-frame").src = "about:blank"; };
 // the figure, bigger in its place: useful on a phone
 $("figure").onclick = () => { if ($("img").src) { $("figure").classList.toggle("zoomed"); fitFigure(); } };
-$("theme").onclick = () => { if (window.Theme) Theme.next(); renderTheme(); retint(); };
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("panel").hidden) { setPanel(false); return; }
   if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.metaKey || e.ctrlKey || e.altKey || !state || !state.started) return;

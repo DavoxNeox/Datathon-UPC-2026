@@ -219,6 +219,34 @@ class Rung0Test(unittest.TestCase):
         self.assertEqual(self.s.teacher()["rung0"]["students_total"], 0)
 
 
+class TeacherLogTest(unittest.TestCase):
+    """The teacher report carries the answer log when the trainer has one, and works without it."""
+
+    def test_the_log_travels_with_the_report(self):
+        fake = mock.MagicMock(wraps=webapp.trainer)
+        fake.answer_log = lambda: {"answers": [{"student_id": "Mar", "correct": True}], "students": {"Mar": {}}}
+        fake.teacher_report = lambda: {"students": [{"student_id": "Mar", "mastery": {"areas": 2}, "by_level": {},
+                                                     "by_topic": {"areas": {"answers": 1, "correct": 1}}}]}
+        with mock.patch.object(webapp, "trainer", fake):
+            session = webapp.Session()
+            out, log = session.teacher(), session.teacher_log()
+        self.assertNotIn("log", out)   # the report stays light: the page polls it every 3 s
+        self.assertEqual(log["log"]["answers"][0]["student_id"], "Mar")
+        self.assertEqual(out["by_topic"]["Mar"]["areas"]["answers"], 1)
+        self.assertIn(("GET", "/api/teacher/log", session.teacher_log), webapp.routes(session))
+
+    def test_without_a_log_the_report_still_comes(self):
+        fake = mock.MagicMock(wraps=webapp.trainer)
+        fake.mastery_map = lambda s: {}
+        del fake.answer_log
+        del fake.teacher_report
+        with mock.patch.object(webapp, "trainer", fake):
+            session = webapp.Session()
+            out, log = session.teacher(), session.teacher_log()
+        self.assertEqual(log, {})
+        self.assertIn("students", out)
+
+
 class Rung0StatsTest(unittest.TestCase):
     def test_counters_survive_a_restart_through_the_json_file(self):
         with tempfile.TemporaryDirectory() as d:
@@ -327,6 +355,55 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class OptionsOverlayTest(unittest.TestCase):
+    """Options read again from the scan (data/options_ocr.jsonl) reach the page; the problem the
+    trainer and the predictor see keeps the bank's options."""
+
+    def setUp(self):
+        self.cat = {**BI_CAT, "id": "ocr-test", "options": {}}
+        self.eng = {**BI_ENG, "id": "ocr-test", "options": {"A": "6", "B": "8 1", "C": "9", "D": "11", "E": "21"}}
+        hints.register_problem(self.cat)
+        hints.register_problem(self.eng)
+        self.recorded = []
+        self.trainer = mock.MagicMock(wraps=webapp.trainer)
+        self.trainer.next_problem = lambda student: dict(self.cat)
+        self.trainer.record_answer = lambda student, pid, letter, rung: self.recorded.append(pid) or {
+            "correct": letter == "C", "label": "C", "topic": "arithmetic", "mastery_before": 0, "mastery_after": 0, "review": False}
+        self.trainer.mastery_map = lambda student: {}
+        self.trainer.start_student = lambda student, level=None: {}
+        del self.trainer.teacher_report
+        self.patches = [mock.patch.object(webapp, "trainer", self.trainer)]
+        self.tmp = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False, encoding="utf-8")
+        self.tmp.write(json.dumps({"key": "ocr-test|cat", "options": {"A": "110°", "B": "115°", "C": "125°", "D": "130°", "E": "135°"}}) + "\n")
+        self.tmp.write(json.dumps({"key": "ocr-test|eng", "options": {"A": "6", "B": "8", "C": "9", "D": "11", "E": "21"}}) + "\n")
+        self.tmp.close()
+        self.patches.append(mock.patch.object(webapp, "OPTIONS_OCR_FILE", self.tmp.name))
+        for p in self.patches:
+            p.start()
+        webapp._options_ocr = None
+        self.s = webapp.Session()
+        quiet(self.s.start, "Mar", "1")
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+        webapp._options_ocr = None
+        os.unlink(self.tmp.name)
+
+    def test_page_sees_the_options_read_again(self):
+        state = quiet(self.s.state)
+        self.assertEqual(state["problem"]["options"]["A"], "110°")
+        self.assertEqual(state["problem"]["options_eng"]["B"], "8")
+        self.assertEqual(self.s.problem["options"], {})   # the served problem keeps the bank's options
+
+    def test_missing_file_means_no_overlay(self):
+        with mock.patch.object(webapp, "OPTIONS_OCR_FILE", self.tmp.name + ".missing"):
+            webapp._options_ocr = None
+            state = quiet(self.s.state)
+        self.assertEqual(state["problem"]["options"], {})
+        self.assertEqual(state["problem"]["options_eng"]["B"], "8 1")
+
+
 class HintCapTest(unittest.TestCase):
     """The hint button works at most HINT_MAX_USES times per problem; rung 0 and the solution do not count."""
 
@@ -360,6 +437,14 @@ class HintCapTest(unittest.TestCase):
         with mock.patch.object(webapp.threading, "Thread"):
             self.assertTrue(self.s.solution().get("ok"))
         self.assertEqual(self.s.state()["hints_left"], webapp.HINT_MAX_USES)
+
+    def test_hints_still_allowed_after_the_answer(self):
+        # the page offers a hint after a wrong answer: the student may want to retry by themselves
+        self.s.answer_letter("A")
+        self.assertIsNotNone(self.s.answer)
+        self.assertTrue(self._hint().get("ok"))
+        self.assertEqual(self.s.state()["hints_left"], webapp.HINT_MAX_USES - 1)
+        self.assertEqual(self.s.answer["letter"], "A")   # the answer stands
 
     def test_cap_resets_on_the_next_problem(self):
         for _ in range(webapp.HINT_MAX_USES):

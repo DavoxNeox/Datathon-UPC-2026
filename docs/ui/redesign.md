@@ -393,3 +393,201 @@ close the card. It opens from the menu icon, and closes with its X, Escape or a 
 scrim; focus moves to the X on open and back to the icon on close, so it behaves the same
 from the keyboard. There is no close-by-itself any more (a centred card would lose the
 cursor all the time), which also settles the keyboard problem of the previous round.
+
+### Eighth round
+
+- The five letter buttons never wrap: one row that shrinks (65 px each on a phone), so no
+  lone giant button.
+- After an answer, right or wrong, the right button is the hint while hints are left; the
+  solution only when none are left. The server now allows hints after the answer (one guard
+  removed in `copilot/webapp.py`, with a test): a student who got it wrong may retry by
+  themselves with a hint before reading the solution. Mastery is unchanged (recorded at the
+  answer). The verdict stays on the sheet when a later hint clears the server's message.
+
+### Ninth round: no white card anywhere
+
+The user does not want a white background on any picture. Every crop is transparent in both
+themes. In the dark theme strokes and the edges of shapes take the light ink, while the inside
+of a filled shape (dark pixels with dark neighbours 3 px away in every direction) keeps its own
+colour: "the black square" stays black, inside a light rim that shows where it is; grey stays
+grey. This replaces the white card of the fifth round and keeps the reviewer's point (black is
+never shown as white). Checked on `lvl-3_2021_20` (black corner squares, grey triangles) and
+`lvl-5_2022_30` (the hand) in both themes. The one exception is the original scan, which the
+user asked to keep as paper (eleventh round).
+
+### Tenth round: options from the other language's OCR
+
+When this language's OCR options are missing or noisy, the page takes the other language's
+options if they are clean and have no words (numbers, fractions, units: "110", "115,5",
+"3√2 cm"). Over the whole bank, 1688 problem versions lack clean options and 110 of them are
+rescued this way; the rest keep their options cut from the scan, because there is no text to
+show. `lvl-7_2008_3` in Catalan now shows 110 / 121 / 115,5 / 119 / 242 as text.
+
+### Eleventh round: the original scan keeps its paper
+
+The original scan (the "veure l'escaneig original" link, and the fallback when nothing could
+be cut) is shown as it is, white paper included, on a white card with soft corners; only the
+cuts (figure, option strip, pieces) are tinted and transparent.
+
+This is deliberate and it is the only place where white paper can appear on the page. The
+user asked for no white backgrounds on the cuts (ninth round) and, separately, for the
+original scan to keep its background ("L'escaneig original no hauria de tindre el fons
+borrat"): a scan shown as a scan, not as a drawing. The automatic fallback to the whole scan,
+when nothing could be cut, is the same picture through the same path, so it is shown untinted
+on purpose. The caption under it says it is the original scan.
+
+Problems the page can serve today (the trainer's bank, `data/train.jsonl` and `data/val.jsonl`):
+1747 problems, each in Catalan and English (3494 versions): 1466 from train and 281 from val;
+by level 0 to 7: 142, 106, 146, 123, 339, 296, 305, 290.
+### Twelfth round (branch `ui-fixes-7`)
+
+- The verdict is captured when the answer arrives (both languages) and stays on the sheet
+  while the problem is open, whatever the server's message does afterwards: a hint in
+  progress, a hand-written step, the lesson, a refusal or the solution. Other messages go to
+  the status line. Checked on `lvl-3_2021_20`: wrong answer, three hints, lesson, solution.
+- The settings popup has `role="dialog"`, `aria-modal="true"` and `aria-labelledby` pointing at
+  the student's name; the teacher link and "Canvia d'alumne" are 44 px tall.
+- The hand-written steps (`demo_steps`) have a label of their own in both languages.
+
+### Thirteenth round (branch `ui-fixes-8`): grey stays grey, and two cutting fixes
+
+- **Grey fills** (G1). A neutral pixel whose 3x3 core holds no solid ink (nothing under 25) and
+  whose 5x5 window has a grey mean (55 to 228) with at most three fifths of white specks is a
+  grey patch: it takes the window's mean (smoothing the scan's grain), lifted by 35 and capped
+  at 210 in the dark theme so it never reaches the ink's lightness. Pixels right next to a line
+  stay edges, in ink: the rim of the shape. Measured by reading pixels, counting the neutral
+  pixels of level 60 to 200 in the figure crop and what they became:
+
+  | crop | grey pixels | still grey, dark | still grey, light | to ink (the rim) | transparent |
+  |---|---|---|---|---|---|
+  | `lvl-3_2021_20` (triangles), before | 4104 | 28 | 0 | 3320 / 3348 | 820 |
+  | `lvl-3_2021_20`, after | 4104 | 3060 | 2944 | 1032 / 1148 | 12 |
+  | `lvl-5_2022_30` (hand, grey 217), after | 3049 | 2954 | 2953 | 27 / 28 | 68 |
+
+  Tinting the hand's crop takes 3 ms. The light grey of the hand (G2) is covered by the same
+  rule, since the window's mean (up to 228) tells it from paper (the scan's paper is 250 and
+  above); a shaded region lighter than about 230 would still be lost, which is the limit.
+- **Indented statement lines.** Wrapped lines of a statement sit after the problem's number;
+  the margin test now allows two line heights, so they are statement, not figure.
+- **Two-row options.** A row with only two options ("D) ... E) ...") right under an option row
+  and aligned with it is an option row too; option rows are looked for only under the
+  statement's long lines (a justified line of text is never an option row) and never include
+  the figure's labels. `lvl-1_2021_24` (three rectangles) now gives the figure alone and five
+  option pieces without their letters.
+
+### Fourteenth round (branch `ui-light-only`): one theme
+
+- **Dark mode removed.** The team chose one palette. `theme.css` keeps the light tokens only;
+  the `prefers-color-scheme` and `[data-theme]` blocks, `theme.js` (the stored choice and the
+  `?theme=` parameter), the ◐ ☀ ☾ button in the settings popup and in the teacher view, and
+  the `theme` i18n keys are gone. The manipulatives keep reading the tokens from `theme.css`.
+- **Tinting, one way.** `tintedCanvas` no longer asks which theme is on: strokes, edges and
+  black fills take the page's ink, grey patches keep their smoothed mean with no lift, colours
+  keep their hue with no lightening. The cuts are tinted once per scan (no retint on a theme
+  change). The measurements of the thirteenth round's light column stand.
+
+### Fifteenth round (branch `ui-teacher`): the teacher's view diagnoses a student
+
+The teacher page (`assets/teacher.html`) was a mastery table and a rung-0 table. It is now two
+blocks, the class and one student, with inline SVG charts drawn on the page (no library, nothing
+fetched) and a table of advanced statistics with a "how" column. References 18 to 21 in
+`research.md`.
+
+- **Data.** `trainer.answer_log()` (new, read-only) returns every answer in order with its
+  topic, level, letter, label, correctness, hint rung, review flag and time, plus each student's
+  row and topic states; `/api/teacher` carries it as `log` next to the report. The page computes
+  everything in the browser. Nothing else of the trainer changed; the predictor and the hints see
+  the same data as before.
+- **The class.** Tiles (students and active today, answers, accuracy with its Wilson interval,
+  accuracy without hints, share of problems with a hint); the mastery heatmap with attempts and
+  accuracy per student (a click on a row picks the student); accuracy by level and by topic.
+- **The student.** A picker (the page's own dropdown), tiles (answers, accuracy with the 95 %
+  interval, accuracy without hints, hint share, median time per problem, current streak, working
+  level and base level), the diagnosis in sentences, and the charts: mastery pips and accuracy per
+  topic; the rolling accuracy of the last five answers with a dot per answer and the problem's
+  level as steps behind; hint use as one stacked bar and the accuracy per rung; letters chosen
+  against the 20 % of chance; accuracy per level; answers per day over the last 14 days.
+- **Advanced statistics** (each row says how it is computed): Wilson 95 % interval; accuracy
+  without hints; hint dependence (accuracy after a hint over accuracy without); trend (last 10
+  against the previous 10, with a two-proportion z test); learning slope (least squares of
+  correctness on answer order, shown from 10 answers); guessing index (chi-square of the letters
+  chosen with 4 degrees of freedom, and accuracy against 20 % chance); median time per problem
+  (gaps over 10 minutes dropped); longest streaks; working level (highest level with at least
+  half correct over 3 answers or more); weakest and strongest topic with 3 answers or more;
+  share of answers given after the solution; rung-0 uses and accuracy after it.
+- **The diagnosis in words** is a list of rules over those numbers, in Catalan and English:
+  little data (under 5), too hard / right zone / masters it (under 45 %, 45 to 75 %, over 75 %),
+  possible guessing (from 8 answers: accuracy not above chance, or one letter dominant with
+  accuracy under 40 %), hint dependence, improving or worsening (15 points between the last 10
+  and the previous 10), answering under 20 s or over 4 minutes, working level and challenge, a
+  topic to reinforce (under 40 %) or mastered (80 % or more), looking at the solution on 30 % or
+  more, rung-0 use. Checked on the local database: a student with 6 answers gets "too hard
+  (33 %)", "answers very fast (5 s)", "uses rung 0"; a student with one answer gets only
+  "little data".
+- Layout: cards of at least 440 px so the 520 px charts draw close to 1:1; one column on a phone,
+  the tables scroll sideways; the bar keeps the student page and the decision dashboard links.
+### Fifteenth round (branch `ui-fixes-10`): the answers as text, read again from the scans
+
+The user kept finding problems whose answers are plain text on the scan but reached the page
+as pieces cut from it (`lvl-3_2024_29`: five angles in degrees). The cause is upstream of the
+page: `laptop/prepare_m3kang.py` reads the options with RapidOCR and writes `options: {}` when
+it cannot build a clean A..E sequence, and on these scans it could not for a reason the page
+cannot fix: a label of the figure on the options' row ("110°", far to the right) was glued to
+option E, or a first digit was read twice ("A) 1" then "10"), or a fullwidth colon ("7：3")
+slipped in. Over the bank, 1806 of 3494 versions had clean options, 1182 had none in either
+language and the rest were noisy or mixed.
+
+- **`laptop/reocr_options.py`** reads those scans again (laptop only, RapidOCR from
+  `laptop/requirements.txt`) with a parser that keeps only the boxes near each marker (before
+  the next marker, at most 1.5 marker spacings to the right, on the marker's row), lets a box
+  that overlaps the marker's and repeats its value replace it, maps the CJK characters the
+  Chinese model gives a π (元 兀 斤) and fullwidth punctuation, and accepts a set only when the
+  page would (the `CLEAN`/`NOISY` test of `app.js`) and nothing betrays a lost fraction: no
+  value repeated, no value without a digit among values with digits, no value ending in an
+  operator. Result on this bank: of the 1731 versions without clean options, **528 now have
+  them** (394 had none, 134 were noisy); the others stay as pictures, which many of them are.
+  A random sample of 20 was checked against the scans; the only wrong ones were lost
+  fractions, which the three rejection rules now catch.
+- **`data/options_ocr.jsonl`** holds the result (`{"key": "lvl-3_2024_29|cat", "options": {...}}`).
+  It is M3Kang text and stays out of git like the rest of `data/`; it must be copied to the
+  board next to `train.jsonl`. The command, from the repository root: `python laptop/reocr_options.py`
+  (`--reparse` re-runs the parser from the cached boxes in seconds).
+- **The server overlays it on the page only.** `copilot/webapp.py` reads the file once and, in
+  `_public_problem`, replaces the shown problem's `options` (and the other language's
+  `options_eng`/`options_cat`) when the file has the key. The problem itself, what the
+  predictor, the hints, the votes and the trainer see, keeps the bank's options, so nothing
+  measured changes. No file, no overlay. Two tests in `tests/test_webapp.py`.
+- Checked in the browser: `lvl-3_2024_29` shows its five angles as text buttons
+  in one row, the figure alone on the right; `lvl-0_2015_1` (pictures) is unchanged.
+- **Tooltips.** Every chart has a tooltip drawn by the page (one `.tip` per card, dark on the
+  page's background): bars, pips, segments and days carry a `data-tip`, and the trend chart
+  answers to the cursor anywhere over it with the nearest answer (a dotted guide marks it) and
+  the rolling accuracy at that point. No `title` attributes, so the text appears at once.
+
+### Sixteenth round (branch `ui-teacher-2`): the diagnosis only claims what its numbers carry
+
+The reviewer reproduced the thirteen statistics (`docs/reviews/review-ui-teacher.md`) and
+found three rules that overclaimed on small samples. Every sentence now names its n and uses
+the same p-values as the table:
+
+- **Trend** (U1): the firm sentence ("Millora: X punts... p = ...") needs both windows of 10
+  and p < 0.05 from the two-proportion test; with 15 points or more but no significance the
+  sentence says "sembla que millora... no és concloent (p = ...)". 2/5 against 6/10 no longer
+  speaks.
+- **Hints** (U2): "Encerta més amb pista (X % de n) que sense (Y % de n)" needs 8 answers on
+  each side and p < 0.05, and no longer prescribes a review.
+- **Little data** (U3): under 10 answers the only sentence about accuracy gives the Wilson
+  interval ("la taxa d'encerts és entre a i b %"); the band sentences with their
+  recommendation ("pot pujar de nivell", "baixa un nivell") appear from 10 answers and carry
+  the interval. 5/5 reads "entre el 57 i el 100 %", not "fiable".
+- **Guessing** (U4): the accuracy test against chance is the exact binomial P(X ≥ k | n, 0.2),
+  shown and used from 20 answers; the chi-square of the letters needs 5 expected per cell
+  (25 answers). Under that the table row says "– (n = ...)".
+- **Topics and level** (U5): the sentences carry the n ("en 4 respostes").
+- **Fast answers** (U6): hidden when the median gap is under a second (simulated databases).
+- **Keyboard** (U7): the heatmap rows are focusable buttons (Enter or Space picks the
+  student); the student dropdown opens with the arrow keys, moves with them, picks with Enter
+  and closes with Escape.
+- **Polling** (U8): `/api/teacher` no longer carries the log; `/api/teacher/log` serves it,
+  fetched at start, when a student is picked and every 30 s. The 3 s poll is the report alone.
+- `INTERFACES.md` lists `trainer.answer_log` under the trainer (U9).

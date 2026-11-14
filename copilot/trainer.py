@@ -646,3 +646,32 @@ def teacher_report(student_id=None):
                               3: "sometimes correct without hints", 4: "consistently correct without hints",
                               5: "correct without hints one level above"},
             "students": students}
+
+
+def answer_log(student_id=None):
+    """Every answer in order, for the teacher's diagnosis of a student (the page computes the
+    statistics). Also each student's row and the time each topic's mastery last moved.
+
+    {"answers": [{"student_id", "problem_id", "topic", "level", "letter", "label", "correct",
+                  "hint_rung", "review", "created_at"}],
+     "students": {student_id: {"created_at", "base_level", "start_level", "diagnostic_done",
+                               "topics": {topic: {"mastery", "level", "updated_at"}}}}}
+    """
+    db = _connect()
+    try:
+        where, args = ("WHERE student_id=?", (student_id,)) if student_id is not None else ("", ())
+        answers = [dict(r) for r in db.execute(
+            "SELECT student_id, problem_id, topic, level, letter, label, correct, hint_rung, review, created_at "
+            f"FROM answers {where} ORDER BY id", args)]
+        for a in answers:
+            a["correct"], a["review"] = bool(a["correct"]), bool(a["review"])
+        students = {}
+        for row in db.execute(f"SELECT * FROM students {where} ORDER BY student_id", args):
+            students[row["student_id"]] = {
+                "created_at": row["created_at"], "base_level": row["base_level"], "start_level": row["start_level"],
+                "diagnostic_done": bool(row["diagnostic_done"]),
+                "topics": {k: {"mastery": v["mastery"], "level": v["level"], "updated_at": v["updated_at"]}
+                           for k, v in _topic_states(db, row["student_id"]).items()}}
+    finally:
+        db.close()
+    return {"answers": answers, "students": students}

@@ -218,6 +218,20 @@ class TrainerDbTest(unittest.TestCase):
         self.assertEqual(sum(v["answers"] for v in ana["by_topic"].values()), 10)
         self.assertEqual(len(report["topics"]), 8)
 
+    def test_answer_log_lists_every_answer_in_order_with_the_students(self):
+        self.play("ana", 4, self.threshold(2))
+        log = trainer.answer_log()
+        self.assertEqual(len(log["answers"]), 4)
+        self.assertEqual([a["student_id"] for a in log["answers"]], ["ana"] * 4)
+        first = log["answers"][0]
+        self.assertEqual(set(first), {"student_id", "problem_id", "topic", "level", "letter", "label",
+                                      "correct", "hint_rung", "review", "created_at"})
+        self.assertIsInstance(first["correct"], bool)
+        self.assertLessEqual(first["created_at"], log["answers"][-1]["created_at"])
+        self.assertIn("ana", log["students"])
+        self.assertIn(first["topic"], log["students"]["ana"]["topics"])
+        self.assertEqual(trainer.answer_log("nobody"), {"answers": [], "students": {}})
+
     def test_start_student_level_sets_the_diagnostic_and_the_base_level(self):
         self.assertEqual(trainer.start_student("s", level=4), {k: 0 for k in TOPIC_KEYS})
         self.assertEqual(trainer.next_problem("s")["level"], 4)

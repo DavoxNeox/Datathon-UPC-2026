@@ -7,7 +7,7 @@ import socket
 import time
 import urllib.error
 
-from . import bias, ladder, solvers, votes
+from . import bias, ladder, prior, solvers, think, votes
 from .board_clock import Clock
 from .config import CONFIG
 from .llm import URL, answer_letter, letter_scores
@@ -28,6 +28,10 @@ USE_LETTER_MODEL = CONFIG.get("LETTER_MODEL", "0") != "0"
 # (copilot/ladder.py) instead of the fallback letter; every other problem still gets FALLBACK_ANSWER.
 # Measured on 281 English validation problems: 27.4% against 23.1% for always D, at no cost.
 USE_MIDDLE_VALUE = CONFIG.get("MIDDLE_VALUE", "1") != "0"
+# OPTION_PRIOR=1: the learned option prior (copilot/prior.py, data_curated/option_prior.json) answers before the
+# middle-value rule where its stratum has a learned rule. Off by default: 80/281 against 77 on validation,
+# bootstrap 95% [-4, +11] (docs/reason-experiments.md, experiment 5).
+USE_OPTION_PRIOR = CONFIG.get("OPTION_PRIOR", "0") != "0"
 # Experiments on the options (copilot/votes.py), off by default. VOTE_SHIFTS=5 asks for a letter once per
 # cyclic shift of the options and takes a strict majority; VALUE_MODEL=1 asks for the option's value with
 # a grammar limited to the five strings. Both run only when the problem has options, after the solvers
@@ -38,6 +42,46 @@ VOTE_SHIFTS = int(CONFIG.get("VOTE_SHIFTS", "0") or 0)
 VOTE_MIN = int(CONFIG.get("VOTE_MIN", "3") or 3)
 USE_VALUE_MODEL = CONFIG.get("VALUE_MODEL", "0") != "0"
 EXPERIMENT_BUDGET = float(CONFIG.get("EXPERIMENT_BUDGET_SECONDS", "50") or 50)
+# Estimated board seconds a solver's extraction may cost (its real time ran at 1.33x the estimate on the board).
+SOLVER_BUDGET = float(CONFIG.get("SOLVER_BUDGET_SECONDS", "42") or 42)
+# Brief reasoning by the 0.8B (copilot/think.py): THINK_LEVELS lists the levels on which the model writes a
+# few lines of working before the letter (empty = off, "all" = every level); THINK_TEXT_ONLY=1 keeps it to
+# problems without a figure. It runs after the solvers and before the middle-value rule, only when the
+# board estimate leaves at least THINK_MIN_TOKENS of output inside THINK_BUDGET_SECONDS, and it
+# abstains (the rest of the policy answers) on a budget skip, a timeout, a server error or unreadable working.
+THINK_LEVELS = think.levels_from_config()
+THINK_TEXT_ONLY = CONFIG.get("THINK_TEXT_ONLY", "1") != "0"
+# THINK_NUMERIC=0 keeps the stage to problems whose options are not five distinct numbers (the middle-value
+# prior answers those); 1 runs it on every problem with five options.
+THINK_NUMERIC = CONFIG.get("THINK_NUMERIC", "1") != "0"
+
+
+LETTERS = "ABCDE"
+
+
+def normalise_problem(problem):
+    """A copy of the problem with the fields every stage reads in the types it expects.
+
+    The exam file may carry anything. text: a string ("" when missing or null, str() of any other
+    type). options: a dict with keys A to E and string values; {} when missing, null or not a
+    dict; lower-case keys are upper-cased; a list of five is read as A to E; a nested value
+    (list, dict) drops its key. The solvers, ladder.numeric_options and the model stages then
+    never see a list, a number or None where they expect text.
+    """
+    problem = dict(problem) if isinstance(problem, dict) else {"text": str(problem)}
+    text = problem.get("text")
+    problem["text"] = text if isinstance(text, str) else ("" if text is None else str(text))
+    options = problem.get("options")
+    if isinstance(options, (list, tuple)):
+        options = dict(zip(LETTERS, options))
+    clean = {}
+    if isinstance(options, dict):
+        for key, value in options.items():
+            letter = str(key).strip().upper()
+            if len(letter) == 1 and letter in LETTERS and not isinstance(value, (dict, list, tuple)):
+                clean[letter] = "" if value is None else str(value)
+    problem["options"] = clean
+    return problem
 
 
 def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL,
@@ -52,7 +96,9 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
     image_b64 and llm_url send the problem image to a vision server.
 
     Order: a family solver when one applies (the model only copies numbers, Python
-    computes, the value must match exactly one option), then the middle-value rule when
+    computes, the value must match exactly one option), then brief reasoning by the model
+    on the levels in THINK_LEVELS (copilot/think.py), then the learned option prior when
+    OPTION_PRIOR=1 and its stratum has a rule, then the middle-value rule when
     MIDDLE_VALUE=1 and the options are numbers, else the letter model below.
 
     With a letter-bias calibration (data_curated/letter_prior.json) the model is
@@ -62,12 +108,18 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
     """
     start = time.perf_counter()
     clock = Clock()
+    problem = normalise_problem(problem)
     result = {"answer": FALLBACK, "status": "ok", "prompt_tokens": 0, "retrieved": "", "examples": [],
               "board_seconds": 0.0, "raw_letter": "", "margin": None, "family": "", "letter_logprobs": None,
               "rule": "", "extra": {}}
     try:
         if USE_SOLVERS and image_b64 is None:
-            solved, spent = solvers.solve_with_timings(problem)
+            # The extraction reads the whole text: budget it like every other model call (a 766-token
+            # exam row would take 78 s on the board), and give it the seconds really left as its timeout.
+            solved, spent, skipped = solvers.solve_within(problem, timeout=max(time_limit - MARGIN, 1.0),
+                                                           budget=min(SOLVER_BUDGET, time_limit - MARGIN) - clock.board_seconds())
+            if skipped:
+                result["status"] = f"ok (solver skipped: {skipped})"
             for timings in spent:  # counted even when the solver abstains: the board still read the problem
                 clock.add_llm(timings)
                 result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
@@ -76,6 +128,22 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
                               seconds=round(time.perf_counter() - start, 2), board_seconds=round(clock.board_seconds(), 2))
                 return result
         remaining = time_limit - (time.perf_counter() - start) - MARGIN
+        if THINK_LEVELS and image_b64 is None and think.applies(problem, THINK_LEVELS, THINK_TEXT_ONLY, THINK_NUMERIC):
+            try:
+                letter, info, timings = think.think_letter(problem, timeout=max(remaining, 1.0), url=llm_url,
+                                                           budget=think.BUDGET - clock.board_seconds(),
+                                                           cold=clock.prompt_tokens > 0)
+            except (socket.timeout, TimeoutError, urllib.error.URLError) as error:
+                # the working never arrived: the rest of the policy answers, and the time is unknown here
+                letter, info, timings = None, {"skipped": f"error: {getattr(error, 'reason', error)}"}, {}
+            clock.add_llm(timings)
+            result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
+            result["extra"]["think"] = info
+            if letter is not None:
+                result.update(answer=letter, rule="think", seconds=round(time.perf_counter() - start, 2),
+                              board_seconds=round(clock.board_seconds(), 2))
+                return result
+            remaining = time_limit - (time.perf_counter() - start) - MARGIN
         if VOTE_SHIFTS > 0 and image_b64 is None and len(problem.get("options") or {}) == 5:
             letter, tally, spent = votes.vote_letter(problem, votes.SHIFTS[:VOTE_SHIFTS], timeout=max(remaining, 1.0),
                                                      url=llm_url, min_votes=VOTE_MIN,
@@ -99,6 +167,9 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
                 result.update(answer=letter, rule="value", seconds=round(time.perf_counter() - start, 2),
                               board_seconds=round(clock.board_seconds(), 2))
                 return result
+        if USE_OPTION_PRIOR and image_b64 is None and (chosen := prior.choose(problem)) is not None:
+            result.update(answer=chosen, rule="option_prior", seconds=round(time.perf_counter() - start, 2), board_seconds=round(clock.board_seconds(), 2))
+            return result
         if USE_MIDDLE_VALUE and image_b64 is None:
             middle = ladder.middle_letter(problem)
             if middle is not None:

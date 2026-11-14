@@ -1,5 +1,5 @@
 /* Math copilot, student page. Local styles only: system fonts, nothing fetched from the network.
-   Colours come from theme.css (light and dark). The look follows Duolingo's lesson screen with
+   Colours come from theme.css. The look follows Duolingo's lesson screen with
    three colours and no pictures: a thick progress bar at the top, big option cards with a
    pressable bottom edge, and a fixed action sheet at the bottom that turns green or red with
    the verdict. One column, the problem first, the rest in a drawer behind "Més". */
@@ -11,7 +11,7 @@ button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 a { color: var(--accent); }
 
-/* The bar: "Més" on the left, the current topic's progress as a thick bar, the language and the theme on the right */
+/* The bar: the menu icon on the left, the current topic's progress as a thick bar */
 .bar { display: flex; align-items: center; padding: 16px 16px 6px; max-width: 920px; margin: 0 auto; }
 .menu-btn { position: fixed; left: 16px; top: 14px; z-index: 31; width: 48px; height: 48px; border: 2px solid var(--control); border-radius: 12px; background: var(--bg); color: var(--muted); cursor: pointer; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0; }
 .menu-btn span { display: block; width: 20px; height: 2px; border-radius: 2px; background: currentColor; margin: 0 auto; }
@@ -42,7 +42,8 @@ a { color: var(--accent); }
 .dlg-block summary { cursor: pointer; margin: 0; }
 .dlg-cols { display: grid; grid-template-columns: auto 1fr; gap: 10px; margin-top: 10px; align-items: start; }
 .dlg-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 20px; margin-top: 12px; font-size: 15px; }
-.dlg-foot a { color: var(--muted); font-weight: 700; }
+.dlg-foot a { color: var(--muted); font-weight: 700; display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; }
+.dlg-foot .secondary.small { min-height: 44px; }
 canvas.led { display: block; background: #121212; border-radius: 10px; border: 3px solid #2a2a2a; width: 195px; height: 120px; }
 .mastery { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; font-size: 14px; font-weight: 700; align-items: center; }
 .mastery.two { grid-template-columns: auto 1fr auto 1fr; column-gap: 14px; }
@@ -84,8 +85,9 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
 .figure.zoomed { float: none; max-width: none; width: 100%; margin: 12px 0; cursor: zoom-out; display: flex; justify-content: center; }
 .figure.zoomed img { height: auto !important; max-height: none; width: 100%; max-width: 760px; }
 .figure.strip { float: none; max-width: none; cursor: default; margin: 12px 0 0; display: flex; justify-content: center; }
-.figure.card img, .letters.card .pic, .hint .neighbour.pic.card img { background: #fff; padding: 6px; border-radius: 10px; box-sizing: content-box; }
 .figure figcaption { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; margin-top: 4px; }
+/* the original scan keeps its paper: a white card with soft corners */
+.figure.original img, .figure.whole img { background: #fff; padding: 8px; border-radius: 12px; box-sizing: border-box; }
 .figure { flex-direction: column; align-items: center; }
 .figure.strip img { max-height: 160px; }
 .letters.pics button { flex-direction: column; gap: 4px; min-height: 84px; padding: 8px 6px; position: relative; }
@@ -109,8 +111,8 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
 .hint p, .lesson p { margin: 4px 0 0; }
 
 /* The answers: cards with a pressable bottom edge, five letters in the picture's order or full rows with the text */
-.letters { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0 0; }
-.letters button { flex: 1 1 0; min-width: 60px; min-height: 84px; padding: 10px 8px; border: 2px solid var(--control); border-radius: 16px; background: var(--card); cursor: pointer;
+.letters { display: flex; flex-wrap: nowrap; gap: 12px; margin: 20px 0 0; }
+.letters button { flex: 1 1 0; min-width: 0; min-height: 84px; padding: 10px 8px; border: 2px solid var(--control); border-radius: 16px; background: var(--card); cursor: pointer;
                   box-shadow: 0 4px 0 var(--control); display: flex; align-items: center; justify-content: center; gap: 14px; transition: background-color .12s, border-color .12s, box-shadow .12s, transform .12s; }
 .letters button .l { font-size: 30px; font-weight: 800; line-height: 1; }
 .letters button:hover:not(:disabled) { background: var(--card-2); }
@@ -123,7 +125,7 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
 .letters.short button { flex-direction: column; gap: 2px; min-height: 76px; padding: 8px 6px; position: relative; }
 .letters.short button .l, .letters.pics button .l, .letters.rows button .l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .letters.short button .o { font-size: 20px; font-weight: 700; }
-.letters.rows { flex-direction: column; gap: 8px; }
+.letters.rows { flex-direction: column; flex-wrap: wrap; gap: 8px; }
 .letters.rows button { flex: none; width: 100%; justify-content: center; padding: 8px 18px; min-height: 56px; text-align: center; position: relative; }
 .letters.rows button .l { font-size: 16px; min-width: 34px; height: 34px; border-radius: 10px; border: 2px solid var(--line); display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
 .letters.rows button.chosen .l { border-color: var(--accent); color: var(--accent); }
@@ -196,7 +198,7 @@ section.start h1 { font-size: 30px; font-weight: 800; margin: 0 0 18px; letter-s
   .progress .track { height: 20px; }
   .text { font-size: 20px; }
   .letters { gap: 8px; }
-  .letters button { min-width: 56px; min-height: 68px; padding: 8px 4px; }
+  .letters button { min-width: 0; min-height: 68px; padding: 8px 4px; }
   .letters button .l { font-size: 24px; }
   .text { font-size: 21px; }
   .problem { display: flex; flex-direction: column; }

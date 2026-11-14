@@ -23,8 +23,8 @@ def matches(text):
     return bool(_KEYWORDS.search(text)) and bool(re.search(r"\bsum of (the )?(\w+ )?consecutive", text))
 
 
-def extract(problem):
-    return llm.extract_json(problem["text"], GRAMMAR, HINT)
+def extract(problem, timeout=60):
+    return llm.extract_json(problem["text"], GRAMMAR, HINT, timeout=timeout)
 
 
 def compute(params, options):

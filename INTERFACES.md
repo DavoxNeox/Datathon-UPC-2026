@@ -188,6 +188,18 @@ reset_student(student_id: str) -> None     # forgets every answer and mastery of
 Web (D): a start screen with the pseudonym, an optional level selector (0..7, shown with the
 school-year labels in Catalan) and a "Reinicia" button that calls `reset_student`.
 
+Added for the teacher's view (14 Nov 2026, branch `ui-teacher`), read-only:
+
+```python
+answer_log(student_id: str | None = None) -> dict
+    # {"answers": [{"student_id", "problem_id", "topic", "level", "letter", "label", "correct": bool,
+    #               "hint_rung": 0..4, "review": bool, "created_at": float}],   # in order
+    #  "students": {student_id: {"created_at", "base_level", "start_level", "diagnostic_done",
+    #                            "topics": {topic: {"mastery", "level", "updated_at"}}}}}
+    # Served by the web app at /api/teacher/log (apart from /api/teacher, which stays light);
+    # the page computes the statistics and the diagnosis in the browser.
+```
+
 ### `copilot/solvers/__init__.py` (A)
 
 ```python
@@ -207,10 +219,22 @@ get_hint(problem_id: str, rung: int, lang: str = "cat") -> dict   # Hint result 
 ### `copilot/hal/led.py` (A)
 
 ```python
-show_result(ok: bool) -> None                 # tick or cross
-show_mastery(mastery: dict[str, int]) -> None # 8 rows, bar of 0..13 LEDs each
-show_path(grid: list[list[int]]) -> None      # animate the path counter (manipulative b)
+show_mastery(mastery: dict[str, int]) -> None    # rest frame: 8 rows, a bar of 0..13 LEDs each, grown over 0.5 s;
+                                                 # an empty map breathes slowly instead of staying dark
+show_hints_left(left: int, maximum: int) -> None # a problem is open: `maximum` blocks on the bottom rows, the spent
+                                                 # ones dimmed, the mastery bars dimmed above
+pulse(on: bool) -> None                          # a dot runs along the bottom row while a hint or the solution is prepared
+show_answer(letter: str, ok: bool) -> None       # the chosen letter, big, for 0.8 s, then the tick or the cross
+show_result(ok: bool) -> None                    # tick or cross at once
+show_path(grid: list[list[int]]) -> None         # the path counter (manipulative b), non-zero cells lit
+last_frame() -> list[list[int]]                  # what the matrix shows now, 8x13, brightness 0..7 (the web canvas)
 ```
+
+Every call returns at once; a daemon thread advances the animation at 12 frames per second and sends
+a frame only when it changed (one Bridge call, about 20 ms on the board). `LED_ANIMATE=0` draws the
+final frame synchronously with no thread (the tests). The web app calls them so: `show_mastery` on
+the start screen and after the verdict; `show_hints_left` when a problem loads and after each hint;
+`pulse` while a hint or the solution is being prepared; `show_answer` on the answer.
 
 Backend is chosen by `RUNTIME` in `config.env` / environment: `sim` prints the frame as
 ASCII and keeps the last frame for the web page; `board` sends it over the App Lab Bridge.

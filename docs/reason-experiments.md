@@ -5,7 +5,12 @@ validation set) by at least 10 problems, and also beats the most frequent letter
 whatever set it is scored on, within the rules: 60 s per problem on the UNO Q, RAM next to
 the embeddings and the app, standard library, deterministic, offline. Branch
 `team/reason-predict-0ff6f3`. One change is adopted (`MIDDLE_VALUE=1`, the default since the
-review of 14 Nov); the others stay behind flags that are **off**.
+review of 14 Nov); the others stay behind flags that are **off** (experiment 5, the learned option
+prior, is on branch `reason-prior`).
+the embeddings and the app, standard library, deterministic, offline. Branches
+`team/reason-predict-0ff6f3` (experiments 1 to 4) and `reason-think` (5 and 6, after the
+organisers made Reasoning half of the grade). One change is adopted (`MIDDLE_VALUE=1`, the
+default since the review of 14 Nov); the others stay behind flags that are **off**.
 
 **What the winning rule is, and is not.** The middle-value rule is a prior on how Kangaroo
 distractors are built: the wrong options are made from the right value (one step too many or
@@ -39,6 +44,14 @@ model runs here.
 | 3 | same | `VALUE_MODEL=1` | 281 | 66 = 23.5% | 23.1% | D 23.1% | 6.7 / 52.6 | 1.06 GB | +1: noise |
 | 4 | 0.8B, 5 cyclic shifts, strict majority | `VOTE_SHIFTS=5` | 50 | 17 = 34.0% | 34.0% | D 34.0% | 22.7 / 59.1 | 1.06 GB | 2 majorities, both wrong |
 | 4 | same | `VOTE_SHIFTS=5` | 281 | 63 = 22.4% | 23.1% | D 23.1% | 20.0 / 73.7, 6 over 60 s | 1.06 GB | -2, too slow |
+| 5 | learned option prior per stratum, threshold +10 on train | `OPTION_PRIOR=1` | 281 | 80 = 28.5% | 23.1% | D 23.1% | 0 / 0 | no model | +3 over the middle value, bootstrap [-4, +11]: off |
+| 5 | same, training set (the rules were chosen on it) | `OPTION_PRIOR=1` | 1466 | 425 = 29.0% | 25.0% | D 25.0% | 0 / 0 | no model | +20 over the middle value, cross-validation inside train: loss |
+| 6 | 0.8B writes its working, letter read from it, every level | `THINK_LEVELS=all THINK_TEXT_ONLY=0` | 281 | 76 = 27.0% | 23.1% | D 23.1% | 25.1 / 51.5 | 1.06 GB | -1 against the shipped 77 |
+| 6 | same, stratified training sample | same | 297 | 82 = 27.6% | 25.6% | D 25.6% | 25.3 / 52.5 | 1.06 GB | +7 against 75, 95% [-5, +20] |
+| 6 | same, the Catalan versions of the 281 | same | 281 | 66 = 23.5% | 23.1% | D 23.1% | 25.7 / 49.6 | 1.06 GB | -7 against 73 |
+| 6 | levels 2 to 5 only (picked after the fact) | `THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0` | 281 / 297 / 281 cat | 85 / 81 / 70 | | | 13.4 / 51.5 | 1.06 GB | +8 / +6 / **-3**: not adopted |
+| 6 | short instruction (`THINK_STYLE=short`), every level | `THINK_LEVELS=all THINK_TEXT_ONLY=0` | 297 / 281 / 281 cat | 84 / 79 / 80 against 75 / 77 / 73 | | | 21 / 52 | 1.06 GB | +9 / +2 / +7, pooled P = 0.063: left off |
+| 7 | board, real seconds, levels 2 to 5, steps style | `THINK_LEVELS=2,3,4,5` | 50 | 16 = 32.0% | 34.0% | D 34.0% | real 10.0 / 47.9, est. 9.7 / 47.5 | 2.7 GB available | no timeout; see text |
 
 The letter model restricted to the middle three values (offline, from the baseline's stored
 log probabilities, 99 strictly numeric problems): 24 right, against 29 for the middle value
@@ -175,6 +188,421 @@ previous request's prompt tokens, read again, plus one letter) would pass it; an
 vote never elects. Whoever turns these flags on gets a policy that respects the 60-second
 rule, and nothing else: they still do not beat always D.
 
+## Experiment 5: a learned option prior (`copilot/prior.py`, `laptop/learn_prior.py`)
+
+**Hypothesis.** The middle-value rule is one prior on the options; maybe other strata of problems
+have a better one. A level-2 problem with a picture, a problem whose options are words, one whose
+options are listed out of order, one whose OCR'd options carry a stray digit: each could have its own
+best rule (another rank of the values, a fixed letter, the option that says "none"). The prior reads
+the five option strings, the level and whether there is a picture, never the problem text, so like
+experiment 1 it costs nothing on the board. Flag `OPTION_PRIOR` (default 0), hook in
+`copilot/pipeline.py` right before the middle-value rule, so the order is solvers, prior, middle
+value, D.
+
+**Candidate rules** (`prior.apply_rule`): a fixed letter A to E (the most frequent letter of the
+stratum is one of them); a rank of the numeric values, `min`, `second_smallest`, `middle`,
+`second_largest`, `max`; `none_option`, the single option whose text says none, impossible, cannot
+(English or Catalan). Numeric values come from `ladder.numeric_options` (strict, five distinct
+numbers with a unit at most) or, where that fails, from a lenient parser that drops a stray leading
+digit that repeats the number's first digit ("1 10", "4 40cm", "6 600 g") and ignores junk after the
+number and its unit ("88 616", "300 g 400g 100g 2"): 102 training problems become "noisy numeric"
+this way, on top of the 663 strict ones. A rule that does not apply to a problem falls back to the
+current policy, so every rule is scored on the whole stratum and compared with the current policy
+(middle value where the options are five distinct numbers, else D) on the same problems.
+
+**Strata.** The main stratification is level 0-7 × picture/text × kind of options (numeric, noisy
+numeric, words, no options): 62 strata on the 1466 English training problems. The task's other
+strata are measured as pooled stratifications: level alone, kind alone, picture alone, language,
+and the option patterns (ascending or unsorted values, fractions, π or roots, "none" text, number of
+distinct options), each crossed with the kind. A stratum keeps its best rule only when the rule
+beats the current policy by **at least 10 problems** in that stratum (`--min-gain 10`); otherwise
+the stratum keeps the current policy. The table is `data_curated/option_prior.json` (counts and rule
+names only), written by `laptop/learn_prior.py`, which also prints everything below.
+
+### Training, main stratification (level / picture / options), 1466 English problems
+
+No stratum reaches +10: the largest gains are +8 (level 2 with picture, numeric: D 9 against the
+middle value 1 on 16 problems; level 2 with picture, noisy numeric; level 3 text numeric) and +7
+(level 7 text words: E). With the main stratification alone **nothing is learned** and the policy
+is the current one, 405/1466.
+
+| level | picture | options | n | labels A B C D E | current policy | best rule | hits | gain |
+| ---: | --- | --- | ---: | --- | ---: | --- | ---: | ---: |
+| 0 | picture | no options | 49 | 2 10 10 14 13 | 14 | `D` | 14 | +0 |
+| 0 | picture | noisy numeric | 10 | 0 1 2 4 3 | 4 | `second_largest` | 5 | +1 |
+| 0 | picture | numeric | 33 | 3 8 7 10 5 | 8 | `D` | 10 | +2 |
+| 0 | picture | words | 5 | 0 0 0 3 2 | 3 | `D` | 3 | +0 |
+| 0 | text | no options | 4 | 2 1 0 1 0 | 1 | `A` | 2 | +1 |
+| 0 | text | noisy numeric | 1 | 0 0 0 1 0 | 1 | `D` | 1 | +0 |
+| 0 | text | numeric | 17 | 1 6 6 4 0 | 6 | `second_largest` | 7 | +1 |
+| 0 | text | words | 3 | 0 1 0 1 1 | 1 | `B` | 1 | +0 |
+| 1 | picture | no options | 36 | 3 2 8 12 11 | 12 | `D` | 12 | +0 |
+| 1 | picture | noisy numeric | 10 | 0 0 0 7 3 | 7 | `D` | 7 | +0 |
+| 1 | picture | numeric | 17 | 0 4 5 4 4 | 7 | `middle` | 7 | +0 |
+| 1 | picture | words | 3 | 0 1 1 1 0 | 1 | `B` | 1 | +0 |
+| 1 | text | no options | 5 | 0 1 3 1 0 | 1 | `C` | 3 | +2 |
+| 1 | text | noisy numeric | 2 | 1 0 0 0 1 | 0 | `A` | 1 | +1 |
+| 1 | text | numeric | 16 | 2 4 1 7 2 | 3 | `D` | 7 | +4 |
+| 2 | picture | no options | 45 | 9 10 8 11 7 | 11 | `D` | 11 | +0 |
+| 2 | picture | noisy numeric | 13 | 0 6 4 0 3 | 0 | `B` | 6 | +6 |
+| 2 | picture | numeric | 16 | 0 3 1 9 3 | 1 | `D` | 9 | +8 |
+| 2 | picture | words | 3 | 2 1 0 0 0 | 0 | `A` | 2 | +2 |
+| 2 | text | no options | 12 | 2 2 5 2 1 | 2 | `C` | 5 | +3 |
+| 2 | text | noisy numeric | 2 | 1 1 0 0 0 | 0 | `A` | 1 | +1 |
+| 2 | text | numeric | 25 | 5 4 5 7 4 | 6 | `second_smallest` | 8 | +2 |
+| 2 | text | words | 1 | 0 0 1 0 0 | 0 | `C` | 1 | +1 |
+| 3 | picture | no options | 30 | 3 4 12 8 3 | 8 | `C` | 12 | +4 |
+| 3 | picture | noisy numeric | 12 | 1 3 1 4 3 | 4 | `second_largest` | 6 | +2 |
+| 3 | picture | numeric | 9 | 3 4 0 1 1 | 3 | `B` | 4 | +1 |
+| 3 | picture | words | 6 | 1 1 2 1 1 | 1 | `C` | 2 | +1 |
+| 3 | text | no options | 19 | 4 4 4 6 1 | 6 | `D` | 6 | +0 |
+| 3 | text | noisy numeric | 1 | 1 0 0 0 0 | 0 | `A` | 1 | +1 |
+| 3 | text | numeric | 33 | 4 3 10 7 9 | 8 | `second_smallest` | 14 | +6 |
+| 3 | text | words | 1 | 0 0 0 1 0 | 1 | `D` | 1 | +0 |
+| 4 | picture | no options | 71 | 14 14 17 16 10 | 16 | `C` | 17 | +1 |
+| 4 | picture | noisy numeric | 11 | 0 2 5 2 2 | 2 | `C` | 5 | +3 |
+| 4 | picture | numeric | 54 | 8 9 13 15 9 | 15 | `second_largest` | 19 | +4 |
+| 4 | picture | words | 13 | 3 1 4 1 4 | 1 | `C` | 4 | +3 |
+| 4 | text | no options | 30 | 3 6 7 11 3 | 11 | `D` | 11 | +0 |
+| 4 | text | numeric | 89 | 12 22 21 19 15 | 28 | `middle` | 28 | +0 |
+| 4 | text | words | 9 | 4 2 2 0 1 | 0 | `A` | 4 | +4 |
+| 5 | picture | no options | 42 | 7 4 5 14 12 | 14 | `D` | 14 | +0 |
+| 5 | picture | noisy numeric | 12 | 5 0 3 3 1 | 3 | `A` | 5 | +2 |
+| 5 | picture | numeric | 36 | 6 9 5 6 10 | 9 | `E` | 10 | +1 |
+| 5 | picture | words | 13 | 2 5 1 3 2 | 3 | `B` | 5 | +2 |
+| 5 | text | no options | 30 | 8 3 5 9 5 | 9 | `D` | 9 | +0 |
+| 5 | text | noisy numeric | 3 | 1 1 0 1 0 | 1 | `second_largest` | 2 | +1 |
+| 5 | text | numeric | 94 | 12 22 25 19 16 | 35 | `middle` | 35 | +0 |
+| 5 | text | words | 13 | 1 2 5 2 3 | 2 | `C` | 5 | +3 |
+| 6 | picture | no options | 55 | 16 9 12 10 8 | 10 | `A` | 16 | +6 |
+| 6 | picture | noisy numeric | 10 | 4 2 0 2 2 | 2 | `A` | 4 | +2 |
+| 6 | picture | numeric | 30 | 4 9 8 5 4 | 8 | `second_smallest` | 11 | +3 |
+| 6 | picture | words | 27 | 6 6 3 6 6 | 6 | `A` | 6 | +0 |
+| 6 | text | no options | 38 | 4 4 11 12 7 | 12 | `D` | 12 | +0 |
+| 6 | text | noisy numeric | 1 | 0 0 0 0 1 | 0 | `E` | 1 | +1 |
+| 6 | text | numeric | 87 | 14 18 23 22 10 | 30 | `middle` | 30 | +0 |
+| 6 | text | words | 8 | 1 2 2 1 2 | 1 | `B` | 2 | +1 |
+| 7 | picture | no options | 53 | 11 14 8 13 7 | 13 | `B` | 14 | +1 |
+| 7 | picture | noisy numeric | 10 | 1 1 4 1 3 | 1 | `C` | 4 | +3 |
+| 7 | picture | numeric | 24 | 4 6 7 4 3 | 8 | `middle` | 8 | +0 |
+| 7 | picture | words | 20 | 4 1 6 4 5 | 4 | `C` | 6 | +2 |
+| 7 | text | no options | 36 | 4 6 8 12 6 | 12 | `D` | 12 | +0 |
+| 7 | text | noisy numeric | 4 | 2 1 0 1 0 | 1 | `A` | 2 | +1 |
+| 7 | text | numeric | 83 | 10 14 22 24 13 | 26 | `middle` | 26 | +0 |
+| 7 | text | words | 21 | 4 5 1 2 9 | 2 | `E` | 9 | +7 |
+
+### Training, pooled stratifications
+
+Five pooled strata reach exactly +10, all of them two findings seen several times: level 2 →
+`second_smallest` (30 against 20 on 117 problems) and words → `E` (36 against 26 on 146 problems,
+also seen as words without fractions, words without "none" text, English words). With all the
+stratifications together, finest first, the learned policy scores 425/1466 = 29.0% on training
+(+20; paired bootstrap of the gain, 1000 resamples, seed 42: 95% [+3, +40]), which is the usual
+optimism of a rule chosen on the same data.
+
+| stratification | stratum | n | current policy | best rule | hits | gain | chosen |
+| --- | --- | ---: | ---: | --- | ---: | ---: | --- |
+| level/kind | level=0, kind=no_options | 53 | 15 | `D` | 15 | +0 |  |
+| level/kind | level=0, kind=noisy_numeric | 11 | 5 | `second_largest` | 6 | +1 |  |
+| level/kind | level=0, kind=numeric | 50 | 14 | `second_largest` | 16 | +2 |  |
+| level/kind | level=0, kind=words | 8 | 4 | `D` | 4 | +0 |  |
+| level/kind | level=1, kind=no_options | 41 | 13 | `D` | 13 | +0 |  |
+| level/kind | level=1, kind=noisy_numeric | 12 | 7 | `D` | 7 | +0 |  |
+| level/kind | level=1, kind=numeric | 33 | 10 | `D` | 11 | +1 |  |
+| level/kind | level=1, kind=words | 3 | 1 | `B` | 1 | +0 |  |
+| level/kind | level=2, kind=no_options | 57 | 13 | `C` | 13 | +0 |  |
+| level/kind | level=2, kind=noisy_numeric | 15 | 0 | `B` | 7 | +7 |  |
+| level/kind | level=2, kind=numeric | 41 | 7 | `D` | 16 | +9 |  |
+| level/kind | level=2, kind=words | 4 | 0 | `A` | 2 | +2 |  |
+| level/kind | level=3, kind=no_options | 49 | 14 | `C` | 16 | +2 |  |
+| level/kind | level=3, kind=noisy_numeric | 13 | 4 | `second_largest` | 7 | +3 |  |
+| level/kind | level=3, kind=numeric | 42 | 11 | `second_smallest` | 18 | +7 |  |
+| level/kind | level=3, kind=words | 7 | 2 | `C` | 2 | +0 |  |
+| level/kind | level=4, kind=no_options | 101 | 27 | `D` | 27 | +0 |  |
+| level/kind | level=4, kind=noisy_numeric | 11 | 2 | `C` | 5 | +3 |  |
+| level/kind | level=4, kind=numeric | 143 | 43 | `second_largest` | 44 | +1 |  |
+| level/kind | level=4, kind=words | 22 | 1 | `A` | 7 | +6 |  |
+| level/kind | level=5, kind=no_options | 72 | 23 | `D` | 23 | +0 |  |
+| level/kind | level=5, kind=noisy_numeric | 15 | 4 | `A` | 6 | +2 |  |
+| level/kind | level=5, kind=numeric | 130 | 44 | `middle` | 44 | +0 |  |
+| level/kind | level=5, kind=words | 26 | 5 | `B` | 7 | +2 |  |
+| level/kind | level=6, kind=no_options | 93 | 22 | `C` | 23 | +1 |  |
+| level/kind | level=6, kind=noisy_numeric | 11 | 2 | `A` | 4 | +2 |  |
+| level/kind | level=6, kind=numeric | 117 | 38 | `middle` | 38 | +0 |  |
+| level/kind | level=6, kind=words | 35 | 7 | `B` | 8 | +1 |  |
+| level/kind | level=7, kind=no_options | 89 | 25 | `D` | 25 | +0 |  |
+| level/kind | level=7, kind=noisy_numeric | 14 | 2 | `min` | 6 | +4 |  |
+| level/kind | level=7, kind=numeric | 107 | 34 | `middle` | 34 | +0 |  |
+| level/kind | level=7, kind=words | 41 | 6 | `E` | 14 | +8 |  |
+| picture/kind | picture=picture, kind=no_options | 381 | 98 | `D` | 98 | +0 |  |
+| picture/kind | picture=picture, kind=noisy_numeric | 88 | 23 | `second_largest` | 26 | +3 |  |
+| picture/kind | picture=picture, kind=numeric | 219 | 59 | `second_smallest` | 59 | +0 |  |
+| picture/kind | picture=picture, kind=words | 90 | 19 | `E` | 20 | +1 |  |
+| picture/kind | picture=text, kind=no_options | 174 | 54 | `D` | 54 | +0 |  |
+| picture/kind | picture=text, kind=noisy_numeric | 14 | 3 | `A` | 6 | +3 |  |
+| picture/kind | picture=text, kind=numeric | 444 | 142 | `middle` | 142 | +0 |  |
+| picture/kind | picture=text, kind=words | 56 | 7 | `E` | 16 | +9 |  |
+| level | level=0 | 122 | 38 | `second_largest` | 41 | +3 |  |
+| level | level=1 | 89 | 31 | `D` | 32 | +1 |  |
+| level | level=2 | 117 | 20 | `second_smallest` | 30 | +10 | yes |
+| level | level=3 | 111 | 31 | `second_smallest` | 36 | +5 |  |
+| level | level=4 | 277 | 73 | `middle` | 75 | +2 |  |
+| level | level=5 | 243 | 76 | `none_option` | 76 | +0 |  |
+| level | level=6 | 256 | 69 | `middle` | 70 | +1 |  |
+| level | level=7 | 251 | 67 | `middle` | 67 | +0 |  |
+| kind | kind=no_options | 555 | 152 | `D` | 152 | +0 |  |
+| kind | kind=noisy_numeric | 102 | 26 | `second_largest` | 30 | +4 |  |
+| kind | kind=numeric | 663 | 201 | `middle` | 201 | +0 |  |
+| kind | kind=words | 146 | 26 | `E` | 36 | +10 | yes |
+| picture | picture=picture | 778 | 199 | `none_option` | 198 | -1 |  |
+| picture | picture=text | 688 | 206 | `none_option` | 206 | +0 |  |
+| kind/order | kind=noisy_numeric, order=ascending | 49 | 18 | `D` | 18 | +0 |  |
+| kind/order | kind=noisy_numeric, order=unsorted | 53 | 8 | `second_smallest` | 13 | +5 |  |
+| kind/order | kind=numeric, order=ascending | 354 | 99 | `D` | 100 | +1 |  |
+| kind/order | kind=numeric, order=unsorted | 309 | 102 | `middle` | 102 | +0 |  |
+| kind/fraction | kind=no_options, fraction=False | 555 | 152 | `D` | 152 | +0 |  |
+| kind/fraction | kind=noisy_numeric, fraction=False | 97 | 25 | `second_largest` | 29 | +4 |  |
+| kind/fraction | kind=noisy_numeric, fraction=True | 5 | 1 | `A` | 3 | +2 |  |
+| kind/fraction | kind=numeric, fraction=False | 646 | 193 | `middle` | 193 | +0 |  |
+| kind/fraction | kind=numeric, fraction=True | 17 | 8 | `C` | 8 | +0 |  |
+| kind/fraction | kind=words, fraction=False | 146 | 26 | `E` | 36 | +10 | yes |
+| kind/pi_root | kind=no_options, pi_root=False | 555 | 152 | `D` | 152 | +0 |  |
+| kind/pi_root | kind=noisy_numeric, pi_root=False | 102 | 26 | `second_largest` | 30 | +4 |  |
+| kind/pi_root | kind=numeric, pi_root=False | 663 | 201 | `middle` | 201 | +0 |  |
+| kind/pi_root | kind=words, pi_root=False | 115 | 20 | `E` | 29 | +9 |  |
+| kind/pi_root | kind=words, pi_root=True | 31 | 6 | `A` | 7 | +1 |  |
+| kind/none_text | kind=no_options, none_text=False | 555 | 152 | `D` | 152 | +0 |  |
+| kind/none_text | kind=noisy_numeric, none_text=False | 102 | 26 | `second_largest` | 30 | +4 |  |
+| kind/none_text | kind=numeric, none_text=False | 663 | 201 | `middle` | 201 | +0 |  |
+| kind/none_text | kind=words, none_text=False | 145 | 25 | `E` | 36 | +11 | yes |
+| kind/none_text | kind=words, none_text=True | 1 | 1 | `D` | 1 | +0 |  |
+| kind/distinct | kind=no_options, distinct=0 | 555 | 152 | `D` | 152 | +0 |  |
+| kind/distinct | kind=noisy_numeric, distinct=5 | 102 | 26 | `second_largest` | 30 | +4 |  |
+| kind/distinct | kind=numeric, distinct=5 | 663 | 201 | `middle` | 201 | +0 |  |
+| kind/distinct | kind=words, distinct=3 | 2 | 0 | `C` | 2 | +2 |  |
+| kind/distinct | kind=words, distinct=4 | 3 | 0 | `A` | 1 | +1 |  |
+| kind/distinct | kind=words, distinct=5 | 141 | 26 | `E` | 35 | +9 |  |
+| language/kind | language=eng, kind=no_options | 555 | 152 | `D` | 152 | +0 |  |
+| language/kind | language=eng, kind=noisy_numeric | 102 | 26 | `second_largest` | 30 | +4 |  |
+| language/kind | language=eng, kind=numeric | 663 | 201 | `middle` | 201 | +0 |  |
+| language/kind | language=eng, kind=words | 146 | 26 | `E` | 36 | +10 | yes |
+
+### Cross-validation inside training (before the look at validation)
+
+Five folds, three shuffles (seeds 42, 43, 44): the rules are learned on four fifths with the same
++10 threshold and scored on the fifth; the table gives the out-of-fold gain over the current policy
+summed over the five folds. Nothing generalises: at the threshold of 10 every stratification is at
+zero or negative, and the full hierarchy loses about 10 problems. (At a threshold of 5, outside the
+protocol, level × kind shows +15 / +17 / +5 and everything else loses; not pursued.)
+
+| stratification | strata | chosen rules | out-of-fold gain, seeds 42 / 43 / 44 | mean |
+| --- | ---: | ---: | --- | ---: |
+| level, picture, kind | 62 | 0 | +0 / +0 / +0 | +0.0 |
+| level, kind | 32 | 0 | -3 / +0 / -1 | -1.3 |
+| picture, kind | 8 | 0 | -1 / -1 / +0 | -0.7 |
+| level | 8 | 1 | +0 / -3 / -2 | -1.7 |
+| kind | 4 | 1 | -2 / -2 / +0 | -1.3 |
+| picture | 2 | 0 | +0 / +0 / +0 | +0.0 |
+| kind, order | 4 | 0 | -9 / -9 / +0 | -6.0 |
+| kind, fraction | 6 | 1 | -2 / -2 / +0 | -1.3 |
+| kind, π or root | 5 | 0 | -4 / -4 / -1 | -3.0 |
+| kind, none text | 5 | 1 | -1 / -1 / +0 | -0.7 |
+| kind, distinct options | 6 | 0 | -3 / -2 / -1 | -2.0 |
+| language, kind | 4 | 1 | -2 / -2 / +0 | -1.3 |
+| all of the above, finest first | 146 | 5 | -13 / -15 / -1 | -9.7 |
+
+### Validation, one look
+
+The policy of the full protocol (all the stratifications, finest first, threshold 10, the five
+rules above) on the 281 English validation problems, `python3 laptop/learn_prior.py --strata
+"level,picture,kind;level,kind;picture,kind;level;kind;picture;kind,order;kind,fraction;kind,pi_root;kind,none_text;kind,distinct;language,kind"
+--validate`:
+
+| set | n | learned prior | current policy (middle value, else D) | gain | paired bootstrap of the gain, 1000 resamples, seed 42 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| validation | 281 | **80 = 28.5%** | 77 = 27.4% | +3 | 95% [-4, +11], **27.4% of resamples at or under zero** |
+| training | 1466 | 425 = 29.0% | 405 = 27.6% | +20 | 95% [+3, +40], 1.2% at or under zero (chosen on these problems) |
+
+Where the learned rules fired on validation: words → E on 24 problems, 6 right against 5 for D;
+level 2 → second smallest on 11 problems, 3 right against 1 for the current policy. The real
+pipeline agrees: `OPTION_PRIOR=1 python3 eval.py --limit 0 --languages eng` gives 80/281 = 28.5%
+with the family solvers on (35 answers by the prior, 112 by the middle value, board estimate mean
+0.8 s, worst 41.2 s, the solver extraction as before). Three problems
+of gain with an interval that covers zero comfortably, after a cross-validation that predicted a
+loss: not a result to ship.
+
+**Verdict.** `OPTION_PRIOR=0`. The prior stays in the repository as a negative result: with
+honest thresholds, the strata of M3Kang do not have option priors that beat the middle value, and
+the gains that look real on training (+8 here, +10 there) are the maximum of eleven rules over small
+groups. The one direction with some support is the lenient parser (102 noisy numeric problems where
+the current policy answers D), but no rank rule beat D on them by 10, and out of fold the kind
+stratification lost. Everything is reproducible with the script; a bigger training set (the
+Catalan copies of the same problems are not new problems) could change the picture.
+## Experiment 6: brief reasoning by the 0.8B itself (`copilot/think.py`, flag `THINK_LEVELS`)
+
+**Hypothesis.** Every policy above asked the model for one token with the reasoning switched
+off. A few lines of working before the letter might turn the 0.8B's near-chance letter into
+something better on the easier problems, if they fit the board's clock: a 150-token prompt
+leaves about 200 output tokens inside `EXPERIMENT_BUDGET_SECONDS=50` (13 s to read, 36 s to
+write at 5.6 tokens/s).
+
+**What the server allows (checked against the running `2cbe0ec`, not assumed).** The Qwen3.5
+template honours `chat_template_kwargs: {"enable_thinking": true}` per request
+(`/apply-template` ends the prompt with `<think>\n`), but the service's `--reasoning-budget 0`
+closes the block at once: the completion is identical to the one without it (same text, empty
+`reasoning_content`). Real thinking mode, through `/completion` with a hand-edited prompt,
+spent 250 tokens on the simplest sample problem ("Thinking Process: 1. Analyze the Request...")
+and had not reached an answer: 45 s of board time for nothing. With the block closed the model
+still writes a short solution when asked ("Anna starts with 3 bags ... The correct answer is
+C) 10", 63 tokens), so the working goes in the content, in **one** request, and the letter is
+read from the text: an explicit `Answer: X` line (the prompt asks for it), else "the answer
+is X", `**X)**`, a lone `X)` on the last lines, or the option whose value equals the last
+number written, when the five options are distinct numbers. A working cut by `max_tokens`
+only counts an explicit `Answer:` line: on the smoke run its last number or letter was the
+middle of a case analysis ("If a = 7", "Comparing to the options: A) 16"). Anything else
+abstains and the usual policy answers (middle value, then D). Two requests (working, then a
+grammar-forced letter that sees it) were ruled out by the cache: this hybrid model restores
+its state only at the start of the last user message, so the second request would re-read
+problem and working, about 300 tokens, 26 s.
+
+**Budget.** The prompt is counted with `/tokenize` (one cheap request; the 3-characters-per-
+token guess is used if it fails), the system prompt is added when the cache is cold, and
+`max_tokens` is what fits in the budget at the board's speeds, capped at `THINK_MAX_TOKENS=200`;
+fewer than `THINK_MIN_TOKENS=80` left means no request. The guess was 2 to 6 tokens above the
+server's `prompt_n` on warm runs and 30 below on the first, cold problem of a run (the system
+prompt): the 10 s between the 50 s budget and the 60 s limit cover it. Measured on the laptop:
+think requests cost 42.2 s of board time on average (median 46.5, worst 51.5), none over 60.
+
+**Protocol.** Validation: the 281 English problems. Decision set: a stratified sample of the
+English training problems by level (0 to 7) x figure (`text_only`) x numeric options
+(`ladder.numeric_options`), proportional with at least one per stratum, seed 42
+(`dev/stratified_sample.py`, 297 ids, `eval.py --ids`). Both sets were run with the stage on
+every level and both kinds of problem (`THINK_LEVELS=all THINK_TEXT_ONLY=0`) and with the
+shipped policy, and compared problem by problem (paired bootstrap, 10 000 resamples, seed 42).
+The stage is skipped when a problem has no five options (114 of 281, 112 of 297) or when the
+budget is gone after a solver read the text (5 and 6).
+
+**Result, everything on.** Validation **76/281 = 27.0%** against 77 for the shipped policy
+(gain -1, 95% [-11, +9], P(gain <= 0) = 0.61). Training sample **82/297 = 27.6%** against 75
+(gain +7, 95% [-5, +20], P = 0.15). The model answered 66 validation problems (18 right, the
+shipped policy was right on 19 of them) and 84 training problems (28 right against 21). Of
+the 162 + 179 requests, **97 + 95 hit the 200-token cap** without an `Answer:` line and
+abstained: the model writes long, LaTeX-heavy working, and the board's 5.6 tokens/s is the
+binding constraint, not the prompt.
+
+By stratum, gain of the stage over the shipped policy (think's letter where it answered,
+the shipped policy elsewhere):
+
+| stratum | val gain, 95%, P(<=0) | answered (think right / shipped right) | train gain, 95%, P(<=0) | answered |
+| --- | --- | --- | --- | --- |
+| all | -1 [-11, +9] 0.61 | 66 (18 / 19) | +7 [-5, +20] 0.15 | 84 (28 / 21) |
+| level 0 | -4 | 6 (1 / 5) | +1 | 7 (3 / 2) |
+| level 1 | -2 | 5 (0 / 2) | +1 | 7 (2 / 1) |
+| level 2 | +4 | 4 (4 / 0) | 0 | 5 (0 / 0) |
+| level 3 | 0 | 2 (1 / 1) | +3 | 6 (4 / 1) |
+| level 4 | +2 | 10 (2 / 0) | +3 | 20 (8 / 5) |
+| level 5 | +2 | 17 (5 / 3) | 0 | 14 (4 / 4) |
+| level 6 | -2 | 12 (3 / 5) | -3 | 13 (3 / 6) |
+| level 7 | -1 | 10 (2 / 3) | +2 | 12 (4 / 2) |
+| no figure (`text_only`) | -2 [-9, +5] 0.77 | 31 | +5 [-5, +16] 0.20 | 49 |
+| with a figure | +1 [-7, +8] 0.45 | 35 | +2 [-5, +9] 0.34 | 35 |
+| numeric options | -3 [-11, +5] 0.81 | 44 | +1 [-9, +12] 0.47 | 58 |
+| non-numeric options | +2 [-4, +8] 0.32 | 22 | +6 [-1, +13] 0.045 | 26 |
+| **levels 2 to 5** | **+8 [+2, +14] 0.004** | 33 (12 / 4) | **+6 [-3, +15] 0.12** | 45 (16 / 10) |
+| levels 2 to 4 | +6 [+2, +11] 0.002 | 16 (7 / 1) | +6 [-2, +14] 0.08 | 31 (12 / 6) |
+| levels 1 to 5 | +6 [-1, +13] 0.05 | 38 | +7 [-3, +17] 0.10 | 52 |
+| levels 2 to 6 | +6 [-2, +14] 0.08 | 45 | +3 [-8, +14] 0.33 | 58 |
+| levels 0 to 3 | -2 [-9, +5] 0.77 | 17 | +5 [-1, +11] 0.06 | 25 |
+
+**Reading it.** The guess that went in (low levels without a figure) is wrong: levels 0 and 1
+lose on validation (the model's working on the easiest problems replaced 7 right answers of
+the prior with 1), and `text_only` is a wash. The only stratum positive on both sets with a
+usable size is **levels 2 to 5**: 78 problems answered over the two sets, the model right on
+28, the shipped policy on 14; validation +8 with an interval that excludes zero, training +6
+with one that does not. Caveat, stated plainly: that stratum was picked after looking at
+eleven candidates, so its validation interval is optimistic (the pick itself is part of the
+luck). Levels 6 and 7 lose or wash on both sets, and should never run the stage: the model's
+working on hard problems is wrong more often than the prior.
+
+**A shorter instruction (`THINK_STYLE=short`, now the default).** The first prompt asked for
+"at most 6 short lines" and got LaTeX and case analyses. Asking for plain text, no LaTeX and at
+most 60 words cut the cap hits from 95 to 70 of 179 requests on the training sample, the cost
+from 40 to 35 s per request, and raised the answered problems from 84 to 109. The same first
+run of this style on each set (no further tuning):
+
+| set | shipped | short style, every level | gain, 95%, P(<=0) | answered (think right / shipped right) | levels 2 to 5 only |
+| --- | ---: | ---: | --- | --- | --- |
+| training sample, 297 | 75 | **84** | +9 [-5, +23] 0.11 | 109 (37 / 28) | +8 [-2, +18] 0.07, 57 answered (22 / 14) |
+| validation English, 281 | 77 | **79** | +3 [-10, +16] 0.35 | 99 (30 / 27) | +4 [-4, +12] 0.20, 50 answered (14 / 10) |
+| validation Catalan, 281 | 73 | **80** | +6 [-7, +18] 0.20 | 102 (32 / 26) | +6 [-3, +15] 0.11, 59 answered (18 / 12) |
+| the three pooled, 859 | 225 | 243 | +18 [-4, +41] 0.063 | 310 (99 / 81) | +18 [+3, +34] 0.013 |
+
+(Gains are "think's letter where it answered, the shipped policy elsewhere", paired per
+problem; the run's own totals differ by one where a solver skip changed the fallback.) The
+sign is the same on all three sets, the size is 1 to 3 points, no single set reaches P < 0.05,
+and the pooled interval leans on two sets that are translations of each other. The levels 2 to
+5 pooled interval excludes zero, but that stratum was picked on the steps-style English data;
+its only clean confirmation is the Catalan set (+6, P = 0.11). Cost: 36 s per request, about
+21 s per problem on every level and 13 s on levels 2 to 5.
+
+**Catalan, the same 281 problems.** `data/val.jsonl` carries each validation problem in
+Catalan too (same ids, OCR options of their own: the shipped policy is 73/281 there, the
+middle value fires on 123). The stage, with the same English instruction, writes English
+working on 142 of 172 requests (the rest mix the two languages), the prompts are longer
+(mean 150 tokens, max 255) and 87 of 172 hit the cap. Result: **66/281 against 73**, gain -7
+[-17, +3], P = 0.93; **levels 2 to 5: -3** [-9, +3] (47 answered, think right on 8, the shipped
+policy on 11); non-numeric 0; levels 6 and 7 -1. The stratum that gained +8 on the English
+versions of these very problems loses 3 on their Catalan versions: the English gain was
+noise plus selection, not a property of the levels.
+**Time.** The stage costs about 42 s of board time per request, whatever the result (a
+cut-off working costs the same as a parsed one). With `THINK_LEVELS=2,3,4,5` on the 281
+validation problems, 84 requests: board estimate mean 13.4 s per problem, median 0, worst
+51.5 s, 63 minutes for the set; the shipped policy takes 4 minutes, the stage on every level
+118. For the exam, per problem, from the validation runs: shipped policy
+(`THINK_LEVELS` empty) mean 0.8 s, worst 38 s (a family solver's extraction); with
+`THINK_LEVELS=2,3,4,5` mean 13.4 s (English) / 13.5 s (Catalan), worst 52 s, that is 4 minutes
+against 63 minutes per 281 problems. A 300-problem exam: about 4 minutes with the shipped
+policy, about 67 minutes with the stage on levels 2 to 5, about 2 hours on every level. The
+board run (Experiment 7) gives the real seconds behind these estimates.
+
+## Experiment 7: the board, 50 problems (`eval.py --limit 50`, real seconds)
+
+Run on the UNO Q from a copy of this branch in `~/reason-think` (next to the controller's
+checkout, never inside it), against the shared servers, with `THINK_LEVELS=2,3,4,5
+THINK_TEXT_ONLY=0`, the steps instruction and `THINK_BUDGET_SECONDS=45`: the 50-problem sample
+of `eval.py --limit 50 --languages eng` (its always-D floor is 17/50 = 34%).
+
+**Accuracy: 16/50 = 32.0%**, the same 16 as the laptop with the same policy on the same 50;
+48 of 50 answers identical (the two differences are workings that changed a token between
+machines: the model's working is deterministic on one server, not bit-stable across two). 12
+think requests, 5 answered (3 right), 6 cut at the cap (fell to the middle value or D), 1
+skipped by the budget after a solver's extraction had read the text. No solver fired, every
+status `ok`.
+
+**Time, real seconds on the board:** mean 10.0 s, median 0, **worst 47.9 s**, 8.3 minutes for
+the 50, none over 60 s; the token estimate said mean 9.7, worst 47.5. On the 13 model requests
+real time was 0.99 to 1.10 of the estimate (mean 1.04) for the working, and **1.33** for the one
+solver extraction (estimated 28.8 s, real 38.2 s: a grammar-constrained JSON on a cold cache).
+Hence two budgets, both in `config.env`: `THINK_BUDGET_SECONDS=45` (real worst case about 50 s;
+in a first run without it a request estimated at 49.5 s hit the 57 s HTTP timeout, answered
+by the middle value at 57.1 s) and `SOLVER_BUDGET_SECONDS=42` (real worst case about 56 s). The
+HTTP timeout, the seconds really left minus the 3 s margin, is the backstop behind both, and
+every skip or timeout falls to the usual policy, so a row never lacks a letter.
+
+**Exam time with the shipped policy** (`THINK_LEVELS` empty): on these 50 the shipped policy
+spends 38 s on one problem (the extraction) and 0 on the rest, 0.8 s per problem on average on
+the 281; a 300-problem exam is about 4 minutes, worst problem under 60 s. With
+`THINK_LEVELS=2,3,4,5`: 10 s per problem here, 13 s on the 281 (the sample has fewer
+five-option problems on those levels), about 50 to 65 minutes per 300 problems, worst problem
+about 50 s.
+
+**The board itself.** During the first run the board hard-reset twice (18:39 and 18:41 UTC,
+`last -x` shows "crash", the journal ends mid-request with no shutdown messages, no OOM; the
+boot of 15:37 had also ended in a crash, before any of this ran). Memory was 2.7 GB available
+and the CPU at 35 C each time. The final run then completed 50 problems in 8 minutes without
+incident. Whoever runs the exam should know the board can reset on its own and `predict.py`
+writes each row as it goes (`out.flush()`), so a restart can resume from the last row written.
+
 ## Decision
 
 `MIDDLE_VALUE=1` is the default in `config.env` (review of 14 Nov): it is the only change
@@ -186,9 +614,26 @@ non-numeric options, with OCR noise or with repeated values still gets D. It is 
 the distractors, not reasoning, and the bootstrap says the hidden-test gain can be anything
 from -2 to +26 problems. `LETTER_MODEL=0`, `VALUE_MODEL=0` and `VOTE_SHIFTS=0` stay: the
 0.8B's choice carries no information whether it writes a letter, a value, or five letters,
-and the 2B is too slow for the board and no better. `tests/test_reason_policy.py` checks
+and the 2B is too slow for the board and no better. `OPTION_PRIOR=0` stays too: no stratum has
+a better option prior than the middle value by a margin that survives cross-validation
+(experiment 5). `tests/test_reason_policy.py` checks
 that the Teach modules import none of this and that `predict.py` answers a letter in every
 case (no options, words, noise, duplicates, server down).
+
+**Brief reasoning (Experiments 5 and 6), after the grade became 50% Reasoning.** `THINK_LEVELS`
+stays **empty** (off) in `config.env`. The stage works as built: one request sized by the board
+clock, real time within 0.99 to 1.10 of the estimate on the board, a 57 s HTTP timeout and the
+usual policy behind every skip, so `predict.py` never passes 60 s and never lacks a letter. What
+it does not do is win clearly. With the short instruction it gains 1 to 3 points on each of the
+three sets (training sample +9, English validation +2, Catalan +7; pooled +18 of 859, P = 0.063),
+and on levels 2 to 5 the pooled interval excludes zero (+18, [+3, +34]), but that stratum was
+chosen after looking, no single set reaches P < 0.05, and the first instruction lost 7 on the
+Catalan set. The price is 13 s per problem on levels 2 to 5 (36 s per request), 65 minutes per
+300 problems against 4. If the controller wants the expected +1 to +2 points and the exam has
+no total-time cap, `THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0` (`THINK_STYLE=short`,
+`THINK_BUDGET_SECONDS=45`) is the setting measured here; levels 0, 1, 6 and 7 should never run
+it (they lose on validation). Levels 2 to 5 with the figure problems included: `THINK_TEXT_ONLY=0`,
+because the figure problems did not lose (+1, +2) and the text-only ones did not win.
 
 ## Reproduce
 
@@ -198,6 +643,17 @@ MIDDLE_VALUE=1 python3 eval.py --input data/train.jsonl --limit 0 --languages en
 VALUE_MODEL=1 python3 eval.py --limit 0 --languages eng --name R-value08-eng281
 VOTE_SHIFTS=5 python3 eval.py --limit 0 --languages eng --name R-vote5-08-eng281
 LLM_PORT=8091 LETTER_MODEL=1 SOLVERS=0 python3 eval.py --limit 50 --languages eng --name R-2bq4-letter-eng50
+python3 laptop/learn_prior.py --cv 5                                   # experiment 5: tables and cross-validation on train
+python3 laptop/learn_prior.py --strata "level,picture,kind;level,kind;picture,kind;level;kind;picture;kind,order;kind,fraction;kind,pi_root;kind,none_text;kind,distinct;language,kind" --validate
+OPTION_PRIOR=1 python3 eval.py --limit 0 --languages eng --name R-prior-eng281
+# Experiment 6: the stratified training sample, then the stage on every level and the shipped policy, per set
+python3 dev/stratified_sample.py > results/train-strat300.ids
+THINK_LEVELS=all THINK_TEXT_ONLY=0 python3 eval.py --limit 0 --languages eng --name T-think-all-eng281
+THINK_LEVELS=all THINK_TEXT_ONLY=0 python3 eval.py --input data/train.jsonl --ids results/train-strat300.ids --limit 0 --languages eng --name T-think-all-train297
+THINK_LEVELS=all THINK_TEXT_ONLY=0 python3 eval.py --limit 0 --languages cat --name T-think-all-cat281
+python3 eval.py --limit 0 --languages eng --name T-base-eng281   # and --ids / --languages cat likewise
+# Experiment 7, on the board, from a copy of the branch next to the controller's checkout
+THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0 python3 eval.py --limit 50 --languages eng --name B-final-l25-eng50
 ```
 
 Each run adds a line to `results/ablations.csv` with its commit and writes the per-problem

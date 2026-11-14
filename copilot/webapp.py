@@ -24,6 +24,27 @@ LANGS = ("cat", "eng")
 TOPIC_NAMES = {t["key"]: t for t in topics.TOPICS}
 # Rung 0 counters survive a restart of the app here (data/ is git-ignored, no problem text inside)
 RUNG0_FILE = os.path.join(ROOT, "data", "rung0.json")
+# Answer options read again from the scans on the laptop (laptop/reocr_options.py), for the problems
+# whose first OCR left none or noisy ones. Shown on the page as text instead of pieces cut from the
+# scan; the problem itself (what the predictor, the hints and the trainer see) keeps the bank's options.
+OPTIONS_OCR_FILE = os.path.join(ROOT, "data", "options_ocr.jsonl")
+_options_ocr = None
+
+
+def _options_overlay():
+    """{"id|lang": {"A": ..}} from OPTIONS_OCR_FILE, read once; empty when the file is missing."""
+    global _options_ocr
+    if _options_ocr is None or _options_ocr.get("_path") != OPTIONS_OCR_FILE:
+        table = {"_path": OPTIONS_OCR_FILE}
+        if os.path.exists(OPTIONS_OCR_FILE):
+            with open(OPTIONS_OCR_FILE, encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        row = json.loads(line)
+                        if row.get("key") and row.get("options"):
+                            table[row["key"]] = {k: str(v) for k, v in row["options"].items()}
+        _options_ocr = table
+    return _options_ocr
 
 
 def _empty_counts():
@@ -150,6 +171,9 @@ class Session:
         if not p:
             return None
         shown = {k: v for k, v in p.items() if k != "label"}
+        overlay = _options_overlay()
+        if overlay.get(f"{p['id']}|{p.get('language', 'cat')}"):
+            shown["options"] = overlay[f"{p['id']}|{p.get('language', 'cat')}"]
         shown["has_image"] = hints._image_path(p["id"], p.get("language", "cat")) is not None
         topic = p.get("topic") or topics.get_topic(p["id"])
         shown["topic"] = topic
@@ -159,7 +183,8 @@ class Session:
         other = hints.problem_for(p["id"], "eng" if p.get("language") == "cat" else "cat")
         if other and other.get("language") != p.get("language"):
             shown["text_" + other["language"]] = other["text"]
-            shown["options_" + other["language"]] = {k: v for k, v in (other.get("options") or {}).items()}
+            other_options = overlay.get(f"{p['id']}|{other['language']}") or other.get("options") or {}
+            shown["options_" + other["language"]] = {k: v for k, v in other_options.items()}
         return shown
 
     def _shown_language(self):
@@ -191,6 +216,7 @@ class Session:
         self.message = {"ca": "Tria una resposta o demana una pista.", "en": "Choose an answer, or ask for a hint."}
         hints.prefetch(self.problem["id"], self.lang)
         self._show_mastery()
+        led.show_hints_left(HINT_MAX_USES, HINT_MAX_USES)   # the matrix: blocks for the hints still available
         self._record("next", started)
 
     # ------------------------------------------------------------ handlers
@@ -295,7 +321,7 @@ class Session:
             self.answer = {"letter": letter, **result}
             self.rung0.answer(self.student, self.rung0_uses > 0, result["correct"])
             self.mastery = trainer.mastery_map(self.student)
-            led.show_result(result["correct"])
+            led.show_answer(letter, result["correct"])
             if result["correct"]:
                 self.message = {"ca": "Molt bé, correcte!", "en": "Correct!"}
             else:
@@ -352,6 +378,9 @@ class Session:
         with self.lock:
             if not self.problem or self.busy:
                 return {"error": "busy" if self.busy else "no problem"}
+            # Hints stay available after the answer: a student who got it wrong may want to try
+            # again by themselves with a hint before reading the solution (mastery was already
+            # recorded with the rung used before answering, so this changes no score).
             if self.hint_uses >= HINT_MAX_USES:
                 # The ladder is capped: three hints per problem, then the student answers or asks
                 # for the solution on purpose. Rung 0 (the other language) does not count.
@@ -360,6 +389,7 @@ class Session:
                 return {"error": "no hints left", "hints_left": 0}
             self.hint_uses += 1
             self.busy = True
+            led.pulse(True)
             if HINT_LESSON_ON_LAST and self.hint_uses == HINT_MAX_USES:
                 # the fourth hint: a short lesson on this kind of problem, not another step
                 if not self.answer:  # after the answer the verdict stays on screen
@@ -378,6 +408,7 @@ class Session:
             if not self.problem or self.busy:
                 return {"error": "busy" if self.busy else "no problem"}
             self.busy = True
+            led.pulse(True)
         threading.Thread(target=self._compute_hint, args=(4,), daemon=True).start()
         return {"ok": True, "busy": True, "rung": 4}
 
@@ -426,6 +457,9 @@ class Session:
                 self.rung = max(self.rung, rung)
                 self.message = {"ca": "", "en": ""}
             self.busy = False
+            led.pulse(False)
+            if self.problem and self.problem["id"] == problem_id and not self.answer:
+                led.show_hints_left(max(0, HINT_MAX_USES - self.hint_uses), HINT_MAX_USES)
             self._record(f"{label}:{result.get('kind')}", started, result.get("estimated_board_seconds", 0.0))
 
     def image(self):
@@ -465,6 +499,17 @@ class Session:
             out["students"][s] = trainer.mastery_map(s)
         return out
 
+    def teacher_log(self):
+        """Every answer, so the page can diagnose a student (trend, hints, time, letter bias).
+        Served apart from the report: the page polls the report every 3 s and this on demand."""
+        log = getattr(trainer, "answer_log", None)
+        if not callable(log):
+            return {}
+        try:
+            return {"log": log()}
+        except Exception as error:
+            return {"log_error": f"answer_log: {type(error).__name__}: {error}"}
+
     def estimate(self, prompt_tokens, output_tokens):
         """Board seconds for a request of this size (the page shows it next to measured times)."""
         return {"board_seconds": round(estimate_tokens(int(prompt_tokens), int(output_tokens)), 2)}
@@ -489,7 +534,8 @@ def _normalise_report(data, out):
         levels = row.get("by_level") or {}
         by_level[name] = {str(lvl): {"correct": int(v.get("correct") or 0), "total": int(v.get("answers", v.get("total", 0)) or 0)}
                           for lvl, v in levels.items()}
-        out.setdefault("details", {})[name] = {k: row.get(k) for k in ("base_level", "diagnostic_done", "answers", "correct", "reviews")}
+        out.setdefault("details", {})[name] = {k: row.get(k) for k in ("base_level", "start_level", "diagnostic_done", "answers", "correct", "reviews")}
+        out.setdefault("by_topic", {})[name] = row.get("by_topic") or {}
     out["by_level"] = by_level if any(by_level.values()) else None
     return out
 
@@ -521,6 +567,7 @@ def routes(session=SESSION):
         ("GET", "/api/led", session.led_frame),
         ("GET", "/api/led/path/{grid}", session.led_path),
         ("GET", "/api/teacher", session.teacher),
+        ("GET", "/api/teacher/log", session.teacher_log),
         ("GET", "/api/estimate/{prompt_tokens}/{output_tokens}", session.estimate),
     ]
 

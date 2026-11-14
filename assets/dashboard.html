@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quadre de decisions</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Decision dashboard: one question per panel, the measurement, the conclusion, the decision.
+     No network, no libraries: the board is offline. Data is embedded below with its source. */
+  main.dash { max-width: 1100px; margin: 0 auto; padding: 0 16px 48px; }
+  .dash h1 { font-size: 26px; margin: 18px 0 6px; }
+  .dash .lede { color: var(--muted); max-width: 72ch; margin: 0 0 18px; }
+  .dash .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 26px; }
+  .dash .tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .dash .tile .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .dash .tile .v { font-size: 34px; font-variant-numeric: tabular-nums; margin: 4px 0 2px; }
+  .dash .tile .s { font-size: 12px; color: var(--muted); }
+  .dash section.q { border-top: 1px solid var(--line); padding: 22px 0; display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 22px; }
+  @media (max-width: 760px) { .dash section.q { grid-template-columns: 1fr; } }
+  .dash .ql { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 0 0 4px; }
+  .dash h2 { font-size: 18px; margin: 0 0 10px; }
+  .dash .chart { position: relative; }
+  .dash .chart svg { width: 100%; height: auto; display: block; }
+  .dash .chart text { font: 12px system-ui, sans-serif; fill: var(--muted); }
+  .dash .chart text.val { fill: var(--ink); font-weight: 600; }
+  .dash .tip { position: absolute; display: none; pointer-events: none; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; font-size: 12px; white-space: nowrap; z-index: 2; }
+  .dash .verdict { display: grid; gap: 12px; align-content: start; }
+  .dash .box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; font-size: 14px; line-height: 1.45; }
+  .dash .box .h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+  .dash .box.decision { border-left: 4px solid var(--ok); }
+  .dash .box.decision.open { border-left-color: #8a5a00; }
+  .dash .box.decision.closed { border-left-color: var(--muted); }
+  .dash .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .dash table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .dash th, .dash td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .dash th { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .dash td.r, .dash th.r { text-align: right; }
+  .dash .wrap { overflow-x: auto; }
+  .dash .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; border: 1px solid var(--line); }
+  .dash .pill.shipped { color: var(--ok); } .dash .pill.open { color: #8a5a00; } .dash .pill.closed { color: var(--muted); }
+  .dash .src { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .dash .foot { color: var(--muted); font-size: 12px; margin-top: 26px; }
+  .dash .langbar { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 10px; }
+  .dash .langbar a { text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; }
+  .dash button.lang { font: inherit; min-height: 44px; min-width: 44px; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .dash button.lang[aria-pressed="true"] { background: var(--ink); color: var(--card); }
+</style>
+</head>
+<body>
+<main class="dash">
+  <div class="langbar">
+    <a href="teacher.html" id="back">← <span data-t="back"></span></a>
+    <span><button class="lang" id="lang-ca" aria-pressed="true">CA</button> <button class="lang" id="lang-en" aria-pressed="false">EN</button></span>
+  </div>
+  <h1 data-t="title"></h1>
+  <p class="lede" data-t="lede"></p>
+  <div class="tiles" id="tiles"></div>
+  <div id="panels"></div>
+  <p class="foot" data-t="foot"></p>
+</main>
+
+<script>
+// ---- Data: every number was measured by the team; "src" says where. ----
+// Places tied to the shipped Reason policy (middle-value rule); change together if another policy wins:
+// (1) T.*.lede, (2) tile 3 (t3/t3s) and the policies rows with set "board", (3) T.*.d1, (4) decisions row 1 evidence,
+// (5) decisions row 2, (6) the policies legend. All numbers are read from DATA.policies.
+const DATA = {
+  policies: { src: "eval.py on val (281 English problems) and predict.py on the board (562 problems, English + Catalan); docs/results-A.md",
+    rows: [
+      {set: "val", policy_ca: "Sempre D", policy_en: "Always D", acc: 23.1, n: 281, kind: "floor"},
+      {set: "val", policy_ca: "A l'atzar", policy_en: "Random", acc: 20.0, n: 281, kind: "floor"},
+      {set: "val", policy_ca: "Lletra del model (0,8B)", policy_en: "Model letter (0.8B)", acc: 21.7, n: 281, kind: "llm"},
+      {set: "val", policy_ca: "Biaix de lletra corregit", policy_en: "Letter bias corrected", acc: 17.8, n: 281, kind: "llm"},
+      {set: "val", policy_ca: "Solvers per família, si no D", policy_en: "Family solvers, else D", acc: 23.1, n: 281, kind: "code"},
+      {set: "val", policy_ca: "Regla del valor central", policy_en: "Middle-value rule", acc: 27.4, n: 281, kind: "code"},
+      {set: "board", policy_ca: "Sempre D (placa, 562)", policy_en: "Always D (board, 562)", acc: 23.1, n: 562, kind: "floor"},
+      {set: "board", policy_ca: "Entregat: valor central (placa, 562)", policy_en: "Shipped: middle value (board, 562)", acc: 26.7, n: 562, kind: "code"}]},
+  confidence: { src: "Log-probabilities of the five letters stored by eval.py, 281 val problems, split in quartiles of the margin between the two best letters",
+    rows: [{q_ca: "Q1 menys segur", q_en: "Q1 least confident", acc: 25.7}, {q_ca: "Q2", q_en: "Q2", acc: 21.4}, {q_ca: "Q3", q_en: "Q3", acc: 22.9}, {q_ca: "Q4 més segur", q_en: "Q4 most confident", acc: 16.9}]},
+  topics: { src: "docs/error-analysis.md, letter-model run on val (281); topics from data_curated/topics.json (76% agreement with 50 hand labels)",
+    rows: [
+      {topic: "arithmetic", kind: "text", n: 53, acc: 21, d: 19}, {topic: "logic", kind: "text", n: 13, acc: 15, d: 23},
+      {topic: "digits", kind: "text", n: 55, acc: 25, d: 25}, {topic: "counting", kind: "text", n: 10, acc: 20, d: 30},
+      {topic: "areas", kind: "visual", n: 63, acc: 21, d: 25}, {topic: "angles", kind: "visual", n: 6, acc: 33, d: 0},
+      {topic: "spatial", kind: "visual", n: 61, acc: 20, d: 21}, {topic: "boards", kind: "visual", n: 20, acc: 25, d: 30}]},
+  solvers: { src: "copilot/solvers on the 911 English training problems with readable options; docs/results-A.md",
+    rows: [{family: "ages", c: 17, f: 0, r: 0, w: 0}, {family: "average", c: 15, f: 0, r: 0, w: 0}, {family: "consecutive", c: 11, f: 3, r: 2, w: 1}, {family: "digit_count", c: 5, f: 1, r: 1, w: 0}]},
+  latency: { src: "docs/results-A.md: board constants from board/calibrate_speed.py (11.4 tok/s read, 5.6 written, 0.12 s per embedding), solver estimates 12.6 to 15.9 s, letter-model baseline on the board (n=50), official run on the board (562); rung 3 median with prefetch from the hint ladder measurement",
+    rows: [
+      {step_ca: "Esglaó 1: veí més fàcil", step_en: "Rung 1: easier neighbour", s: 0.12},
+      {step_ca: "Esglaó 2: fitxa d'estratègia", step_en: "Rung 2: strategy card", s: 0.01},
+      {step_ca: "Esglaó 3: pista amb prefetch (med.)", step_en: "Rung 3: hint with prefetch (median)", full_ca: "Esglaó 3: pista del model amb prefetch, mediana, estimació", full_en: "Rung 3: model hint with prefetch, median, estimate", s: 12.6},
+      {step_ca: "Lletra del model, 1 problema (mitjana)", step_en: "Letter model, 1 problem (mean)", full_ca: "Lletra del model, un problema, mitjana real a la placa, n=50", full_en: "Letter model, one problem, real mean on the board, n=50", s: 10.3},
+      {step_ca: "Extracció JSON d'un solver (màx.)", step_en: "Solver JSON extraction (max)", full_ca: "Extracció JSON d'un solver, màxim, estimació 12,6 a 15,9 s", full_en: "Solver JSON extraction, max, estimate 12.6 to 15.9 s", s: 15.9},
+      {step_ca: "Pitjor problema oficial (real)", step_en: "Worst official problem (real)", full_ca: "Pitjor problema de l'execució oficial a la placa, real, 562 problemes", full_en: "Worst problem of the official run on the board, real, 562 problems", s: 38.7, worst: true}]},
+  hints: { src: "Hint ladder measurements (docs/results-A.md, data_curated/hint_quality.json): leaks on the 10 sample problems and the 66-problem validation batch, judged by code; the quality rows are a draft by the tool on 3 hints per language, marked in hint_quality.json for the team to redo",
+    rows: [
+      {m_ca: "Filtracions, prompt pla (10 problemes de mostra)", m_en: "Leaks, plain prompt (10 sample problems)", v: 5, of: 10, bad: true},
+      {m_ca: "Filtracions, pregunta única + gramàtica sense dígits (mostra)", m_en: "Leaks, single question + digit-free grammar (sample)", v: 0, of: 10, bad: true},
+      {m_ca: "Rebutjades pel filtre (lot de validació)", m_en: "Rejected by the filter (validation batch)", v: 3, of: 66, bad: true},
+      {m_ca: "Encara rebutjades després d'un reintent", m_en: "Still rejected after one retry", v: 1, of: 66, bad: true},
+      {m_ca: "Pistes en català bones (esborrany de l'eina, n=3, pendent de judici humà)", m_en: "Catalan hints good (tool draft, n=3, awaiting human judgment)", v: 0, of: 3, bad: false},
+      {m_ca: "Pistes en anglès bones (esborrany de l'eina, n=3)", m_en: "English hints good (tool draft, n=3)", v: 2, of: 3, bad: false}]},
+  ram: { src: "free -m (available) and process RSS on the UNO Q with both servers, the relay and the app running; RSS counts file-backed pages the kernel also reports as cache, so the two bars are not additive",
+    total: 3669, rows: [{c_ca: "Servidor LLM (Qwen3.5 0,8B)", c_en: "LLM server (Qwen3.5 0.8B)", mb: 1059}, {c_ca: "Embeddings (bge-small)", c_en: "Embeddings (bge-small)", mb: 75}, {c_ca: "Contenidor App Lab", c_en: "App Lab container", mb: 91}, {c_ca: "Lliure (free -m)", c_en: "Available (free -m)", mb: 2609, free: true}]},
+  trainer: { src: "python3 -m copilot.simulate --bank data --steps 60 (real bank of 1,747 problems, neighbours from retrieval), run on 2026-11-14; random student: 3 runs",
+    rows: [
+      {s_ca: "llindar 2", s_en: "threshold 2", conv_ca: "sí", conv_en: "yes", band: "2-3", steps: 3, same: 100, mastered: 3},
+      {s_ca: "llindar 5", s_en: "threshold 5", conv_ca: "sí", conv_en: "yes", band: "5-6", steps: 3, same: 100, mastered: 3},
+      {s_ca: "sempre encerta", s_en: "always right", conv_ca: "sí", conv_en: "yes", band: "7-7", steps: 4, same: null, mastered: 8},
+      {s_ca: "millora (+1 nivell cada 8)", s_en: "improving (+1 level / 8)", conv_ca: "segueix", conv_en: "follows", band: "6-7", steps: 32, same: 89, mastered: 5},
+      {s_ca: "només amb pistes", s_en: "hints only", conv_ca: "topall", conv_en: "capped", band: "7-7", steps: 4, same: null, mastered: 0},
+      {s_ca: "a l'atzar 20% (3 rèpliques)", s_en: "random 20% (3 runs)", conv_ca: "no", conv_en: "no", band: "0-1", steps: null, same: "94-95", mastered: 0}]},
+  retrieval: { src: "Retrieval and Catalan-bridge measurements (data branch): 20 neighbours judged by hand, 60 val ids queried in both languages, OCR coverage from prepare_m3kang.py",
+    rows: [
+      {m_ca: "El veí és més fàcil (judici manual)", m_en: "Neighbour is easier (hand judged)", v: 20, of: 20},
+      {m_ca: "El veí és del mateix tema real", m_en: "Neighbour on the same real topic", v: 15, of: 20},
+      {m_ca: "Veïns del propi tema, consulta en anglès", m_en: "Neighbours in own topic, English query", v: 43, of: 60},
+      {m_ca: "Veïns del propi tema, consulta en català", m_en: "Neighbours in own topic, Catalan query", v: 26, of: 60, cat: true},
+      {m_ca: "Solapament dels 5 veïns, català vs anglès", m_en: "Top-5 overlap, Catalan vs English", v: 10, of: 60, cat: true},
+      {m_ca: "Opcions llegides per OCR (tots els problemes)", m_en: "Options read by OCR (all problems)", v: 2202, of: 3494}]},
+  decisions: { src: "docs/results-A.md and the branch reports", rows: [
+    {q_ca: "Ha de respondre el model al jurat?", q_en: "Should the model answer the jury?", e: "21.7% vs 23.1% (n=281); confidence anti-correlated", d_ca: "No: predict.py no demana mai la lletra (LETTER_MODEL=0).", d_en: "No: predict.py never asks for the letter (LETTER_MODEL=0).", st: "shipped"},
+    {q_ca: "Quina política de Reason entreguem?", q_en: "Which Reason policy ships?", e: "150/562 = 26.7% board vs 130/562; bootstrap -2..+26", d_ca: "Regla del valor central com a prior, mai a les pistes, amb l'interval.", d_en: "Middle-value rule as a prior, never in hints, interval reported.", st: "shipped"},
+    {q_ca: "Invertim en solvers per família?", q_en: "Invest in family solvers?", e: "4 fired / 911 train, 0 / 281 val", d_ca: "Parar a quatre famílies; resultat negatiu documentat.", d_en: "Stop at four families; documented negative result.", st: "closed"},
+    {q_ca: "On és el valor del producte?", q_en: "Where is the product value?", e: "Visual topics 21% (n=150) = chance; labels known", d_ca: "Track Teach: correcció amb l'oracle, entrenador adaptatiu, escala de pistes.", d_en: "Teach track: oracle correction, adaptive trainer, hint ladder.", st: "shipped"},
+    {q_ca: "Deixem que el model escrigui pistes?", q_en: "Let the model write hints?", e: "tool draft n=3: ca 0/3, en 2/3 (to be redone); leaks 5/10 vs 0/10 on samples", d_ca: "Per tema i amb judici humà (70%); gramàtica i filtre obligatoris; anglès opcional.", d_en: "Per topic by human judgment (70%); grammar and filter mandatory; English optional.", st: "shipped"},
+    {q_ca: "Precarreguem el problema a la memòria cau?", q_en: "Prefetch the problem into the cache?", e: "rung 3 median 12.6 s with the problem prefetched (estimate)", d_ca: "Prefetch en mostrar el problema.", d_en: "Prefetch on problem load.", st: "shipped"},
+    {q_ca: "Busquem veïns en català o en anglès?", q_en: "Search neighbours in Catalan or English?", e: "same topic 72% (en) vs 43% (ca)", d_ca: "Sempre el text anglès del mateix id; mostrar el català.", d_en: "Always the English text of the same id; show Catalan.", st: "shipped"},
+    {q_ca: "Algun pas arrisca els 60 s?", q_en: "Does any step risk 60 s?", e: "worst real 38.7 s; clock error +3.7%", d_ca: "Pressupost de reintent de 30 s; cap pas per sobre de 60.", d_en: "Retry budget 30 s; no step above 60.", st: "shipped"},
+    {q_ca: "Hi cap tot a la RAM?", q_en: "Does everything fit in RAM?", e: "2609 MB available with everything running", d_ca: "Sí; cap model més gran si no deixa 500 MB.", d_en: "Yes; no bigger model unless it leaves 500 MB.", st: "shipped"},
+    {q_ca: "L'entrenador situa bé l'alumne?", q_en: "Does the trainer place students right?", e: "threshold students settle in 3 steps; random student masters 0 topics (3 runs)", d_ca: "Regla de dos encerts mantinguda; mesurar amb persones.", d_en: "Two-wins rule kept; measure with people next.", st: "open"}]}
+};
+
+const T = {
+  ca: {
+    back: "Vista del professor", title: "Math on the Edge: què ha decidit la dada",
+    lede: "Totes les xifres les ha mesurat l'equip sobre la validació de M3Kang (281 problemes Cangur en anglès i 281 en català) o sobre la mateixa placa Arduino UNO Q. Cada panell fa una pregunta del repte, mostra la mesura i deixa escrita la decisió. El titular: un model de 0,8B no sap resoldre problemes Cangur, així que el copilot no el deixa provar-ho; ensenya, i l'únic guany de Reason que entreguem és un prior sobre com es construeixen els distractors.",
+    t1: "El model sol", t1s: "validació, 281 problemes. A l'atzar: 20%.", t2: "Sempre respondre D", t2s: "el terra que fixen els organitzadors", t3: "predict.py entregat, a la placa", t3s: "562 problemes; pitjor pas {w} s de 60", t4: "RAM lliure amb tot engegat", t4s: "de 3669 MB, mesurat amb servidors, relay i app engegats",
+    q1: "Ha de respondre el model les preguntes del jurat?", q1b: "Sap el model quan l'encerta?",
+    c1: "Demanada una lletra, el model de 0,8B fa un {a}%, per sota de sempre-D. Treure-li el biaix de lletra l'empitjora ({b}%), i el seu quartil més segur és el pitjor ({c}%). La lletra no porta informació.",
+    d1: "El model no respon mai per al jurat (LETTER_MODEL=0). L'únic que supera el terra és la regla del valor central, un prior sobre com els distractors envolten el valor correcte: {n} de 562 a la placa. El seu guany per bootstrap va de -2 a +26 problemes; l'entreguem com a prior i ho diem.",
+    q2: "On és el valor del copilot: resoldre o ensenyar?", c2: "A tots els temes el model queda entre l'atzar i sempre-D. Els temes visuals són {v} dels 281 problemes i el model no veu la figura. Però M3Kang dona la lletra correcta dels 1.747 problemes: el copilot no ha de resoldre res per corregir, triar el problema següent i guiar.",
+    d2: "Construir per al track Teach: les etiquetes són l'oracle, l'entrenador adapta el nivell per tema, l'escala de pistes guia sense la resposta, la matriu LED mostra el progrés. El model només classifica, extreu i escriu una frase curta.",
+    q3: "Pot el codi resoldre els problemes amb plantilla?", c3: "Quatre famílies disparen {f} vegades en 911 problemes i mai a la validació. Els problemes Cangur fan servir les paraules d'una plantilla dins d'endevinalles que no en segueixen cap. Guany net: uns 0,3 punts.", d3: "Parar a quatre famílies, guardar-les com a resultat negatiu documentat i dedicar les hores a la placa i a la demo.",
+    s3: "911 problemes d'entrenament en anglès amb opcions llegibles. Una família només dispara si el valor calculat coincideix amb exactament una opció.",
+    q4: "Pot el model escriure pistes, i com evitem que filtrin la resposta?", c4: "Un prompt pla va filtrar la resposta en {a} de 10 pistes; una sola pregunta sota una gramàtica sense dígits en va filtrar {b} de 10. El filtre de codi encara en rebutja {c} de 66. En un esborrany de l'eina sobre 3 pistes per idioma (pendent que ho jutgi una persona), les catalanes van sortir bones {d} de 3 i les angleses 2 de 3.",
+    d4: "Els esglaons 1 (un veí més fàcil) i 2 (una fitxa d'estratègia) no necessiten model. L'esglaó del model només s'obre per a temes que una persona hagi jutjat al 70% o més, sempre amb gramàtica i filtre, i es pot mostrar en anglès.",
+    q5: "Cap tot pas en 60 segons a la placa?", c5: "Tot el que espera l'alumne és instantani (recuperació, fitxes) o una crida al model de 10 a 16 s si el problema s'ha precarregat: la pista de l'esglaó 3 té una mediana estimada de {a} s. El rellotge que ho predeia es va calibrar a la placa: error del +3,7% en 50 problemes.", d5: "Precarregar cada problema en mostrar-lo; reintentar una pista filtrada només dins d'un pressupost de 30 s; cap pas passa de 60 s (pitjor real {b} s).",
+    q6: "Situa l'entrenador l'alumne al nivell correcte?", c6: "Els alumnes amb un llindar real s'estabilitzen a la seva banda en 3 passos i es queden al tema després d'un error. Un alumne que respon a l'atzar no domina cap tema en 3 rèpliques: la regla de dos encerts independents resisteix l'atzar.", d6: "Mantenir la regla i el repàs espaiat del 20%. Pendent: una mesura amb persones (protocol escrit, tres alumnes, 30 minuts).",
+    s6: "Comanda: python3 -m copilot.simulate --bank data --steps 60. 60 passos per alumne sobre el banc real de 1.747 problemes; \"dominat\" és domini 3 o més sobre 5.",
+    q7: "Busquem veïns en català o en anglès?", c7: "El model d'embeddings només sap anglès: consultat en anglès, el {a}% dels veïns comparteixen tema; en català, el {b}%. Jutjat a mà, el veí més fàcil ho és 20 de 20 vegades i és del mateix tema 15 de 20.", d7: "Vectoritzar el text anglès del mateix id de M3Kang i mostrar la versió catalana: el pont multilingüe. L'esglaó 1 mai puja de nivell ni canvia de tema.",
+    q8: "Hi cap tot en 4 GB?", c8: "Els dos servidors, el relay i el contenidor fan servir uns 1,2 GB; queden {a} MB lliures amb tot engegat (l'arrencada en fred triga uns dos minuts).", d8: "Cap model més gran si no deixa més de 500 MB; la demo arrenca sola des de l'engegada.",
+    log: "Registre de decisions", logh: "Deu preguntes, deu decisions, cadascuna lligada a una mesura",
+    thQ: "Pregunta", thE: "Evidència", thD: "Decisió", thS: "Estat", conclusion: "Conclusió", decision: "Decisió", question: "Pregunta",
+    thFam: "Família", thCls: "Classificats", thFire: "Disparen", thR: "Encerten", thW: "Fallen",
+    thStu: "Alumne simulat", thConv: "S'estabilitza", thBand: "Banda final", thSteps: "Passos", thSame: "Mateix tema després d'errar", thMast: "Temes dominats",
+    legendTopics: "atzar 20%  |  barra gruixuda: model, prima: sempre D", limit: "límit 60 s", floorRand: "atzar 20%", floorD: "sempre D", source: "Font",
+    foot: "Fonts: execucions d'eval.py al portàtil (llama.cpp al commit dels organitzadors, només CPU, els flags de la placa) i a l'Arduino UNO Q; velocitat de la placa calibrada a 11,4 tokens/s de lectura, 5,6 d'escriptura, 0,12 s per embedding. Els judicis manuals són de membres de l'equip i així consta. Res d'aquesta pàgina surt de la placa."
+  },
+  en: {
+    back: "Teacher view", title: "Math on the Edge: what the data decided",
+    lede: "Every figure was measured by our team on the M3Kang validation split (281 Kangaroo problems in English and 281 in Catalan) or on the Arduino UNO Q itself. Each panel asks one question the challenge poses, shows the measurement and records the decision. The headline: a 0.8B model cannot solve Kangaroo problems, so the copilot never lets it try; it teaches, and the one Reason gain we ship is a prior about how distractors are built.",
+    t1: "Model on its own", t1s: "validation, 281 problems. Random: 20%.", t2: "Always answer D", t2s: "the floor the organizers set", t3: "Shipped predict.py, on the board", t3s: "562 problems; worst step {w} s of 60", t4: "RAM free with everything running", t4s: "of 3669 MB, measured with servers, relay and app running",
+    q1: "Should the language model answer the jury's problems?", q1b: "Does the model know when it is right?",
+    c1: "Asked for a letter, the 0.8B model scores {a}%, below always-D. Removing its letter bias makes it worse ({b}%), and its most confident quartile is its worst ({c}%). The letter carries no information.",
+    d1: "The model never answers for the jury (LETTER_MODEL=0). The only thing above the floor is the middle-value rule, a prior about how distractors surround the correct value: {n} of 562 on the board. Its bootstrap gain spans -2 to +26 problems, so we ship it as a prior and say so.",
+    q2: "Where is the copilot's value: solving or teaching?", c2: "On every topic the model sits between random and always-D. Visual topics are {v} of the 281 problems and the model cannot see the figure. Yet M3Kang gives the correct letter of all 1,747 problems: the copilot does not need to solve anything to correct, choose the next problem and guide.",
+    d2: "Build for the Teach track: the labels are the oracle, the trainer adapts the level per topic, the hint ladder guides without the answer, the LED matrix shows progress. The model only classifies, extracts and writes one short sentence.",
+    q3: "Can code solve the templated problems?", c3: "Four families fire {f} times in 911 problems and never on validation. Kangaroo problems use the words of a template inside puzzles that follow none. Net gain: about 0.3 points.", d3: "Stop at four families, keep them as the documented negative result, spend the remaining hours on the board and the demo.",
+    s3: "911 English training problems with readable options. A family fires only when its computed value matches exactly one option.",
+    q4: "May the model write hints, and how do we keep them from leaking the answer?", c4: "A plain prompt leaked the answer in {a} of 10 hints; one question under a digit-free grammar leaked {b} of 10. The code filter still rejects {c} of 66. In a tool draft on 3 hints per language (awaiting a person's judgment), Catalan hints came out good {d} of 3 and English 2 of 3.",
+    d4: "Rung 1 (an easier neighbour) and rung 2 (a strategy card) need no model. The model's rung opens only for topics a person has judged at 70% or better, always under the grammar and the filter, and may be shown in English.",
+    q5: "Does every step fit in 60 seconds on the board?", c5: "Everything the student waits for is instant (retrieval, cards) or a model call of 10 to 16 s when the problem was prefetched: the rung-3 hint has an estimated median of {a} s. The clock that predicted these numbers was calibrated on the board: error +3.7% over 50 problems.", d5: "Prefetch every problem as it is shown; retry a leaking hint only within a 30 s budget; no step crosses 60 s (worst real {b} s).",
+    q6: "Does the trainer place a student at the right level?", c6: "Students with a true threshold settle in their band in 3 steps and stay on topic after a miss. A student answering at random masters no topic in 3 runs: the two-independent-wins rule holds against guessing.", d6: "Keep the rule and the 20% spaced review. Still open: a measurement with people (protocol written, three students, 30 minutes).",
+    s6: "Command: python3 -m copilot.simulate --bank data --steps 60. 60 steps per student on the real bank of 1,747 problems; \"mastered\" is mastery 3 or more on the 0-5 scale.",
+    q7: "Search neighbours in Catalan or in English?", c7: "The embedding model is English-only: queried in English, {a}% of neighbours share the problem's topic; in Catalan, {b}%. Hand-judged, the easier neighbour is easier 20 of 20 times and on the same topic 15 of 20.", d7: "Embed the English text of the same M3Kang id, show the Catalan version: the multilingual bridge. Rung 1 never climbs a level or changes topic.",
+    q8: "Does it all fit in 4 GB?", c8: "Both servers, the relay and the container use about 1.2 GB; {a} MB stay free with everything running (a cold boot takes about two minutes).", d8: "No larger model unless it leaves more than 500 MB free; the demo runs from boot with nothing started by hand.",
+    log: "Decision log", logh: "Ten questions, ten decisions, each tied to a measurement",
+    thQ: "Question", thE: "Evidence", thD: "Decision", thS: "Status", conclusion: "Conclusion", decision: "Decision", question: "Question",
+    thFam: "Family", thCls: "Classified", thFire: "Fired", thR: "Right", thW: "Wrong",
+    thStu: "Simulated student", thConv: "Settles", thBand: "Final band", thSteps: "Steps", thSame: "Same topic after a miss", thMast: "Topics mastered",
+    legendTopics: "random 20%  |  thick bar: model, thin: always D", limit: "60 s limit", floorRand: "random 20%", floorD: "always D", source: "Source",
+    foot: "Sources: eval.py runs on the laptop (llama.cpp at the organizers' commit, CPU only, the board's flags) and on the Arduino UNO Q; board speed calibrated at 11.4 tokens/s read, 5.6 written, 0.12 s per embedding. Hand judgments are by team members and say so. Nothing on this page leaves the board."
+  }
+};
+
+let lang = "ca";
+try { lang = localStorage.getItem("dash-lang") || "ca"; } catch (e) {}
+const t = (k, vars) => (T[lang][k] || k).replace(/\{(\w+)\}/g, (_, v) => vars && v in vars ? vars[v] : "");
+const f1 = x => (Math.round(x * 10) / 10).toLocaleString(lang === "ca" ? "ca-ES" : "en-GB", {minimumFractionDigits: 1, maximumFractionDigits: 1});
+const L = (row, key) => row[key + "_" + lang] ?? row[key];
+const SVGNS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, text) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
+function h(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function tipOf(box) { let tp = box.querySelector(".tip"); if (!tp) { tp = h("div", "tip"); box.appendChild(tp); } return tp; }
+function attachTip(box, rect, text) { const tp = tipOf(box); rect.addEventListener("mousemove", e => { tp.textContent = text; tp.style.display = "block"; const r = box.getBoundingClientRect(); tp.style.left = Math.min(e.clientX - r.left + 12, r.width - tp.offsetWidth - 4) + "px"; tp.style.top = (e.clientY - r.top - 30) + "px"; }); rect.addEventListener("mouseleave", () => tp.style.display = "none"); }
+
+// Horizontal bars drawn to one scale; every label names a reached value.
+function hbars(box, rows, label, value, o) {
+  o = Object.assign({max: null, left: 160, unit: "", refs: [], color: () => "var(--accent)"}, o);
+  const w = Math.max(320, box.clientWidth || 600), rowH = 26, top = 8, hgt = top + rows.length * rowH + 40;
+  const left = Math.min(o.left, w * 0.55), max = o.max || Math.max(...rows.map(value)) * 1.15;
+  const x = v => left + (w - left - 56) * (v / max);
+  const svg = el("svg", {viewBox: `0 0 ${w} ${hgt}`, role: "img"});
+  const maxChars = Math.max(10, Math.floor((left - 10) / 6.2));
+  rows.forEach((r, i) => { const y = top + i * rowH; const lab = label(r);
+    if (lab.length <= maxChars) svg.appendChild(el("text", {x: left - 8, y: y + 17, "text-anchor": "end"}, lab));
+    else { const cut = lab.lastIndexOf(" ", maxChars); const a = lab.slice(0, cut > 0 ? cut : maxChars), b = lab.slice(cut > 0 ? cut + 1 : maxChars, cut > 0 ? cut + 1 + maxChars : 2 * maxChars);
+      svg.appendChild(el("text", {x: left - 8, y: y + 11, "text-anchor": "end", style: "font-size:10px"}, a)); svg.appendChild(el("text", {x: left - 8, y: y + 22, "text-anchor": "end", style: "font-size:10px"}, b + (lab.length > a.length + 1 + b.length ? "…" : ""))); }
+    const rect = el("rect", {x: x(0), y: y + 4, width: Math.max(0, x(value(r)) - x(0)), height: 18, rx: 2, style: "fill:" + o.color(r)});
+    svg.appendChild(rect); attachTip(box, rect, `${(o.full ? o.full(r) : null) || lab}: ${f1(value(r))}${o.unit}`);
+    svg.appendChild(el("text", {x: x(value(r)) + 5, y: y + 17, class: "val"}, f1(value(r)) + o.unit)); });
+  o.refs.forEach((rf, i) => { svg.appendChild(el("line", {x1: x(rf.v), x2: x(rf.v), y1: top, y2: hgt - 34, style: "stroke:var(--muted);stroke-dasharray:4 3"})); svg.appendChild(el("text", {x: x(rf.v) + (i % 2 ? 4 : -4), y: hgt - 20 + (i % 2) * 14, "text-anchor": i % 2 ? "start" : "end"}, rf.t)); });
+  svg.setAttribute("aria-label", rows.map(r => `${label(r)} ${f1(value(r))}${o.unit}`).join("; "));
+  box.replaceChildren(svg);
+}
+function topicsChart(box) {
+  const rows = DATA.topics.rows, w = Math.max(320, box.clientWidth || 600), rowH = 30, left = Math.min(170, w * 0.45), top = 8, hgt = top + rows.length * rowH + 26;
+  const x = v => left + (w - left - 56) * (v / 40); const svg = el("svg", {viewBox: `0 0 ${w} ${hgt}`, role: "img", "aria-label": rows.map(r => `${r.topic} ${r.acc}% vs always D ${r.d}%`).join("; ")});
+  rows.forEach((r, i) => { const y = top + i * rowH;
+    svg.appendChild(el("text", {x: left - 8, y: y + 16, "text-anchor": "end"}, `${r.topic} (${r.kind}, n=${r.n})`));
+    const a = el("rect", {x: x(0), y: y + 3, width: x(r.acc) - x(0), height: 10, rx: 2, style: "fill:" + (r.kind === "visual" ? "#7c5cff" : "var(--accent)")}); svg.appendChild(a);
+    attachTip(box, a, `${r.topic}: ${lang === "ca" ? "model" : "model"} ${r.acc}%, ${t("floorD")} ${r.d}%, n=${r.n}`);
+    svg.appendChild(el("rect", {x: x(0), y: y + 15, width: x(r.d) - x(0), height: 6, rx: 2, style: "fill:#8a8a8a"}));
+    svg.appendChild(el("text", {x: x(r.acc) + 4, y: y + 13, class: "val"}, r.acc + "%")); });
+  svg.appendChild(el("line", {x1: x(20), x2: x(20), y1: top, y2: hgt - 22, style: "stroke:var(--muted);stroke-dasharray:4 3"}));
+  svg.appendChild(el("text", {x: x(20), y: hgt - 6, "text-anchor": "middle"}, t("legendTopics")));
+  box.replaceChildren(svg);
+}
+function ramChart(box) {
+  const rows = DATA.ram.rows, total = DATA.ram.total, w = Math.max(320, box.clientWidth || 600); const svg = el("svg", {viewBox: `0 0 ${w} 110`, role: "img", "aria-label": rows.map(r => `${L(r, "c")} ${r.mb} MB`).join("; ")});
+  const colors = ["var(--accent)", "#7c5cff", "#2a9d8f"]; const x = v => w * v / total; let acc = 0;
+  rows.filter(r => !r.free).forEach((r, i) => { const rect = el("rect", {x: x(acc), y: 8, width: Math.max(0, x(r.mb)), height: 26, style: "fill:" + colors[i]}); svg.appendChild(rect); attachTip(box, rect, `${L(r, "c")}: ${r.mb} MB`); const lbl = `${L(r, "c")} ${r.mb} MB`; if (x(r.mb) > lbl.length * 7 + 12) svg.appendChild(el("text", {x: x(acc) + 6, y: 26, class: "val", style: "fill:#fff"}, lbl)); acc += r.mb; });
+  svg.appendChild(el("text", {x: x(acc) + 6, y: 26, class: "val"}, `${acc} MB RSS`));
+  const free = rows.find(r => r.free); const fr = el("rect", {x: x(total - free.mb), y: 46, width: x(free.mb), height: 26, style: "fill:var(--line)"}); svg.appendChild(fr); attachTip(box, fr, `${L(free, "c")}: ${free.mb} MB`);
+  svg.appendChild(el("text", {x: x(total - free.mb) + 6, y: 64, class: "val"}, `${L(free, "c")} ${free.mb} MB`));
+  svg.appendChild(el("text", {x: 0, y: 100}, "0 MB")); svg.appendChild(el("text", {x: w, y: 100, "text-anchor": "end"}, `${total} MB`));
+  box.replaceChildren(svg);
+}
+function table(cols, rows, keyf) { const wrap = h("div", "wrap"); const tb = h("table"); const thead = h("thead"); const tr = h("tr"); cols.forEach(c => { const th = h("th", c.r ? "r" : "", c.h); tr.appendChild(th); }); thead.appendChild(tr); tb.appendChild(thead); const body = h("tbody"); rows.forEach(r => { const row = h("tr"); cols.forEach(c => { const td = h("td", c.r ? "r" : ""); const v = c.v(r); if (c.pill) { const p = h("span", "pill " + v, v); td.appendChild(p); } else td.textContent = v == null ? "—" : String(v); row.appendChild(td); }); body.appendChild(row); }); tb.appendChild(body); wrap.appendChild(tb); return wrap; }
+function panel(id, n, q, chartFn, conclusion, decision, status, extra) {
+  const s = h("section", "q"); s.id = id; const left = h("div"); left.appendChild(h("p", "ql", `${t("question")} ${n}`)); left.appendChild(h("h2", "", q));
+  const box = h("div", "chart"); left.appendChild(box); if (extra) extra(left); left.appendChild(h("p", "src", `${t("source")}: ${chartFn.src}`));
+  const right = h("div", "verdict"); const c = h("div", "box"); c.appendChild(h("div", "h", t("conclusion"))); c.appendChild(document.createTextNode(conclusion)); right.appendChild(c);
+  const d = h("div", "box decision " + (status || "")); d.appendChild(h("div", "h", t("decision"))); d.appendChild(document.createTextNode(decision)); right.appendChild(d);
+  s.appendChild(left); s.appendChild(right); document.getElementById("panels").appendChild(s); requestAnimationFrame(() => chartFn(box));
+  return s;
+}
+function render() {
+  document.documentElement.lang = lang; document.querySelectorAll("[data-t]").forEach(e => e.textContent = t(e.dataset.t));
+  document.getElementById("lang-ca").setAttribute("aria-pressed", lang === "ca"); document.getElementById("lang-en").setAttribute("aria-pressed", lang === "en");
+  const P = DATA.policies.rows, val = P.filter(r => r.set === "val"), g = (set, i) => P.filter(r => r.set === set)[i];
+  const worst = DATA.latency.rows.find(r => r.worst).s, free = DATA.ram.rows.find(r => r.free).mb;
+  const tiles = document.getElementById("tiles"); tiles.replaceChildren();
+  [[t("t1"), f1(val[2].acc) + "%", t("t1s")], [t("t2"), f1(val[0].acc) + "%", t("t2s")], [t("t3"), f1(g("board", 1).acc) + "%", t("t3s", {w: f1(worst)})], [t("t4"), free + " MB", t("t4s")]].forEach(([k, v, s]) => { const d = h("div", "tile"); d.appendChild(h("div", "k", k)); d.appendChild(h("div", "v", v)); d.appendChild(h("div", "s", s)); tiles.appendChild(d); });
+  document.getElementById("panels").replaceChildren();
+  const polFn = box => { hbars(box, val, r => L(r, "policy"), r => r.acc, {max: 35, left: 230, unit: "%", refs: [{v: 20, t: t("floorRand")}, {v: 23.1, t: t("floorD")}], color: r => r.kind === "llm" ? "#8a8a8a" : r.kind === "floor" ? "#8a8a8a" : "var(--accent)"});
+    const b2 = h("div", "chart"); b2.style.marginTop = "14px"; box.parentNode.insertBefore(b2, box.nextSibling); b2.insertAdjacentElement("beforebegin", h("p", "ql", t("q1b")));
+    hbars(b2, DATA.confidence.rows, r => L(r, "q"), r => r.acc, {max: 35, left: 170, unit: "%", refs: [{v: 20, t: t("floorRand")}], color: r => r.acc < 20 ? "#c0392b" : "var(--accent)"}); };
+  polFn.src = DATA.policies.src + "; " + DATA.confidence.src;
+  panel("q-model", 1, t("q1"), polFn, t("c1", {a: f1(val[2].acc), b: f1(val[3].acc), c: f1(DATA.confidence.rows[3].acc)}), t("d1", {n: Math.round(g("board", 1).acc / 100 * 562)}), "shipped");
+  const topFn = box => topicsChart(box); topFn.src = DATA.topics.src;
+  panel("q-topics", 2, t("q2"), topFn, t("c2", {v: DATA.topics.rows.filter(r => r.kind === "visual").reduce((a, r) => a + r.n, 0)}), t("d2"), "shipped");
+  const solFn = box => box.replaceChildren(table([{h: t("thFam"), v: r => r.family}, {h: t("thCls"), v: r => r.c, r: 1}, {h: t("thFire"), v: r => r.f, r: 1}, {h: t("thR"), v: r => r.r, r: 1}, {h: t("thW"), v: r => r.w, r: 1}], DATA.solvers.rows)); solFn.src = DATA.solvers.src;
+  panel("q-solvers", 3, t("q3"), solFn, t("c3", {f: DATA.solvers.rows.reduce((a, r) => a + r.f, 0)}), t("d3"), "closed", left => left.appendChild(h("p", "src", t("s3"))));
+  const hintFn = box => hbars(box, DATA.hints.rows, r => `${L(r, "m")} (${r.v}/${r.of})`, r => 100 * r.v / r.of, {max: 100, left: 330, unit: "%", color: r => r.bad ? "#c0392b" : "var(--accent)"}); hintFn.src = DATA.hints.src;
+  const H = DATA.hints.rows; panel("q-hints", 4, t("q4"), hintFn, t("c4", {a: H[0].v, b: H[1].v, c: H[2].v, d: H[4].v}), t("d4"), "shipped");
+  const latFn = box => hbars(box, DATA.latency.rows, r => L(r, "step"), r => r.s, {max: 65, left: 320, unit: " s", full: r => L(r, "full"), refs: [{v: 60, t: t("limit")}], color: r => r.s > 30 ? "#8a5a00" : "var(--accent)"}); latFn.src = DATA.latency.src;
+  panel("q-latency", 5, t("q5"), latFn, t("c5", {a: f1(DATA.latency.rows[2].s)}), t("d5", {b: f1(worst)}), "shipped");
+  const trFn = box => box.replaceChildren(table([{h: t("thStu"), v: r => L(r, "s")}, {h: t("thConv"), v: r => L(r, "conv")}, {h: t("thBand"), v: r => r.band}, {h: t("thSteps"), v: r => r.steps, r: 1}, {h: t("thSame"), v: r => r.same == null ? null : String(r.same) + "%", r: 1}, {h: t("thMast"), v: r => r.mastered, r: 1}], DATA.trainer.rows)); trFn.src = DATA.trainer.src;
+  panel("q-trainer", 6, t("q6"), trFn, t("c6"), t("d6"), "open", left => left.appendChild(h("p", "src", t("s6"))));
+  const R = DATA.retrieval.rows; const retFn = box => hbars(box, R, r => `${L(r, "m")} (${r.v}/${r.of})`, r => 100 * r.v / r.of, {max: 100, left: 330, unit: "%", color: r => r.cat ? "#7c5cff" : "var(--accent)"}); retFn.src = DATA.retrieval.src;
+  panel("q-retrieval", 7, t("q7"), retFn, t("c7", {a: Math.round(100 * R[2].v / R[2].of), b: Math.round(100 * R[3].v / R[3].of)}), t("d7"), "shipped");
+  const ramFn = box => ramChart(box); ramFn.src = DATA.ram.src;
+  panel("q-ram", 8, t("q8"), ramFn, t("c8", {a: free}), t("d8"), "shipped");
+  const log = h("section", "q"); log.id = "q-log"; log.style.gridTemplateColumns = "1fr"; const ld = h("div"); ld.appendChild(h("p", "ql", t("log"))); ld.appendChild(h("h2", "", t("logh")));
+  ld.appendChild(table([{h: t("thQ"), v: r => L(r, "q")}, {h: t("thE"), v: r => r.e}, {h: t("thD"), v: r => L(r, "d")}, {h: t("thS"), v: r => r.st, pill: true}], DATA.decisions.rows)); ld.appendChild(h("p", "src", `${t("source")}: ${DATA.decisions.src}`)); log.appendChild(ld); document.getElementById("panels").appendChild(log);
+}
+document.getElementById("lang-ca").onclick = () => { lang = "ca"; try { localStorage.setItem("dash-lang", lang); } catch (e) {} render(); };
+document.getElementById("lang-en").onclick = () => { lang = "en"; try { localStorage.setItem("dash-lang", lang); } catch (e) {} render(); };
+let resizeTimer; window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 150); });
+render();
+</script>
+</body>
+</html>

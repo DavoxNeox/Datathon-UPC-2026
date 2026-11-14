@@ -227,3 +227,92 @@ zoom. On the phone it is 358 px wide and fine.
 
 **Touch behaviour not verified here**: the phone emulation still reports `(hover: hover)`, so
 the auto-close ran on it too; a tap outside did close the panel. Check once on a real phone.
+
+## Addendum 4: ninth round, no white card (`origin/main` at ff45825)
+
+Checked on the six demo problems in sim (port 7017) at 1280x800, light and dark, by reading the
+pixels of each tinted figure back from the page and timing `tinted()` on the raw crops; 285 tests
+OK, 1 skipped. `c849c56` (options from the other language) is not exercised by the six demo
+problems (all have Catalan OCR options).
+
+**What holds.**
+- **Black is never shown as white.** `lvl-3_2021_20` in dark: of 11,024 black pixels in the crop,
+  9,136 stay black (the insides of the four corner squares) and 1,888 become the light rim at
+  their edges; no pixel of any of the six figures is white (over 245) in dark. In light every
+  opaque pixel is ink.
+- **Filled shapes read on the dark page**: the black squares sit inside a light rim; the hand's
+  ring bands stay black (8% of its opaque pixels).
+- **Thin lines stay legible**: the grid of `lvl-1_2024_2` is 98% light strokes in dark, the folded
+  sheet 99%; both zoom crisp.
+- **Cost**: `tinted()` takes 2 to 10 ms per figure at 1280 (232x232 square 9.5 ms in dark, 2.2 ms
+  in light; 328x216 grid 4.2 ms; the five 70x66 pieces 2 to 6 ms each), once per problem and per
+  theme change. Nothing a phone or the board's browser would notice.
+
+**G1 (IMPORTANT). Grey does not stay grey, in either theme, and the demo's sixth problem asks
+about the grey part.** `lvl-3_2021_20`'s crop has 4,168 neutral grey pixels (levels 60 to 200,
+mostly 80 to 120: the eight grey triangles and the anti-aliased edges). In dark 3,320 of them
+become the light ink, 820 transparent and 28 stay grey; in light 3,348 become black and 820
+transparent. The interior test (`mn < 110` and dark neighbours 3 px away in four directions)
+rarely holds inside thin triangles of mid grey, so they are treated as strokes. The student
+reads "Quina és l'àrea de la part grisa?" and sees, in dark, whitish triangles between black
+squares, and in light, black triangles next to black squares. The round's note says the opposite
+("grey stays grey", checked on this id). *Fix:* treat a neutral pixel with `mn` between 60 and
+200 as a fill whenever it has at least two neutral neighbours of similar level at 2 px (not four
+dark ones at 3 px), and keep its own level in both themes (lightened by a fixed amount in dark
+so it reads against the page); or fall back to the white card for crops whose grey share passes
+a few percent. Re-measure with this script on `lvl-3_2021_20` after the change.
+
+**G2 (MINOR). Light greys vanish.** The hand of `lvl-5_2022_30` is filled light grey (217) in the
+scan; `darkness < 60` makes it transparent in both themes, so the hand is an outline on the page.
+Harmless here, but any figure whose light grey carries meaning (a shaded region in a counting
+problem) loses it. Lower the noise floor to 40 for neutral pixels inside a closed outline, or
+keep 60 and say so in the note.
+
+**Still open**: P1 (the hand is 181x272 px at 1280 now, so the tall-figure cap was relaxed:
+closed), the pieces' `alt` text, the two controls under 44 px in the settings popup.
+
+## Addendum 5: thirteenth round, grey patches (`ui-fixes-8`, `origin/main` at 5dbcef0)
+
+Re-measured with the method of addendum 4 on the six demo problems in sim (port 7018) at
+1280x800, light and dark: every neutral pixel of the raw crop classed by its level (black under
+40, mid grey 40 to 200, light grey 200 to 235) and followed into the tinted image (black under
+60, grey 60 to 200, lifted grey 200 to 216, ink 216 to 240, white over 245, transparent); zooms of
+the triangles and the hand; `tinted()` timed per crop; crop sizes compared with addendum 3.
+304 tests OK, 1 skipped.
+
+**G1 closed.** `lvl-3_2021_20`, dark: of the 4,168 mid-grey pixels (the triangles' anti-aliased
+edges and grain), 2,742 come out as lifted grey (the cap of 210), 286 as grey under 200 and 1,140
+as the ink rim: 3,028 grey against 28 before. Of the 10,018 light-grey pixels (the triangles'
+body, 200 to 235 in the scan), 9,668 come out grey at 210, 144 darker grey, 206 transparent, none
+as ink. Light theme: 2,800 + 206 of the mid greys and 7,720 + 2,068 of the light greys stay grey,
+1,162 go to the black rim. The zooms show the triangles as a smooth grey surface in both themes,
+not a speckle; the UI's own counts (3,060 / 2,944 of 4,104) agree with mine within the class
+boundaries.
+
+**Black never white, still.** The square's 11,024 black pixels: 9,136 black and 1,888 ink rim in
+dark, all black in light; no white pixel in any figure in either theme.
+
+**G2 closed.** The hand (`lvl-5_2022_30`, fill at 217): in dark 16,952 of its 17,341 light-grey
+pixels come out at 210 and the hand reads as a grey surface with a light outline; in light they
+stay at 217 on the 244 page, a faint but visible fill (14,553 in the 216-240 band). The ring
+bands stay black (129 of 432 black pixels; the rest is rim).
+
+**Thin lines.** The grid's 6,732 black and 7,395 anti-aliased pixels: light ink in dark (98%),
+black in light; the zooms are crisp. The folded sheet likewise.
+
+**Cuts unchanged.** 232x232 and five pieces of 72/76/92/70/72 by 66 (square), 328x216 (grid),
+460x140 (sheet), 154x232 (hand), nothing for the two text-only problems: identical to addendum 3,
+so the statement-continuation and two-row-option changes did not move the demo's crops.
+
+**Cost.** 1 to 11 ms per crop (the 5x5 window pass: grid 11 ms in light, 3.5 ms in dark; square 3
+to 5 ms; pieces 1 to 2 ms). Once per problem and theme change; nothing a phone would notice.
+
+**Two remarks.**
+- **H1 (MINOR).** In dark the grey patch is capped at 210 and the ink is 231: a gap of 21 lum
+  levels between a shaded area and its rim. It reads, but on a projector with a washed-out
+  dark theme it will be subtle. Capping at 195 keeps the patch clearly below the ink and still
+  above the page (lum 23).
+- **H2 (MINOR).** The automatic whole-scan fallback is now drawn untinted (`fig.toDataURL` when
+  `scan.figure` is null): the only place a white paper background can still appear, under the
+  "Escaneig original" caption. None of the six demo problems triggers it; worth a sentence in the
+  round's notes since the brief was "no white background anywhere".

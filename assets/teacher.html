@@ -6,43 +6,99 @@
   <title>Vista del professor</title>
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="style.css">
-  <script src="theme.js"></script>
   <style>
-    main.teacher { max-width: 920px; }
-    main.teacher section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin-bottom: 14px; }
-    main.teacher h2 { font-size: 13px; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    /* The teacher's view: the class at a glance, then one student diagnosed from every answer
+       recorded (topic, level, letter, hints, time). Charts are inline SVG drawn here; no library,
+       nothing fetched: the board is offline. Same tokens and buttons as the student page. */
+    main.teacher { max-width: 1100px; padding-bottom: 48px; }
+    .teacher h2 { font-size: 13px; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 800; }
+    .teacher h3 { font-size: 15px; margin: 0 0 8px; }
+    .teacher section.block { margin: 18px 0 26px; }
+    .teacher .meta { margin: 0 0 10px; }
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 0 0 14px; }
+    .tile { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; min-height: 92px; }
+    .tile .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 800; }
+    .tile .v { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; margin: 4px 0 2px; }
+    .tile .s { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .tile.good .v { color: var(--ok); } .tile.bad .v { color: var(--bad); } .tile.warn .v { color: var(--warn); }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 12px; }
+    .card { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; position: relative; }
+    /* the tooltip of a chart: follows the cursor, drawn by the page (no title attributes) */
+    .card .tip { position: absolute; display: none; pointer-events: none; z-index: 2; max-width: 260px; padding: 6px 10px; border-radius: 10px;
+                 background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 700; line-height: 1.35; white-space: pre-line; box-shadow: 0 4px 14px rgba(31, 36, 48, .18); }
+    .card svg [data-tip] { cursor: default; } .card svg [data-tip]:hover { filter: brightness(.82); }
+    .card.wide { grid-column: 1 / -1; }
+    .card svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .card svg text { font: 600 12px ui-rounded, "SF Pro Rounded", system-ui, sans-serif; fill: var(--muted); }
+    .card svg text.ink { fill: var(--ink); font-weight: 800; }
+    .card svg text.small { font-size: 11px; }
+    .card .note { font-size: 12px; color: var(--muted); font-weight: 600; margin: 8px 0 0; }
+    .who { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 0 0 14px; }
+    .who .dropdown { width: min(100%, 360px); }
+    .who .since { font-size: 14px; color: var(--muted); font-weight: 600; }
+    .diag { border-left: 6px solid var(--accent); }
+    .diag ul { margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.45; }
+    .diag li { margin: 4px 0; } .diag li.good::marker { color: var(--ok); } .diag li.bad::marker { color: var(--bad); } .diag li.warn::marker { color: var(--warn); }
     .scroll { overflow-x: auto; }
-    table.grid { border-collapse: collapse; font-size: 15px; }
+    table.grid { border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; width: 100%; }
     table.grid th, table.grid td { border: 1px solid var(--line); padding: 6px 10px; text-align: center; }
+    table.grid th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
     table.grid th:first-child, table.grid td:first-child { text-align: left; }
+    table.grid tbody tr { cursor: pointer; } table.grid tbody tr:hover td:first-child { text-decoration: underline; }
+    table.grid tr.on td:first-child { font-weight: 800; color: var(--accent); }
     /* mastery 0..5: from "no data" to "one level above", in the page's own tints */
     td.m0 { background: var(--card-2); color: var(--muted); } td.m1 { background: var(--bad-bg); color: var(--bad); } td.m2 { background: var(--warn-bg); color: var(--warn); }
-    td.m3 { background: var(--accent-soft); } td.m4 { background: var(--ok-bg); } td.m5 { background: var(--ok-bg); color: var(--ok); font-weight: 700; }
-    .legend span { display: inline-block; margin-right: 12px; font-size: 13px; color: var(--muted); }
+    td.m3 { background: var(--accent-soft); } td.m4 { background: var(--ok-bg); } td.m5 { background: var(--ok-bg); color: var(--ok); font-weight: 800; }
+    .legend span { display: inline-block; margin-right: 12px; font-size: 13px; color: var(--muted); font-weight: 600; }
+    table.stats { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+    table.stats td { padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    table.stats td:first-child { font-weight: 800; width: 34%; } table.stats td.val { white-space: nowrap; font-weight: 800; width: 20%; }
+    table.stats td.how { color: var(--muted); font-size: 12px; font-weight: 600; }
+    .empty { color: var(--muted); font-weight: 600; padding: 12px 0; }
+    .tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .tools a.icon { display: inline-flex; align-items: center; text-decoration: none; }
+    @media (max-width: 700px) { .bar { flex-wrap: wrap; gap: 8px; } .tile .v { font-size: 26px; } }
   </style>
 </head>
 <body>
 <header class="bar">
   <div class="brand"><span id="title">Vista del professor</span></div>
   <div class="tools">
-    <a class="icon" href="index.html" id="back" style="display: inline-flex; align-items: center; text-decoration: none">Pàgina de l'alumne</a>
+    <a class="icon" href="index.html" id="back">Pàgina de l'alumne</a>
+    <a class="icon" href="dashboard.html" id="dash">Quadre de decisions</a>
     <span class="lang" role="group" aria-label="CA / EN"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
-    <button class="icon" id="theme"><span id="theme-label">◐</span></button>
   </div>
 </header>
 <main class="teacher">
-  <section>
-    <h2 id="h-mastery">Domini per tema i alumne</h2>
-    <div class="meta" id="source"></div>
-    <div class="scroll"><table class="grid" id="mastery"></table></div>
-    <p class="legend" id="legend"></p>
+  <section class="block" id="class-block">
+    <h2 id="h-class"></h2>
+    <p class="meta" id="source"></p>
+    <div class="tiles" id="class-tiles"></div>
+    <div class="cards">
+      <div class="card wide">
+        <h3 id="h-mastery"></h3>
+        <div class="scroll"><table class="grid" id="mastery"></table></div>
+        <p class="legend" id="legend"></p>
+      </div>
+      <div class="card"><h3 id="h-class-levels"></h3><div id="class-levels"></div></div>
+      <div class="card"><h3 id="h-class-topics"></h3><div id="class-topics"></div></div>
+    </div>
   </section>
-  <section id="levels-section" hidden>
-    <h2 id="h-levels">Encerts per nivell</h2>
-    <div class="scroll"><table class="grid" id="levels"></table></div>
+
+  <section class="block" id="student-block">
+    <h2 id="h-student"></h2>
+    <div class="who">
+      <div class="dropdown">
+        <button class="dd-button" id="who-button" type="button" aria-haspopup="listbox" aria-expanded="false"><span id="who-label"></span><span class="dd-caret" aria-hidden="true"></span></button>
+        <ul class="dd-list" id="who-list" role="listbox" hidden></ul>
+      </div>
+      <span class="since" id="since"></span>
+    </div>
+    <div id="student"></div>
   </section>
-  <section id="rung0-section">
-    <h2 id="h-rung0">Esglaó 0 · lectura en l'altre idioma</h2>
+
+  <section class="block" id="rung0-section">
+    <h2 id="h-rung0"></h2>
     <p class="meta" id="rung0-help"></p>
     <p id="rung0-summary"></p>
     <div class="scroll"><table class="grid" id="rung0"></table></div>
@@ -52,74 +108,495 @@
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const SVGNS = "http://www.w3.org/2000/svg";
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const RUNGS = [0, 1, 2, 3, 4];
+
 const I18N = {
-  cat: {title: "Vista del professor", back: "Pàgina de l'alumne", mastery: "Domini per tema i alumne", levels: "Encerts per nivell",
-        student: "Alumne", level: "Nivell", correct: "Encerts", total: "Intents",
-        rung0: "Esglaó 0 · lectura en l'altre idioma",
+  cat: {title: "Vista del professor", back: "Pàgina de l'alumne", dash: "Quadre de decisions",
+        h_class: "La classe", h_student: "L'alumne", mastery: "Domini per tema i alumne", levels: "Encerts per nivell",
+        class_topics: "Encerts per tema (tota la classe)",
+        student: "Alumne", level: "Nivell", correct: "Encerts", total: "Intents", all: "Tots", none: "cap alumne encara",
+        since: n => `des de ${n}`, no_answers: "Encara no ha respost cap problema.",
+        source: {mastery_map: "Dades: trainer.mastery_map (el trainer encara no publica teacher_report)", teacher_report: "Dades: trainer.teacher_report i trainer.answer_log"},
+        legend: ["0 sense dades", "1 sempre falla", "2 encerta amb pistes", "3 a vegades sense pistes", "4 sempre sense pistes", "5 encerta un nivell per sobre"],
+        tiles: {students: "Alumnes", answers: "Respostes", acc: "Encerts", acc_clean: "Sense pistes", today: "avui", active: "actius avui",
+                hints: "Pistes", hints_s: "problemes amb pista", time: "Temps", time_s: "mediana per problema", streak: "Ratxa", streak_ok: "encerts seguits", streak_bad: "errors seguits",
+                level: "Nivell", level_s: b => `base ${b}`, reviews: "repassos", ci: (a, b) => `IC 95 %: ${a}–${b} %`, of: n => `de ${n}`},
+        charts: {topics: "Domini i encerts per tema", trend: "Evolució", hints: "Ús de les pistes", letters: "Lletres triades",
+                 days: "Activitat per dia (últims 14 dies)", levels: "Encerts per nivell", stats: "Estadístics avançats", diag: "Diagnòstic",
+                 rolling: "encerts dels últims 5", level_line: "nivell del problema", chance: "atzar (20 %)", acc_rung: "encerts"},
+        rungs: ["sense pista", "problema veí", "estratègia", "pas a pas", "solució"],
+        stats: {acc: ["Encerts amb interval de confiança", "Wilson al 95 %: on és de debò la taxa d'encerts amb aquest nombre de respostes"],
+                clean: ["Encerts sense cap pista", "la mesura que fa servir el domini: respostes correctes sense ajuda"],
+                hintdep: ["Dependència de les pistes", "encerts després d'una pista entre encerts sense pista, amb la p del contrast de dues proporcions; per sobre d'1,5 les pistes fan la feina"],
+                trend: ["Tendència", "últimes 10 respostes contra les 10 anteriors, en punts; p del contrast de dues proporcions"],
+                slope: ["Pendent d'aprenentatge", "regressió lineal d'encert sobre l'ordre de la resposta, en punts per cada 10 respostes"],
+                guess: ["Índex d'endevinar", "binomial exacta dels encerts contra l'atzar del 20 % (des de 20 respostes) i khi quadrat de les lletres triades, 4 gl (des de 25)"],
+                time: ["Temps per problema", "mediana de l'interval entre respostes seguides (pauses de més de 10 min descartades)"],
+                streaks: ["Ratxes", "ratxa d'encerts més llarga i d'errors més llarga"],
+                zpd: ["Nivell de treball", "nivell més alt amb almenys la meitat d'encerts en 3 respostes o més; el següent és el repte"],
+                weak: ["Tema més fluix", "amb 3 respostes o més"], strong: ["Tema més fort", "amb 3 respostes o més"],
+                solution: ["Mira la solució", "part de les respostes donades després de veure la solució"],
+                rung0: ["Esglaó 0", "vegades que ha llegit l'enunciat en l'altre idioma; encerts després / sense"]},
+        diag: {few: (n, a, b) => `Poques dades: ${n} respostes; la taxa d'encerts és entre el ${a} i el ${b} %. Amb 10 o més surten les recomanacions.`,
+               high: (p, a, b) => `Domina el que fa (${p} % d'encerts, interval ${a}–${b} %): pot pujar de nivell.`,
+               mid: (p, a, b) => `Zona de treball adequada (${p} % d'encerts, interval ${a}–${b} %): ni massa fàcil ni massa difícil.`,
+               low: (p, a, b) => `Massa difícil (${p} % d'encerts, interval ${a}–${b} %): baixa un nivell o reforça amb el problema veí.`,
+               guess: "Possible resposta a l'atzar: els encerts no es distingeixen del 20 % o sempre tria la mateixa lletra.",
+               hintdep: (ph, nh, pc, nc) => `Encerta més amb pista (${ph} % de ${nh}) que sense (${pc} % de ${nc}); la diferència no és casual.`,
+               up: (d, p) => `Millora: ${d} punts més en les últimes 10 respostes que en les 10 anteriors (p = ${p}).`,
+               down: (d, p) => `Empitjora: ${d} punts menys en les últimes 10 respostes que en les 10 anteriors (p = ${p}); pot ser cansament.`,
+               up_soft: (d, p) => `Sembla que millora (${d} punts més en les últimes 10), però amb 20 respostes no és concloent (p = ${p}).`,
+               down_soft: (d, p) => `Sembla que empitjora (${d} punts menys en les últimes 10), però amb 20 respostes no és concloent (p = ${p}).`,
+               fast: s => `Respon molt de pressa (${s} s de mediana): potser no llegeix l'enunciat.`,
+               slow: s => `Triga molt (${s} de mediana): pot necessitar l'estratègia abans de començar.`,
+               weak: (tp, p, n) => `Reforça ${tp}: ${p} % d'encerts en ${n} respostes.`, strong: (tp, p, n) => `${tp} dominat: ${p} % d'encerts en ${n} respostes.`,
+               solution: p => `Mira la solució en el ${p} % dels problemes.`, rung0: n => `Fa servir l'esglaó 0 (${n} vegades): la llengua hi pesa.`,
+               level: (l, n, nx) => `Nivell de treball ${l} (${n} respostes); el repte és el ${nx}.`},
+        rung0_title: "Esglaó 0 · lectura en l'altre idioma",
         rung0_help: "Abans de cap pista, l'alumne pot llegir el mateix enunciat en anglès (o en català). No compta com a pista per al domini: separa \"no entenc l'enunciat\" de \"no sé resoldre'l\".",
         rung0_summary: (u, n, k) => `${u} de ${n} alumnes l'han fet servir, ${k} vegades en total.`,
         rung0_none: "Encara cap alumne amb respostes.",
         rung0_caveat: (nw, nwo) => `Comparació observacional, no un experiment controlat: cada alumne tria quan fa servir l'esglaó 0, sovint als problemes que ja li costen. n = ${nw} respostes després de l'esglaó 0 i ${nwo} sense. Per mesurar-ne l'efecte, el protocol de docs/teach-measurement.md.`,
-        uses: "Vegades", problems: "Problemes", acc_with: "Encerts després de l'esglaó 0", acc_without: "Encerts sense l'esglaó 0", all: "Tots",
-        source: {mastery_map: "Dades: trainer.mastery_map (el trainer encara no publica teacher_report)", teacher_report: "Dades: trainer.teacher_report"},
-        theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"},
-        legend: ["0 sense dades", "1 sempre falla", "2 encerta amb pistes", "3 a vegades sense pistes", "4 sempre sense pistes", "5 encerta un nivell per sobre"]},
-  eng: {title: "Teacher view", back: "Student page", mastery: "Mastery by topic and student", levels: "Correct answers by level",
-        student: "Student", level: "Level", correct: "Correct", total: "Attempts",
-        rung0: "Rung 0 · reading in the other language",
+        uses: "Vegades", problems: "Problemes", acc_with: "Encerts després de l'esglaó 0", acc_without: "Encerts sense l'esglaó 0",
+        units: {s: "s", min: "min", pp: "punts", n: "n"}},
+  eng: {title: "Teacher view", back: "Student page", dash: "Decision dashboard",
+        h_class: "The class", h_student: "The student", mastery: "Mastery by topic and student", levels: "Correct answers by level",
+        class_topics: "Correct answers by topic (whole class)",
+        student: "Student", level: "Level", correct: "Correct", total: "Attempts", all: "All", none: "no student yet",
+        since: n => `since ${n}`, no_answers: "No problem answered yet.",
+        source: {mastery_map: "Data: trainer.mastery_map (the trainer does not publish teacher_report yet)", teacher_report: "Data: trainer.teacher_report and trainer.answer_log"},
+        legend: ["0 no data", "1 always fails", "2 correct with hints", "3 sometimes correct without hints", "4 consistently correct without hints", "5 correct one level above"],
+        tiles: {students: "Students", answers: "Answers", acc: "Correct", acc_clean: "Without hints", today: "today", active: "active today",
+                hints: "Hints", hints_s: "problems with a hint", time: "Time", time_s: "median per problem", streak: "Streak", streak_ok: "correct in a row", streak_bad: "wrong in a row",
+                level: "Level", level_s: b => `base ${b}`, reviews: "reviews", ci: (a, b) => `95 % CI: ${a}–${b} %`, of: n => `of ${n}`},
+        charts: {topics: "Mastery and accuracy by topic", trend: "Over time", hints: "Hint use", letters: "Letters chosen",
+                 days: "Activity per day (last 14 days)", levels: "Correct answers by level", stats: "Advanced statistics", diag: "Diagnosis",
+                 rolling: "correct among the last 5", level_line: "problem level", chance: "chance (20 %)", acc_rung: "correct"},
+        rungs: ["no hint", "neighbour problem", "strategy", "step by step", "solution"],
+        stats: {acc: ["Accuracy with confidence interval", "Wilson 95 %: where the true rate lies given this many answers"],
+                clean: ["Accuracy without any hint", "what mastery uses: correct with no help"],
+                hintdep: ["Hint dependence", "accuracy after a hint over accuracy without, with the p of a two-proportion test; above 1.5 the hints do the work"],
+                trend: ["Trend", "last 10 answers against the 10 before, in points; p of a two-proportion test"],
+                slope: ["Learning slope", "linear regression of correctness on answer order, in points per 10 answers"],
+                guess: ["Guessing index", "exact binomial of the correct answers against 20 % chance (from 20 answers) and chi-square of the letters chosen, 4 df (from 25)"],
+                time: ["Time per problem", "median gap between consecutive answers (breaks over 10 min dropped)"],
+                streaks: ["Streaks", "longest run of correct and of wrong answers"],
+                zpd: ["Working level", "highest level with at least half correct over 3 or more answers; the next one is the challenge"],
+                weak: ["Weakest topic", "with 3 answers or more"], strong: ["Strongest topic", "with 3 answers or more"],
+                solution: ["Looks at the solution", "share of answers given after seeing the solution"],
+                rung0: ["Rung 0", "times the statement was read in the other language; accuracy after / without"]},
+        diag: {few: (n, a, b) => `Little data: ${n} answers; the accuracy lies between ${a} and ${b} %. Recommendations appear from 10 on.`,
+               high: (p, a, b) => `Masters the current work (${p} % correct, interval ${a}–${b} %): ready to move up a level.`,
+               mid: (p, a, b) => `Right working zone (${p} % correct, interval ${a}–${b} %): neither too easy nor too hard.`,
+               low: (p, a, b) => `Too hard (${p} % correct, interval ${a}–${b} %): move down a level or reinforce with the neighbour problem.`,
+               guess: "Possible guessing: accuracy is not distinguishable from 20 %, or the same letter is always chosen.",
+               hintdep: (ph, nh, pc, nc) => `More correct with a hint (${ph} % of ${nh}) than without (${pc} % of ${nc}); the difference is not chance.`,
+               up: (d, p) => `Improving: ${d} points more over the last 10 answers than over the 10 before (p = ${p}).`,
+               down: (d, p) => `Getting worse: ${d} points fewer over the last 10 answers than over the 10 before (p = ${p}); may be tiredness.`,
+               up_soft: (d, p) => `Seems to improve (${d} points more over the last 10), but with 20 answers it is not conclusive (p = ${p}).`,
+               down_soft: (d, p) => `Seems to get worse (${d} points fewer over the last 10), but with 20 answers it is not conclusive (p = ${p}).`,
+               fast: s => `Answers very fast (median ${s} s): may not be reading the statement.`,
+               slow: s => `Takes long (median ${s}): may need the strategy before starting.`,
+               weak: (tp, p, n) => `Reinforce ${tp}: ${p} % correct over ${n} answers.`, strong: (tp, p, n) => `${tp} mastered: ${p} % correct over ${n} answers.`,
+               solution: p => `Looks at the solution on ${p} % of the problems.`, rung0: n => `Uses rung 0 (${n} times): language weighs.`,
+               level: (l, n, nx) => `Working level ${l} (${n} answers); the challenge is ${nx}.`},
+        rung0_title: "Rung 0 · reading in the other language",
         rung0_help: "Before any hint the student can read the same statement in English (or in Catalan). It is not a hint for mastery: it separates \"I don't understand the statement\" from \"I can't solve it\".",
         rung0_summary: (u, n, k) => `${u} of ${n} students used it, ${k} times in all.`,
         rung0_none: "No student with answers yet.",
         rung0_caveat: (nw, nwo) => `Observational comparison, not a controlled experiment: each student chooses when to use rung 0, often on the problems they already find hard. n = ${nw} answers after rung 0 and ${nwo} without. To measure its effect, see the protocol in docs/teach-measurement.md.`,
-        uses: "Uses", problems: "Problems", acc_with: "Correct after rung 0", acc_without: "Correct without rung 0", all: "All",
-        source: {mastery_map: "Data: trainer.mastery_map (the trainer does not publish teacher_report yet)", teacher_report: "Data: trainer.teacher_report"},
-        theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"},
-        legend: ["0 no data", "1 always fails", "2 correct with hints", "3 sometimes correct without hints", "4 consistently correct without hints", "5 correct one level above"]},
+        uses: "Uses", problems: "Problems", acc_with: "Correct after rung 0", acc_without: "Correct without rung 0",
+        units: {s: "s", min: "min", pp: "points", n: "n"}},
 };
 let lang = new URLSearchParams(location.search).get("lang") === "eng" ? "eng" : "cat", data = null;
+let who = new URLSearchParams(location.search).get("student") || null;
 const t = () => I18N[lang];
-function render() {
-  if (!data) return;
-  document.documentElement.lang = lang === "cat" ? "ca" : "en"; document.title = t().title;
-  $("title").textContent = t().title; $("back").textContent = t().back; $("h-mastery").textContent = t().mastery; $("h-levels").textContent = t().levels;
-  $("lang-cat").classList.toggle("on", lang === "cat"); $("lang-eng").classList.toggle("on", lang === "eng");
-  renderTheme();
-  $("source").textContent = (t().source[data.source] || data.source) + (data.error ? " · " + data.error : "");
-  const students = Object.keys(data.students || {}).sort();
-  $("mastery").innerHTML = `<tr><th>${t().student}</th>${data.topics.map(tp => `<th>${esc(lang === "cat" ? tp.name_ca : tp.name_en)}</th>`).join("")}</tr>` +
-    students.map(s => `<tr><td>${esc(s)}</td>${data.topics.map(tp => { const m = data.students[s][tp.key] ?? 0; return `<td class="m${m}">${m}</td>`; }).join("")}</tr>`).join("");
-  $("legend").innerHTML = t().legend.map(l => `<span>${esc(l)}</span>`).join("");
-  renderRung0(data.rung0);
-  const lv = data.by_level;
-  $("levels-section").hidden = !lv;
-  if (lv) {
-    // by_level: {student: {level: {"correct": n, "total": n}}} or {level: {"correct", "total"}}
-    const nested = Object.values(lv).some(v => v && typeof v === "object" && Object.values(v).some(x => x && typeof x === "object" && "total" in x));
-    const rows = nested ? Object.entries(lv) : [["*", lv]];
-    const levels = [...new Set(rows.flatMap(([, byLevel]) => Object.keys(byLevel)))].sort((a, b) => a - b);
-    $("levels").innerHTML = `<tr><th>${t().student}</th>${levels.map(l => `<th>${t().level} ${esc(l)}</th>`).join("")}</tr>` +
-      rows.map(([s, byLevel]) => `<tr><td>${esc(s)}</td>${levels.map(l => { const c = byLevel[l]; return `<td>${c ? `${c.correct}/${c.total}` : "–"}</td>`; }).join("")}</tr>`).join("");
-  }
+const topicName = key => { const tp = (data.topics || []).find(x => x.key === key); return tp ? (lang === "cat" ? tp.name_ca : tp.name_en) : key; };
+
+// ---------------------------------------------------------------- statistics
+const pct = (k, n) => n ? Math.round(100 * k / n) : null;
+const fmtPct = v => v == null ? "–" : `${v} %`;
+function wilson(k, n, z = 1.96) {
+  if (!n) return [0, 0];
+  const p = k / n, d = 1 + z * z / n, c = (p + z * z / (2 * n)) / d, h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
+  return [Math.max(0, c - h), Math.min(1, c + h)];
 }
-const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
-function renderTheme() { const m = Theme.get(); $("theme-label").textContent = THEME_GLYPH[m]; $("theme").title = t().theme[m]; $("theme").setAttribute("aria-label", t().theme[m]); }
-$("theme").onclick = () => { Theme.next(); renderTheme(); };
-function pct(c) { return c.answers ? `${c.correct}/${c.answers} (${Math.round(100 * c.correct / c.answers)}%)` : "–"; }
+function erf(x) {   // Abramowitz and Stegun 7.1.26
+  const s = Math.sign(x), a = Math.abs(x), tt = 1 / (1 + .3275911 * a);
+  const y = 1 - (((((1.061405429 * tt - 1.453152027) * tt) + 1.421413741) * tt - .284496736) * tt + .254829592) * tt * Math.exp(-a * a);
+  return s * y;
+}
+const normalSf = z => .5 * (1 - erf(z / Math.SQRT2));           // P(Z > z)
+const chi2Sf4 = x => Math.exp(-x / 2) * (1 + x / 2);              // survival of chi-square with 4 degrees of freedom
+function binomSf(k, n, p) {   // P(X >= k) for X ~ Binomial(n, p), exact, in log space
+  if (k <= 0) return 1; if (k > n) return 0;
+  let lp = n * Math.log(1 - p), sum = 0;
+  for (let i = 0; i <= n; i++) { if (i >= k) sum += Math.exp(lp); lp += Math.log((n - i) / (i + 1)) + Math.log(p / (1 - p)); }
+  return Math.min(1, sum);
+}
+function twoProp(k1, n1, k2, n2) {
+  if (!n1 || !n2) return null;
+  const p = (k1 + k2) / (n1 + n2), se = Math.sqrt(p * (1 - p) * (1 / n1 + 1 / n2));
+  if (!se) return {diff: k1 / n1 - k2 / n2, p: 1};
+  const z = (k1 / n1 - k2 / n2) / se;
+  return {diff: k1 / n1 - k2 / n2, p: 2 * normalSf(Math.abs(z))};
+}
+function slope(ys) {   // least squares of y on index, per unit of index
+  const n = ys.length; if (n < 3) return null;
+  const mx = (n - 1) / 2, my = ys.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0, sxx = 0; ys.forEach((y, i) => { sxy += (i - mx) * (y - my); sxx += (i - mx) ** 2; });
+  return sxx ? sxy / sxx : 0;
+}
+const median = xs => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+function runs(bools) {
+  let best = [0, 0], cur = [0, 0];
+  bools.forEach(b => { if (b) { cur[0]++; cur[1] = 0; } else { cur[1]++; cur[0] = 0; } best = [Math.max(best[0], cur[0]), Math.max(best[1], cur[1])]; });
+  let current = 0; const last = bools[bools.length - 1];
+  for (let i = bools.length - 1; i >= 0 && bools[i] === last; i--) current++;
+  return {longestOk: best[0], longestBad: best[1], current: last === undefined ? 0 : (last ? current : -current)};
+}
+const fmtTime = s => s == null ? "–" : s < 90 ? `${Math.round(s)} ${t().units.s}` : `${(s / 60).toFixed(1)} ${t().units.min}`;
+const dayKey = ts => { const d = new Date(ts * 1000); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+
+function analyse(name) {
+  const log = (data.log && data.log.answers || []).filter(a => a.student_id === name);
+  const meta = data.log && data.log.students && data.log.students[name] || {};
+  const n = log.length, k = log.filter(a => a.correct).length;
+  const clean = log.filter(a => a.hint_rung === 0), cleanK = clean.filter(a => a.correct).length;
+  const hinted = log.filter(a => a.hint_rung > 0 && a.hint_rung < 4), hintedK = hinted.filter(a => a.correct).length;
+  const afterSolution = log.filter(a => a.hint_rung === 4).length;
+  const recent = log.slice(-10), previous = log.slice(-20, -10);
+  const trend = twoProp(recent.filter(a => a.correct).length, recent.length, previous.filter(a => a.correct).length, previous.length);
+  const gaps = []; for (let i = 1; i < n; i++) { const g = log[i].created_at - log[i - 1].created_at; if (g > 0 && g <= 600) gaps.push(g); }
+  const letters = {A: 0, B: 0, C: 0, D: 0, E: 0}; log.forEach(a => { if (a.letter in letters) letters[a.letter]++; });
+  const chi2 = n ? Object.values(letters).reduce((s, o) => s + (o - n / 5) ** 2 / (n / 5), 0) : 0;
+  const pBinom = n ? binomSf(k, n, .2) : 1;   // the chance of this many correct answers by picking letters at random
+  const byLevel = {}; log.forEach(a => { const b = byLevel[a.level] = byLevel[a.level] || {n: 0, k: 0}; b.n++; if (a.correct) b.k++; });
+  const byTopic = {}; log.forEach(a => { const b = byTopic[a.topic] = byTopic[a.topic] || {n: 0, k: 0}; b.n++; if (a.correct) b.k++; });
+  const byRung = RUNGS.map(r => { const xs = log.filter(a => a.hint_rung === r); return {n: xs.length, k: xs.filter(a => a.correct).length}; });
+  const levelsOk = Object.entries(byLevel).filter(([, v]) => v.n >= 3 && v.k / v.n >= .5).map(([l]) => +l);
+  const zpd = levelsOk.length ? Math.max(...levelsOk) : null;
+  const topics3 = Object.entries(byTopic).filter(([, v]) => v.n >= 3).map(([key, v]) => ({key, acc: v.k / v.n, n: v.n})).sort((a, b) => a.acc - b.acc);
+  const days = {}; log.forEach(a => { const d = dayKey(a.created_at); days[d] = (days[d] || 0) + 1; });
+  const r0 = data.rung0 && data.rung0.by_student && data.rung0.by_student[name];
+  return {name, meta, log, n, k, acc: pct(k, n), ci: wilson(k, n), clean: {n: clean.length, k: cleanK}, hinted: {n: hinted.length, k: hintedK},
+          hintRate: pct(log.filter(a => a.hint_rung > 0).length, n), afterSolution, trend, recentN: recent.length, previousN: previous.length,
+          slope: n >= 10 ? slope(log.map(a => a.correct ? 1 : 0)) : null, medianGap: median(gaps), gaps, letters, chi2, pLetters: n >= 25 ? chi2Sf4(chi2) : null, pBinom,
+          hintTest: twoProp(hintedK, hinted.length, cleanK, clean.length),
+          runs: runs(log.map(a => a.correct)), byLevel, byTopic, byRung, zpd, weakest: topics3[0] || null, strongest: topics3.length >= 2 ? topics3[topics3.length - 1] : null,
+          days, reviews: log.filter(a => a.review).length, rung0: r0 || null,
+          mastery: (data.students || {})[name] || {}, base: meta.base_level, start: meta.start_level};
+}
+
+// ---------------------------------------------------------------- the diagnosis in words
+function diagnose(s) {
+  const d = t().diag, out = [];
+  // every rule names its n and only recommends when the numbers can carry it (reviewer, round 16)
+  const [lo, hi] = s.ci.map(v => Math.round(100 * v));
+  if (s.n < 10) out.push(["warn", d.few(s.n, lo, hi)]);
+  else if (s.acc >= 75) out.push(["good", d.high(s.acc, lo, hi)]); else if (s.acc >= 45) out.push(["", d.mid(s.acc, lo, hi)]); else out.push(["bad", d.low(s.acc, lo, hi)]);
+  if (s.n >= 20 && (s.pBinom > .2 || (s.pLetters != null && s.pLetters < .05 && s.acc < 40))) out.push(["bad", d.guess]);
+  if (s.hinted.n >= 8 && s.clean.n >= 8 && s.hintTest && s.hintTest.diff > 0 && s.hintTest.p < .05) out.push(["warn", d.hintdep(pct(s.hinted.k, s.hinted.n), s.hinted.n, pct(s.clean.k, s.clean.n), s.clean.n)]);
+  if (s.trend && s.previousN >= 10) {
+    const dd = Math.round(100 * s.trend.diff), pp = s.trend.p.toFixed(2);
+    if (s.trend.p < .05) out.push(dd > 0 ? ["good", d.up(dd, pp)] : ["bad", d.down(-dd, pp)]);
+    else if (dd >= 15) out.push(["", d.up_soft(dd, pp)]); else if (dd <= -15) out.push(["", d.down_soft(-dd, pp)]);
+  }
+  if (s.gaps.length >= 5) { if (s.medianGap >= 1 && s.medianGap < 20) out.push(["warn", d.fast(Math.round(s.medianGap))]); else if (s.medianGap > 240) out.push(["", d.slow(fmtTime(s.medianGap))]); }
+  if (s.zpd != null) out.push(["", d.level(s.zpd, s.byLevel[s.zpd].n, Math.min(7, s.zpd + 1))]);
+  if (s.weakest && s.weakest.acc < .4) out.push(["bad", d.weak(topicName(s.weakest.key), Math.round(100 * s.weakest.acc), s.weakest.n)]);
+  if (s.strongest && s.strongest.acc >= .8 && s.strongest !== s.weakest) out.push(["good", d.strong(topicName(s.strongest.key), Math.round(100 * s.strongest.acc), s.strongest.n)]);
+  if (s.n >= 5 && s.afterSolution / s.n >= .3) out.push(["warn", d.solution(pct(s.afterSolution, s.n))]);
+  if (s.rung0 && s.rung0.uses > 0) out.push(["", d.rung0(s.rung0.uses)]);
+  return out;
+}
+
+// ---------------------------------------------------------------- SVG helpers
+function el(tag, attrs, text) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
+function svg(w, h) { return el("svg", {viewBox: `0 0 ${w} ${h}`, role: "img", preserveAspectRatio: "xMidYMid meet"}); }
+function titled(node, text) { node.dataset.tip = text; return node; }
+// one tooltip per card: the hovered element's data-tip, or what the chart's own nearest() says
+function tips(box) {
+  const tp = document.createElement("div"); tp.className = "tip"; box.appendChild(tp);
+  const hide = () => { tp.style.display = "none"; box.querySelectorAll("svg").forEach(g => g.leave && g.leave()); };
+  const show = e => {
+    const g = e.target.closest("svg"), hit = e.target.closest("[data-tip]");
+    const text = hit ? hit.dataset.tip : (g && g.nearest ? g.nearest(e) : null);
+    if (!text) { hide(); return; }
+    tp.textContent = text; tp.style.display = "block";
+    const r = box.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    tp.style.left = Math.max(4, Math.min(x + 14, r.width - tp.offsetWidth - 6)) + "px";
+    tp.style.top = (y - tp.offsetHeight - 12 > 0 ? y - tp.offsetHeight - 12 : y + 18) + "px";
+  };
+  box.addEventListener("mousemove", show); box.addEventListener("mouseleave", hide);
+  box.addEventListener("touchstart", e => { const t0 = e.touches[0]; show({target: document.elementFromPoint(t0.clientX, t0.clientY) || e.target, clientX: t0.clientX, clientY: t0.clientY}); }, {passive: true});
+}
+const C = () => ({ink: cssVar("--ink"), muted: cssVar("--muted"), line: cssVar("--line"), card2: cssVar("--card-2"), accent: cssVar("--accent"), ok: cssVar("--ok"), bad: cssVar("--bad"), warn: cssVar("--warn")});
+
+// horizontal bars: rows [{label, value (0..1), text}]
+function hbars(rows, opts = {}) {
+  const c = C(), w = 520, rowH = 30, left = opts.left || 170, right = 70, h = rows.length * rowH + 6;
+  const s = svg(w, h);
+  rows.forEach((r, i) => {
+    const y = i * rowH + 4, bw = Math.max(0, (w - left - right) * (r.value || 0));
+    s.appendChild(el("text", {x: left - 10, y: y + 17, "text-anchor": "end", class: "small"}, r.label));
+    s.appendChild(el("rect", {x: left, y, width: w - left - right, height: 20, rx: 10, fill: c.card2}));
+    s.appendChild(titled(el("rect", {x: left, y, width: w - left - right, height: 20, rx: 10, fill: "transparent"}), `${r.label}\n${r.text} · ${Math.round(100 * (r.value || 0))} %`));
+    if (r.value) s.appendChild(titled(el("rect", {x: left, y, width: bw, height: 20, rx: 10, fill: c.accent}), `${r.label}\n${r.text} · ${Math.round(100 * r.value)} %`));
+    s.appendChild(el("text", {x: left + (w - left - right) + 8, y: y + 17, class: "ink"}, r.text));
+  });
+  return s;
+}
+
+// mastery 0..5 as five pips plus the accuracy bar, one row per topic
+function topicsChart(s) {
+  const c = C(), w = 520, rowH = 34, left = 170, h = (data.topics || []).length * rowH + 6, g = svg(w, h);
+  (data.topics || []).forEach((tp, i) => {
+    const y = i * rowH + 4, m = +(s.mastery[tp.key] || 0), b = s.byTopic[tp.key];
+    g.appendChild(el("text", {x: left - 10, y: y + 17, "text-anchor": "end", class: "small"}, lang === "cat" ? tp.name_ca : tp.name_en));
+    const name = lang === "cat" ? tp.name_ca : tp.name_en;
+    for (let p = 0; p < 5; p++) g.appendChild(titled(el("rect", {x: left + p * 16, y: y + 3, width: 12, height: 18, rx: 4, fill: p < m ? (m >= 4 ? c.ok : m >= 3 ? c.accent : m === 2 ? c.warn : c.bad) : c.card2}), `${name}\n${t().legend[m]}`));
+    const x0 = left + 96, bw = w - x0 - 64;
+    g.appendChild(titled(el("rect", {x: x0, y: y + 3, width: bw, height: 18, rx: 9, fill: c.card2}), b && b.n ? `${name}\n${b.k}/${b.n} · ${pct(b.k, b.n)} %` : `${name}\n–`));
+    if (b && b.n) {
+      g.appendChild(titled(el("rect", {x: x0, y: y + 3, width: bw * b.k / b.n, height: 18, rx: 9, fill: c.accent}), `${name}\n${b.k}/${b.n} · ${pct(b.k, b.n)} %`));
+      g.appendChild(el("text", {x: x0 + bw + 8, y: y + 17, class: "ink"}, `${b.k}/${b.n}`));
+    } else g.appendChild(el("text", {x: x0 + bw + 8, y: y + 17, class: "small"}, "–"));
+  });
+  return g;
+}
+
+// rolling accuracy over the answers, a dot per answer, the problem's level as steps behind
+function trendChart(s) {
+  const c = C(), w = 520, h = 190, left = 36, right = 36, top = 14, bottom = 28, pw = w - left - right, ph = h - top - bottom, g = svg(w, h);
+  const n = s.log.length; if (!n) return g;
+  const x = i => left + (n === 1 ? pw / 2 : pw * i / (n - 1));
+  const yAcc = v => top + ph * (1 - v), yLvl = l => top + ph * (1 - l / 7);
+  [0, .5, 1].forEach(v => { g.appendChild(el("line", {x1: left, x2: left + pw, y1: yAcc(v), y2: yAcc(v), stroke: c.line, "stroke-dasharray": v === .5 ? "3 4" : null})); g.appendChild(el("text", {x: left - 6, y: yAcc(v) + 4, "text-anchor": "end", class: "small"}, `${v * 100}`)); });
+  [0, 7].forEach(l => g.appendChild(el("text", {x: left + pw + 6, y: yLvl(l) + 4, class: "small"}, `N${l}`)));
+  let d = ""; s.log.forEach((a, i) => { d += (i ? " L" : "M") + `${x(i)} ${yLvl(a.level)}`; if (i + 1 < n) d += ` L${x(i + 1)} ${yLvl(a.level)}`; });
+  g.appendChild(titled(el("path", {d, fill: "none", stroke: c.muted, "stroke-width": 2, "stroke-dasharray": "4 3", opacity: .7}), t().charts.level_line));
+  const win = 5; let p = "";
+  s.log.forEach((_, i) => { const xs = s.log.slice(Math.max(0, i - win + 1), i + 1); const v = xs.filter(a => a.correct).length / xs.length; p += (i ? " L" : "M") + `${x(i)} ${yAcc(v)}`; });
+  g.appendChild(titled(el("path", {d: p, fill: "none", stroke: c.accent, "stroke-width": 3, "stroke-linejoin": "round"}), t().charts.rolling));
+  s.log.forEach((a, i) => g.appendChild(el("circle", {cx: x(i), cy: yAcc(a.correct ? 1 : 0), r: 4.5, fill: a.correct ? c.ok : c.bad})));
+  g.appendChild(el("text", {x: left, y: h - 8, class: "small"}, "1"));
+  g.appendChild(el("text", {x: left + pw, y: h - 8, "text-anchor": "end", class: "small"}, `${n}`));
+  g.appendChild(el("text", {x: left + pw / 2, y: h - 8, "text-anchor": "middle", class: "small"}, `${t().charts.rolling} · ${t().charts.level_line}`));
+  const guide = g.appendChild(el("line", {x1: 0, x2: 0, y1: top, y2: top + ph, stroke: c.ink, "stroke-width": 1, "stroke-dasharray": "2 3", visibility: "hidden"}));
+  g.nearest = e => {   // the answer closest to the cursor, whatever the cursor is over
+    const r = g.getBoundingClientRect(), vx = (e.clientX - r.left) * w / r.width;
+    let best = 0; for (let i = 1; i < n; i++) if (Math.abs(x(i) - vx) < Math.abs(x(best) - vx)) best = i;
+    const a = s.log[best], xs = s.log.slice(Math.max(0, best - win + 1), best + 1), roll = Math.round(100 * xs.filter(q => q.correct).length / xs.length);
+    guide.setAttribute("x1", x(best)); guide.setAttribute("x2", x(best)); guide.setAttribute("visibility", "visible");
+    return `${best + 1}/${n} · ${topicName(a.topic)} · ${t().level} ${a.level}\n${a.letter}${a.correct ? " ✓" : " ✗ (" + a.label + ")"}${a.hint_rung ? " · " + t().rungs[a.hint_rung] : ""}\n${t().charts.rolling}: ${roll} %`;
+  };
+  g.leave = () => guide.setAttribute("visibility", "hidden");
+  return g;
+}
+
+// one stacked bar of the hint rungs, then each rung with its accuracy
+function hintsChart(s) {
+  const c = C(), w = 520, h = 40 + 5 * 26, g = svg(w, h), colors = [c.ok, c.accent, c.accent, c.warn, c.bad], fade = [1, 1, .7, 1, 1];
+  let x = 0; const bw = w - 2;
+  g.appendChild(el("rect", {x: 1, y: 2, width: bw, height: 22, rx: 11, fill: c.card2}));
+  if (s.n) s.byRung.forEach((r, i) => { if (!r.n) return; const ww = bw * r.n / s.n; g.appendChild(titled(el("rect", {x: 1 + x, y: 2, width: ww, height: 22, fill: colors[i], opacity: fade[i]}), `${t().rungs[i]}\n${r.n} · ${pct(r.n, s.n)} % · ${t().charts.acc_rung} ${pct(r.k, r.n)} %`)); x += ww; });
+  s.byRung.forEach((r, i) => {
+    const y = 40 + i * 26;
+    g.appendChild(el("circle", {cx: 8, cy: y + 10, r: 6, fill: colors[i], opacity: fade[i]}));
+    g.appendChild(el("text", {x: 22, y: y + 14, class: "small"}, t().rungs[i]));
+    g.appendChild(el("text", {x: 230, y: y + 14, class: "ink"}, r.n ? `${r.n} · ${pct(r.n, s.n)} %` : "0"));
+    g.appendChild(el("text", {x: 360, y: y + 14, class: "small"}, r.n ? `${t().charts.acc_rung} ${pct(r.k, r.n)} %` : ""));
+  });
+  return g;
+}
+
+// letters chosen, against the 20 % of chance
+function lettersChart(s) {
+  const c = C(), w = 520, h = 150, left = 30, top = 10, bottom = 26, pw = w - left - 10, ph = h - top - bottom, g = svg(w, h);
+  const max = Math.max(.4, ...Object.values(s.letters).map(v => s.n ? v / s.n : 0));
+  const y = v => top + ph * (1 - v / max);
+  g.appendChild(titled(el("line", {x1: left, x2: left + pw, y1: y(.2), y2: y(.2), stroke: c.muted, "stroke-dasharray": "3 4"}), t().charts.chance));
+  g.appendChild(el("text", {x: left + pw, y: y(.2) - 4, "text-anchor": "end", class: "small"}, t().charts.chance));
+  "ABCDE".split("").forEach((L, i) => {
+    const v = s.n ? s.letters[L] / s.n : 0, bw = pw / 5 - 14, x = left + 7 + i * pw / 5;
+    g.appendChild(titled(el("rect", {x, y: top, width: bw, height: ph, fill: "transparent"}), `${L}\n${s.letters[L]} · ${Math.round(100 * v)} %`));
+    if (s.letters[L]) g.appendChild(titled(el("rect", {x, y: y(v), width: bw, height: top + ph - y(v), rx: 8, fill: c.accent}), `${L}\n${s.letters[L]} · ${Math.round(100 * v)} %`));
+    g.appendChild(el("text", {x: x + bw / 2, y: h - 8, "text-anchor": "middle", class: "ink"}, L));
+    if (s.letters[L]) g.appendChild(el("text", {x: x + bw / 2, y: y(v) - 4, "text-anchor": "middle", class: "small"}, `${s.letters[L]}`));
+  });
+  return g;
+}
+
+// answers per day, the last 14 days
+function daysChart(s) {
+  const c = C(), w = 520, h = 110, left = 6, top = 16, bottom = 22, pw = w - 12, ph = h - top - bottom, g = svg(w, h);
+  const days = []; const now = new Date(); now.setHours(12, 0, 0, 0);
+  for (let i = 13; i >= 0; i--) { const d = new Date(now.getTime() - i * 864e5); days.push({key: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`, label: `${d.getDate()}`, n: 0}); }
+  days.forEach(d => d.n = s.days[d.key] || 0);
+  const max = Math.max(1, ...days.map(d => d.n));
+  days.forEach((d, i) => {
+    const bw = pw / 14 - 6, x = left + 3 + i * pw / 14, bh = ph * d.n / max;
+    g.appendChild(titled(el("rect", {x, y: top, width: bw, height: ph, fill: "transparent"}), `${d.key.split("-").reverse().join("/")}\n${d.n}`));
+    if (d.n) g.appendChild(titled(el("rect", {x, y: top + ph - bh, width: bw, height: bh, rx: 5, fill: i === 13 ? c.accent : c.muted}), `${d.key.split("-").reverse().join("/")}\n${d.n}`));
+    else g.appendChild(el("rect", {x, y: top + ph - 2, width: bw, height: 2, rx: 1, fill: c.line}));
+    g.appendChild(el("text", {x: x + bw / 2, y: h - 6, "text-anchor": "middle", class: "small"}, d.label));
+    if (d.n) g.appendChild(el("text", {x: x + bw / 2, y: top + ph - bh - 4, "text-anchor": "middle", class: "small"}, `${d.n}`));
+  });
+  return g;
+}
+
+// ---------------------------------------------------------------- the page
+function card(title, node, cls) { const d = document.createElement("div"); d.className = "card" + (cls ? " " + cls : ""); const h = document.createElement("h3"); h.textContent = title; d.appendChild(h); d.appendChild(node); if (node.tagName === "svg") tips(d); return d; }
+function tile(k, v, s, cls) { return `<div class="tile ${cls || ""}"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="s">${esc(s || "")}</div></div>`; }
+const accClass = p => p == null ? "" : p >= 75 ? "good" : p >= 45 ? "" : "bad";
+function empty(text) { const p = document.createElement("p"); p.className = "empty"; p.textContent = text || t().no_answers; return p; }
+
+function studentNames() {
+  const names = new Set(Object.keys(data.students || {}));
+  Object.keys(data.log && data.log.students || {}).forEach(n => names.add(n));
+  (data.log && data.log.answers || []).forEach(a => names.add(a.student_id));
+  return [...names].sort((a, b) => a.localeCompare(b));
+}
+function lastAnswerOf(name) { const xs = (data.log && data.log.answers || []).filter(a => a.student_id === name); return xs.length ? xs[xs.length - 1].created_at : 0; }
+const fmtDate = ts => new Date(ts * 1000).toLocaleDateString(lang === "cat" ? "ca" : "en");
+
+function renderClass() {
+  const T = t().tiles, log = data.log && data.log.answers || [], names = studentNames();
+  const n = log.length, k = log.filter(a => a.correct).length, clean = log.filter(a => a.hint_rung === 0), cleanK = clean.filter(a => a.correct).length;
+  const today = dayKey(Date.now() / 1000), todayAnswers = log.filter(a => dayKey(a.created_at) === today), activeToday = new Set(todayAnswers.map(a => a.student_id)).size;
+  $("class-tiles").innerHTML =
+    tile(T.students, names.length, `${activeToday} ${T.active}`) +
+    tile(T.answers, n, `${todayAnswers.length} ${T.today}`) +
+    tile(T.acc, fmtPct(pct(k, n)), n ? T.ci(...wilson(k, n).map(v => Math.round(100 * v))) : "", accClass(pct(k, n))) +
+    tile(T.acc_clean, fmtPct(pct(cleanK, clean.length)), T.of(clean.length), accClass(pct(cleanK, clean.length))) +
+    tile(T.hints, fmtPct(pct(log.filter(a => a.hint_rung > 0).length, n)), T.hints_s);
+  // the mastery heatmap, one row per student; a click picks the student
+  const topics = data.topics || [];
+  $("mastery").innerHTML = `<thead><tr><th>${t().student}</th>${topics.map(tp => `<th>${esc(lang === "cat" ? tp.name_ca : tp.name_en)}</th>`).join("")}<th>${t().total}</th><th>${t().correct}</th></tr></thead><tbody>` +
+    names.map(s => { const xs = log.filter(a => a.student_id === s), kk = xs.filter(a => a.correct).length; return `<tr data-s="${esc(s)}" class="${s === who ? "on" : ""}" tabindex="0" role="button" aria-pressed="${s === who}"><td>${esc(s)}</td>${topics.map(tp => { const m = ((data.students || {})[s] || {})[tp.key] ?? 0; return `<td class="m${m}">${m}</td>`; }).join("")}<td>${xs.length}</td><td>${fmtPct(pct(kk, xs.length))}</td></tr>`; }).join("") + "</tbody>";
+  $("mastery").querySelectorAll("tbody tr").forEach(tr => {
+    tr.onclick = () => pick(tr.dataset.s, true);
+    tr.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(tr.dataset.s, true); } };
+  });
+  $("legend").innerHTML = t().legend.map(l => `<span>${esc(l)}</span>`).join("");
+  // the class by level and by topic
+  const byLevel = {}; log.forEach(a => { const b = byLevel[a.level] = byLevel[a.level] || {n: 0, k: 0}; b.n++; if (a.correct) b.k++; });
+  const lv = Object.keys(byLevel).sort((a, b) => a - b).map(l => ({label: `${t().level} ${l}`, value: byLevel[l].k / byLevel[l].n, text: `${byLevel[l].k}/${byLevel[l].n}`}));
+  $("class-levels").replaceChildren(lv.length ? hbars(lv, {left: 90}) : empty());
+  [$("class-levels"), $("class-topics")].forEach(b => { if (!b.parentElement.querySelector(".tip")) tips(b.parentElement); });
+  const byTopic = {}; log.forEach(a => { const b = byTopic[a.topic] = byTopic[a.topic] || {n: 0, k: 0}; b.n++; if (a.correct) b.k++; });
+  const tp = topics.filter(x => byTopic[x.key]).map(x => ({label: lang === "cat" ? x.name_ca : x.name_en, value: byTopic[x.key].k / byTopic[x.key].n, text: `${byTopic[x.key].k}/${byTopic[x.key].n}`}));
+  $("class-topics").replaceChildren(tp.length ? hbars(tp) : empty());
+}
+
+function renderWho() {
+  const names = studentNames();
+  if (!who || !names.includes(who)) who = names.slice().sort((a, b) => lastAnswerOf(b) - lastAnswerOf(a))[0] || null;
+  $("who-label").textContent = who || t().none;
+  $("who-list").innerHTML = names.map(n => `<li role="option" tabindex="0" aria-selected="${n === who}" data-s="${esc(n)}">${esc(n)}<small>${lastAnswerOf(n) ? fmtDate(lastAnswerOf(n)) : ""}</small></li>`).join("");
+  $("who-list").querySelectorAll("li").forEach(li => {
+    li.onclick = () => { openWho(false); pick(li.dataset.s); };
+    li.onkeydown = e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openWho(false); pick(li.dataset.s); $("who-button").focus(); }
+      else if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); const sib = e.key === "ArrowDown" ? li.nextElementSibling : li.previousElementSibling; (sib || li).focus(); }
+      else if (e.key === "Escape") { openWho(false); $("who-button").focus(); }
+    };
+  });
+  const meta = data.log && data.log.students && who ? data.log.students[who] : null;
+  $("since").textContent = meta && meta.created_at ? t().since(fmtDate(meta.created_at)) : "";
+}
+function openWho(open) { const o = open == null ? $("who-list").hidden : open; $("who-list").hidden = !o; $("who-button").setAttribute("aria-expanded", String(o)); }
+$("who-button").onclick = () => openWho();
+$("who-button").onkeydown = e => { if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); openWho(true); const items = $("who-list").querySelectorAll("li"); const on = $("who-list").querySelector('[aria-selected="true"]'); (on || items[0] || $("who-button")).focus(); } };
+// choosing a student: the log is fetched again (it is not polled with the report)
+function pick(name, scroll) { who = name; loadLog().then(render); render(); if (scroll) $("student-block").scrollIntoView({behavior: "smooth", block: "start"}); }
+document.addEventListener("click", e => { if (!e.target.closest(".dropdown") && !$("who-list").hidden) openWho(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("who-list").hidden) openWho(false); });
+
+function renderStudent() {
+  const box = $("student"); box.replaceChildren();
+  if (!who) { box.appendChild(empty(t().none)); return; }
+  const s = analyse(who), T = t().tiles, ST = t().stats;
+  if (!s.n) { box.appendChild(empty()); return; }
+  const tiles = document.createElement("div"); tiles.className = "tiles";
+  const streak = s.runs.current;
+  tiles.innerHTML =
+    tile(T.answers, s.n, `${s.reviews} ${T.reviews}`) +
+    tile(T.acc, fmtPct(s.acc), T.ci(...s.ci.map(v => Math.round(100 * v))), accClass(s.acc)) +
+    tile(T.acc_clean, fmtPct(pct(s.clean.k, s.clean.n)), T.of(s.clean.n), accClass(pct(s.clean.k, s.clean.n))) +
+    tile(T.hints, fmtPct(s.hintRate), T.hints_s, s.hintRate >= 50 ? "warn" : "") +
+    tile(T.time, fmtTime(s.medianGap), T.time_s, s.medianGap != null && s.medianGap < 20 ? "warn" : "") +
+    tile(T.streak, `${Math.abs(streak)}`, streak >= 0 ? T.streak_ok : T.streak_bad, streak > 0 ? "good" : streak < 0 ? "bad" : "") +
+    tile(T.level, s.zpd != null ? s.zpd : (s.base ?? "–"), s.base != null ? T.level_s(s.base) : "");
+  box.appendChild(tiles);
+  const ul = document.createElement("ul");
+  diagnose(s).forEach(([cls, text]) => { const li = document.createElement("li"); li.className = cls; li.textContent = text; ul.appendChild(li); });
+  const grid = document.createElement("div"); grid.className = "cards";
+  grid.appendChild(card(t().charts.diag, ul, "diag wide"));
+  grid.appendChild(card(t().charts.topics, topicsChart(s)));
+  grid.appendChild(card(t().charts.trend, trendChart(s)));
+  grid.appendChild(card(t().charts.hints, hintsChart(s)));
+  grid.appendChild(card(t().charts.letters, lettersChart(s)));
+  const lv = Object.keys(s.byLevel).sort((a, b) => a - b).map(l => ({label: `${t().level} ${l}`, value: s.byLevel[l].k / s.byLevel[l].n, text: `${s.byLevel[l].k}/${s.byLevel[l].n}`}));
+  grid.appendChild(card(t().charts.levels, hbars(lv, {left: 90})));
+  grid.appendChild(card(t().charts.days, daysChart(s)));
+  // the advanced statistics, each with how it is computed
+  const rows = [
+    [ST.acc, `${fmtPct(s.acc)} · ${Math.round(100 * s.ci[0])}–${Math.round(100 * s.ci[1])} %`],
+    [ST.clean, s.clean.n ? `${fmtPct(pct(s.clean.k, s.clean.n))} (${s.clean.k}/${s.clean.n})` : "–"],
+    [ST.hintdep, s.hinted.n && s.clean.n ? `${s.clean.k ? ((s.hinted.k / s.hinted.n) / (s.clean.k / s.clean.n)).toFixed(2) : "∞"} (${s.hinted.n} / ${s.clean.n}${s.hintTest ? ", p = " + s.hintTest.p.toFixed(2) : ""})` : "–"],
+    [ST.trend, s.trend && s.previousN ? `${s.trend.diff >= 0 ? "+" : ""}${Math.round(100 * s.trend.diff)} ${t().units.pp} · p = ${s.trend.p.toFixed(2)}` : "–"],
+    [ST.slope, s.slope != null ? `${s.slope >= 0 ? "+" : ""}${(1000 * s.slope).toFixed(1)} ${t().units.pp}` : "–"],
+    [ST.guess, s.n >= 20 ? `p = ${s.pBinom.toFixed(3)}` + (s.pLetters != null ? ` · χ² = ${s.chi2.toFixed(1)} (p = ${s.pLetters.toFixed(2)})` : "") : `– (${t().units.n} = ${s.n})`],
+    [ST.time, s.gaps.length ? `${fmtTime(s.medianGap)} (${t().units.n} = ${s.gaps.length})` : "–"],
+    [ST.streaks, `${s.runs.longestOk} ✓ · ${s.runs.longestBad} ✗`],
+    [ST.zpd, s.zpd != null ? `${s.zpd} → ${Math.min(7, s.zpd + 1)}` : "–"],
+    [ST.weak, s.weakest ? `${topicName(s.weakest.key)} · ${Math.round(100 * s.weakest.acc)} % (${s.weakest.n})` : "–"],
+    [ST.strong, s.strongest ? `${topicName(s.strongest.key)} · ${Math.round(100 * s.strongest.acc)} % (${s.strongest.n})` : "–"],
+    [ST.solution, `${fmtPct(pct(s.afterSolution, s.n))} (${s.afterSolution})`],
+    [ST.rung0, s.rung0 ? `${s.rung0.uses} · ${s.rung0.with.answers ? fmtPct(pct(s.rung0.with.correct, s.rung0.with.answers)) : "–"} / ${s.rung0.without.answers ? fmtPct(pct(s.rung0.without.correct, s.rung0.without.answers)) : "–"}` : "–"],
+  ];
+  const table = document.createElement("table"); table.className = "stats";
+  table.innerHTML = rows.map(([[name, how], val]) => `<tr><td>${esc(name)}</td><td class="val">${esc(val)}</td><td class="how">${esc(how)}</td></tr>`).join("");
+  grid.appendChild(card(t().charts.stats, table, "wide"));
+  box.appendChild(grid);
+}
+
+function pctOf(c) { return c.answers ? `${c.correct}/${c.answers} (${Math.round(100 * c.correct / c.answers)}%)` : "–"; }
 function renderRung0(r) {
-  $("h-rung0").textContent = t().rung0; $("rung0-help").textContent = t().rung0_help;
+  $("h-rung0").textContent = t().rung0_title; $("rung0-help").textContent = t().rung0_help;
   if (!r) { $("rung0-section").hidden = true; return; }
   $("rung0-section").hidden = false;
   const names = Object.keys(r.by_student || {}).sort();
-  $("rung0-summary").textContent = r.students_total ? t().rung0_summary(r.students_using, r.students_total, r.uses) : t().rung0_none;
+  $("rung0-summary").textContent = names.length ? t().rung0_summary(r.students_using, r.students_total, r.uses) : t().rung0_none;
   $("rung0-caveat").textContent = t().rung0_caveat(r.with.answers, r.without.answers);
-  const row = (name, c) => `<tr><td>${esc(name)}</td><td>${c.uses}</td><td>${c.problems}</td><td>${pct(c.with)}</td><td>${pct(c.without)}</td></tr>`;
+  const row = (name, c) => `<tr><td>${esc(name)}</td><td>${c.uses}</td><td>${c.problems}</td><td>${pctOf(c.with)}</td><td>${pctOf(c.without)}</td></tr>`;
   $("rung0").innerHTML = `<tr><th>${t().student}</th><th>${t().uses}</th><th>${t().problems}</th><th>${t().acc_with}</th><th>${t().acc_without}</th></tr>` +
     names.map(n => row(n, r.by_student[n])).join("") +
     (names.length > 1 ? row(t().all, {uses: r.uses, problems: names.reduce((a, n) => a + r.by_student[n].problems, 0), with: r.with, without: r.without}) : "");
 }
-async function load() { data = await (await fetch("/api/teacher")).json(); render(); }
+
+function render() {
+  if (!data) return;
+  document.documentElement.lang = lang === "cat" ? "ca" : "en"; document.title = t().title;
+  $("title").textContent = t().title; $("back").textContent = t().back; $("dash").textContent = t().dash;
+  $("h-class").textContent = t().h_class; $("h-student").textContent = t().h_student; $("h-mastery").textContent = t().mastery;
+  $("h-class-levels").textContent = t().levels; $("h-class-topics").textContent = t().class_topics;
+  $("lang-cat").classList.toggle("on", lang === "cat"); $("lang-eng").classList.toggle("on", lang === "eng");
+  $("source").textContent = (t().source[data.source] || data.source) + (data.error ? " · " + data.error : "") + (data.log_error ? " · " + data.log_error : "");
+  renderWho();
+  renderClass();
+  renderStudent();
+  renderRung0(data.rung0);
+}
+let logData = null;   // the answer log, fetched apart: it is the heavy part of the report
+async function loadLog() { try { logData = await (await fetch("/api/teacher/log")).json(); } catch (e) { return; } if (data) { Object.assign(data, logData); } }
+async function load() { try { data = await (await fetch("/api/teacher")).json(); } catch (e) { return; } if (logData) Object.assign(data, logData); render(); }   // a server restart: keep the last picture
 $("lang-cat").onclick = () => { lang = "cat"; render(); }; $("lang-eng").onclick = () => { lang = "eng"; render(); };
-load(); setInterval(load, 3000);
+loadLog().then(load); setInterval(load, 3000); setInterval(() => loadLog().then(render), 30000);
 </script>
 </body>
 </html>

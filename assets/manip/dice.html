@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>El dau</title>
 <link rel="stylesheet" href="../theme.css">
-<script src="../theme.js"></script>
 <style>
   body { margin: 0; padding: 14px; font: 16px/1.4 system-ui, sans-serif; color: var(--ink); background: var(--card); }
   h1 { font-size: 18px; margin: 0 0 6px; } p { margin: 4px 0 10px; color: var(--muted); font-size: 14px; }
@@ -41,7 +40,7 @@
   </div>
 </div>
 <script>
-const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();  // theme tokens for canvas and inline colours
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();  // colour tokens for canvas and inline colours
 const lang = new URLSearchParams(location.search).get("lang") === "eng" ? "eng" : "cat";
 const T = {
   cat: {title: "El dau", intro: "En un dau, les cares oposades sumen 7: 1 i 6, 2 i 5, 3 i 4. Gira'l amb les fletxes i mira quines cares es veuen alhora.",
