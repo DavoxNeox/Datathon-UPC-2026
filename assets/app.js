@@ -476,7 +476,10 @@ function renderAnswer(s) {
     b.classList.toggle("right", !!a && b.dataset.l === a.label);
     b.classList.toggle("wrong", !!a && b.dataset.l === a.letter && !a.correct);
   });
-  $("verdict").textContent = txt(s.message, "text") || (lang === "cat" ? s.message.ca : s.message.en) || "";
+  // the verdict stays on the sheet while the problem is open, even when a later hint clears the server's message
+  const msg = txt(s.message, "text") || (lang === "cat" ? s.message.ca : s.message.en) || "";
+  if (msg || !a) verdictKept = {id: s.problem && s.problem.id, lang, text: msg};
+  $("verdict").textContent = msg || (verdictKept.id === (s.problem && s.problem.id) && verdictKept.lang === lang ? verdictKept.text : "");
   $("feedback").className = "sheet " + (a ? (a.correct ? "ok" : "bad") : "");
   const solved = s.hints.some(h => h.kind === "solution");
   $("next").hidden = !(a || solved);
@@ -496,6 +499,7 @@ function renderAnswer(s) {
 
 const expanded = new Set();   // "mostra-ho tot" pressed, by problem and hint index
 let scrolledSolution = null;   // the problem whose solution the page already scrolled to
+let verdictKept = {id: null, lang: null, text: ""};   // the last verdict shown, per problem and language
 let hintsSig = "";
 function renderHints(s) {
   const pid = s.problem ? s.problem.id : "";

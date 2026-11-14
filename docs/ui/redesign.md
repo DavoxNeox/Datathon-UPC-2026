@@ -393,3 +393,13 @@ close the card. It opens from the menu icon, and closes with its X, Escape or a 
 scrim; focus moves to the X on open and back to the icon on close, so it behaves the same
 from the keyboard. There is no close-by-itself any more (a centred card would lose the
 cursor all the time), which also settles the keyboard problem of the previous round.
+
+### Eighth round
+
+- The five letter buttons never wrap: one row that shrinks (65 px each on a phone), so no
+  lone giant button.
+- After an answer, right or wrong, the right button is the hint while hints are left; the
+  solution only when none are left. The server now allows hints after the answer (one guard
+  removed in `copilot/webapp.py`, with a test): a student who got it wrong may retry by
+  themselves with a hint before reading the solution. Mastery is unchanged (recorded at the
+  answer). The verdict stays on the sheet when a later hint clears the server's message.
