@@ -21,7 +21,7 @@ const I18N = {
         confirm_reset: "Segur? Esborra el progrés",
         more: "mostra-ho tot", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
         more_panel: "Menú", board_led: "La placa", timing: "Temps (per al professor)", problem: "Problema", option: "opció",
-        theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"}, no_hints: "Ja no queden pistes en aquest problema",
+        no_hints: "Ja no queden pistes en aquest problema",
         read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
         other_kind: {eng: "En anglès · no compta com a pista", cat: "En català · no compta com a pista"},
         show_scan: "veure l'escaneig original", hide_scan: "amagar l'escaneig", original_scan: "Escaneig original",
@@ -39,14 +39,13 @@ const I18N = {
         confirm_reset: "Sure? Erase the progress",
         more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
         more_panel: "Menu", board_led: "The board", timing: "Timings (for the teacher)", problem: "Problem", option: "option",
-        theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"}, no_hints: "No hints left on this problem",
+        no_hints: "No hints left on this problem",
         read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
         other_kind: {eng: "In English · not counted as a hint", cat: "In Catalan · not counted as a hint"},
         show_scan: "see the original scan", hide_scan: "hide the scan", original_scan: "Original scan",
         no_hints_after: "This server gives no hints after an answer.",
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
-const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
 let lang = "cat", state = null, lastProblem = null, hadAnswer = false, loadReported = false;
 const t = () => I18N[lang];
 const txt = (obj, key) => obj[key + "_" + (lang === "cat" ? "ca" : "en")] ?? obj[key + "_ca"] ?? "";
@@ -76,7 +75,6 @@ function applyI18n() {
   sel.innerHTML = `<option value="auto">${esc(t().auto)}</option>` + t().courses.map((c, i) => `<option value="${i}">${esc(c)} (${t().levelName.toLowerCase()} ${i})</option>`).join("");
   sel.value = keep || "auto";
   renderDropdown();
-  renderTheme();
 }
 
 // The course dropdown: a button and a list that opens in the flow of the page (no popup, no native menu).
@@ -101,13 +99,6 @@ $("level-list").addEventListener("keydown", e => {
   else if (e.key === "Escape" || e.key === "Tab") { renderDropdown(false); if (e.key === "Escape") $("level-button").focus(); }
 });
 document.addEventListener("click", e => { if (!e.target.closest(".dropdown") && !$("level-list").hidden) renderDropdown(false); });
-
-function renderTheme() {
-  const mode = window.Theme ? Theme.get() : "auto";
-  $("theme-label").textContent = THEME_GLYPH[mode];
-  $("theme").title = t().theme[mode];
-  $("theme").setAttribute("aria-label", t().theme[mode]);
-}
 
 function drawLed(frame) {
   const c = $("led"), ctx = c.getContext("2d");
@@ -308,18 +299,14 @@ function cropPart(img, box, masks) {
 }
 
 // The scans are black on white. On the page the white goes: every pixel becomes ink with the alpha of its
-// darkness. Strokes and the edges of shapes take the theme's ink colour, so lines read on a dark page;
-// the inside of a filled shape (dark pixels with dark neighbours 3 px away in every direction) keeps its
-// own colour, so "the black square" stays black, with a light rim around it; a flat grey area (a shaded
-// triangle, a shaded hand) keeps its grey level in both themes, lifted a fixed step on a dark page. A
-// saturated colour keeps its hue (lightened in the dark theme). The light theme tints the same way:
-// black ink on the warm page. No white card anywhere.
+// darkness. Strokes and the edges of shapes take the page's ink colour; a flat grey area (a shaded
+// triangle, a shaded hand) keeps its grey level, smoothed; a saturated colour keeps its hue. Black ink on
+// the warm page, no white card anywhere.
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-function isDarkTheme() { const [br, bg, bb] = hexRgb(cssVar("--bg") || "#ffffff"); return br * 299 + bg * 587 + bb * 114 < 128000; }
 const tinted = raw => tintedCanvas(raw).toDataURL("image/png");
 function tintedCanvas(raw) {
-  const [ir, ig, ib] = hexRgb(cssVar("--ink") || "#1f2430"), dark = isDarkTheme();
+  const [ir, ig, ib] = hexRgb(cssVar("--ink") || "#1f2430");
   const w = raw.width, h = raw.height;
   const c = document.createElement("canvas"); c.width = w; c.height = h;
   const ctx = c.getContext("2d"); ctx.drawImage(raw, 0, 0);
@@ -327,7 +314,6 @@ function tintedCanvas(raw) {
   const lvl = new Uint8Array(w * h), neutral = new Uint8Array(w * h);   // the darkest channel, and whether the pixel is grey
   for (let p = 0, i = 0; p < w * h; p++, i += 4) { const mn = Math.min(d[i], d[i + 1], d[i + 2]); lvl[p] = mn; neutral[p] = Math.max(d[i], d[i + 1], d[i + 2]) - mn < 40 ? 1 : 0; }
   const at = (x, y) => x >= 0 && y >= 0 && x < w && y < h ? y * w + x : -1;
-  const darkAt = (x, y) => { const p = at(x, y); return p >= 0 && lvl[p] < 110; };
   // a grey patch: no solid ink (nothing under 25) within one pixel, and around it (two pixels) a grey mean rather
   // than paper, with white specks (the scan's grain in a shaded area) at most three fifths of the window; the
   // pixel takes the window's mean over its non-ink pixels, which also smooths the grain. Pixels right next
@@ -348,19 +334,15 @@ function tintedCanvas(raw) {
     if (neutral[p] && mn >= 40 && mn <= 245) {
       const k = win(x, y);
       if (k && k.mean >= 55 && k.mean <= 228 && k.white <= 0.6) {
-        const v = dark ? Math.min(210, Math.round(k.mean) + 35) : Math.round(k.mean);   // lifted a step on a dark page, never as light as the ink
-        out[i] = out[i + 1] = out[i + 2] = v; out[i + 3] = 255; continue;
+        out[i] = out[i + 1] = out[i + 2] = Math.round(k.mean); out[i + 3] = 255; continue;
       }
     }
     const darkness = 255 - mn;   // 0 on white; the scan's faint noise (under 60) goes, ink reaches full by 170
     const a = darkness < 60 ? 0 : Math.min(255, Math.round((darkness - 60) * 255 / 110));
     out[i + 3] = Math.min(d[i + 3], a);
     if (!a) continue;
-    const interior = dark && mn < 110 && darkAt(x - 3, y) && darkAt(x + 3, y) && darkAt(x, y - 3) && darkAt(x, y + 3);
-    if (interior) { out[i] = r; out[i + 1] = g; out[i + 2] = b; out[i + 3] = 255; }   // a black fill stays black
-    else if (mx - mn < 40) { out[i] = ir; out[i + 1] = ig; out[i + 2] = ib; }         // strokes and edges in the theme's ink
-    else if (dark) { out[i] = r + (255 - r) * .4; out[i + 1] = g + (255 - g) * .4; out[i + 2] = b + (255 - b) * .4; }
-    else { out[i] = r; out[i + 1] = g; out[i + 2] = b; }
+    if (mx - mn < 40) { out[i] = ir; out[i + 1] = ig; out[i + 2] = ib; }   // strokes, edges and fills in the page's ink
+    else { out[i] = r; out[i + 1] = g; out[i + 2] = b; }                    // a coloured piece keeps its colour
   }
   im.data.set(out); ctx.putImageData(im, 0, 0);
   return c;
@@ -378,7 +360,7 @@ function extractParts(img, clean) {
 
 const toCanvas = img => { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext("2d").drawImage(img, 0, 0); return c; };
 // one scan per problem: fetched once, cut once, then reused on every poll
-let scan = {id: null, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false, colours: false};
+let scan = {id: null, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false};
 function loadScan(p, clean) {
   scan = {id: p.id, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false,
         };
@@ -398,13 +380,11 @@ function loadScan(p, clean) {
 }
 const setSrc = (img, url) => { if (!url) img.removeAttribute("src"); else if (img.getAttribute("src") !== url) img.src = url; };
 function applyScan() {
-  // tinted once per theme, then reused on every poll
-  const key = cssVar("--bg");
-  if (scan.tintKey !== key) {
+  // tinted once per scan, then reused on every poll
+  if (!scan.tinted) {
     const fig = scan.figure || scan.whole;
     // the original scan (the link, or the fallback) is shown as it is, white paper included
     scan.tinted = {figure: fig ? (scan.figure ? tinted(fig) : fig.toDataURL("image/png")) : "", options: scan.options ? tinted(scan.options) : "", pieces: (scan.pieces || []).map(tinted), full: ""};
-    scan.tintKey = key;
   }
   const tt = scan.tinted || {figure: "", options: "", pieces: [], full: ""};
   $("fig-cap").hidden = !scan.whole;   // the whole scan stands in for a figure: say so
@@ -440,8 +420,6 @@ function tintedHintImage(key, b64) {
   const img = new Image(); img.onload = () => tintCache.set(key, tinted(toCanvas(img))); img.src = "data:image/png;base64," + b64;
   return "";
 }
-function retint() { tintCache.clear(); scan.tintKey = null; if (state && state.started) { applyScan(); renderHints(state); } }
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retint);
 
 // The figure never grows past the question: its height is the text's height (and at most a third of the
 // window, and at most 1.25 times its own size); the CSS keeps it under 30 % of the column. On a phone it
@@ -660,11 +638,10 @@ $("reset").onclick = async () => {
   render(await api("/api/reset"));
 };
 $("hints").addEventListener("click", e => { const b = e.target.closest("button[data-more]"); if (!b || !state) return; const key = (state.problem ? state.problem.id : "") + ":" + b.dataset.more; if (expanded.has(key)) expanded.delete(key); else expanded.add(key); renderHints(state); });
-$("manip").onclick = () => { const m = $("manip").dataset.m; $("manip-title").textContent = t().manip[m]; $("manip-frame").src = `manip/${m}.html?lang=${lang}${window.Theme ? Theme.query() : ""}`; $("manip-box").hidden = false; $("manip-box").scrollIntoView({behavior: "smooth", block: "nearest"}); };
+$("manip").onclick = () => { const m = $("manip").dataset.m; $("manip-title").textContent = t().manip[m]; $("manip-frame").src = `manip/${m}.html?lang=${lang}`; $("manip-box").hidden = false; $("manip-box").scrollIntoView({behavior: "smooth", block: "nearest"}); };
 $("manip-close").onclick = () => { $("manip-box").hidden = true; $("manip-frame").src = "about:blank"; };
 // the figure, bigger in its place: useful on a phone
 $("figure").onclick = () => { if ($("img").src) { $("figure").classList.toggle("zoomed"); fitFigure(); } };
-$("theme").onclick = () => { if (window.Theme) Theme.next(); renderTheme(); retint(); };
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("panel").hidden) { setPanel(false); return; }
   if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.metaKey || e.ctrlKey || e.altKey || !state || !state.started) return;

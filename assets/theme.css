@@ -1,6 +1,5 @@
 /* Colour tokens shared by the student page, the teacher view and the manipulatives.
-   Light by default, dark when the system asks for it (prefers-color-scheme) or when the
-   student picks it (html[data-theme]). The page's own styles only ever use these variables. */
+   One light theme; the page's own styles only ever use these variables. */
 :root {
   color-scheme: light;
   --bg: #f7f4ee;            /* warm off-white page */
@@ -22,27 +21,8 @@
   --warn: #8a5a00;
   --warn-bg: #fff3dc;
   --focus: #2f5fd6;
-  --figure-bg: #ffffff;     /* the problem PNGs have a white background */
-  --figure-dim: none;
   --shadow: 0 1px 2px rgba(31, 36, 48, .06);
   --glass: rgba(247, 244, 238, .84);   /* the settings popup */
   --scrim: rgba(31, 36, 48, .32);
-}
-/* Dark: graphite, not black; soft text, the accent one step lighter. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #15171c; --card: #15171c; --card-2: #22262e; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f; --control: #737a88;
-    --accent: #8aa6ff; --accent-ink: #0f1424; --accent-soft: #273153; --accent-deep: #6d88e0; --ok-deep: #6fb98f; --bad-deep: #d4847c;
-    --ok: #8fd9ad; --ok-bg: #1b3326; --bad: #f3a59d; --bad-bg: #44211e; --warn: #f0c070; --warn-bg: #3d3016;
-    --focus: #8aa6ff; --figure-bg: #ffffff; --figure-dim: brightness(.86); --shadow: none; --glass: rgba(30, 33, 40, .84); --scrim: rgba(0, 0, 0, .45);
-  }
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #15171c; --card: #15171c; --card-2: #22262e; --ink: #e9e7e2; --muted: #a0a6b1; --line: #30353f; --control: #737a88;
-  --accent: #8aa6ff; --accent-ink: #0f1424; --accent-soft: #273153; --accent-deep: #6d88e0; --ok-deep: #6fb98f; --bad-deep: #d4847c;
-  --ok: #8fd9ad; --ok-bg: #1b3326; --bad: #f3a59d; --bad-bg: #44211e; --warn: #f0c070; --warn-bg: #3d3016;
-  --focus: #8aa6ff; --figure-bg: #ffffff; --figure-dim: brightness(.86); --shadow: none; --glass: rgba(30, 33, 40, .84); --scrim: rgba(0, 0, 0, .45);
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
