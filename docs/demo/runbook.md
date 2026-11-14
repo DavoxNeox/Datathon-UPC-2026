@@ -1,5 +1,13 @@
 # Runbook: the morning of the pitch
 
+**Shortcuts.** `dev/demo_preflight.sh` runs steps 1 to 6 below in one command from the laptop
+(USB, the three services, the app, both pages, the LED, the two chains, the rehearsal aliases;
+`--clean` first wipes `data/students.db` on the board, `--no-chains` skips the chain rehearsal);
+every line prints `ok`, `FAIL` or `note`, and a `FAIL` names the row of `contingency.md` to read.
+`docs/demo/GUIA-DEMO.md` is the one-person guide in Spanish (the 3-minute order, the clicks one
+by one on the current interface, the numbers, the Reasoning half, plan B in short). This runbook
+is the long form: what each step checks and why.
+
 From a powered-off board to the last click. Laptop commands run in a terminal on the
 MacBook; nothing has to be typed on the board (the app, the two model servers and the relay
 start at boot: `docs/deploy-board.md` §5). Allow **30 minutes** before the slot; the board
@@ -14,7 +22,8 @@ needs 2 of them, the rest is checking and one rehearsal.
       and notifications off, browser zoom at 150% remembered for `127.0.0.1:7002`.
 - [ ] `git log -1` on the board equals `origin/main` (the controller says which commit is the
       demo commit; do not pull on the morning).
-- [ ] `docs/demo/demo-problems.md` printed, and `one-pager.md` printed for the jury.
+- [ ] `docs/demo/demo-problems.md` and `docs/demo/GUIA-DEMO.md` printed for the team, `one-pager.md`
+      printed for the jury.
 
 ## 1. Power on (t = 0)
 
@@ -60,6 +69,8 @@ on the first start after a change, about a minute).
 
 ## 4. Forward the page to the laptop (t = 4 min)
 
+(`dev/demo_preflight.sh` does steps 1 to 6 at once; read on for the hand version.)
+
 ```bash
 adb forward tcp:7002 tcp:7000
 ```
@@ -102,6 +113,8 @@ Then wait about 20 s for the page and check the teacher view is empty:
 <http://127.0.0.1:7002/teacher> shows no student row.
 
 ## 6. One full rehearsal on the board (t = 6 to 12 min)
+
+(`dev/demo_preflight.sh` runs both chains and forgets the aliases; by hand:)
 
 Run the click script from the laptop against the board, exactly as the pitch will do it:
 
