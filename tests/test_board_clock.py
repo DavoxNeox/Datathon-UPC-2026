@@ -69,3 +69,16 @@ class RuntimeTest(unittest.TestCase):
                 os.environ.pop("RUNTIME", None)
             else:
                 os.environ["RUNTIME"] = old_env
+
+    def test_app_lab_container_counts_as_board(self):
+        import os
+        from unittest import mock
+        from copilot import board_clock as bc
+        old = bc.BOARD_MODEL_FILE
+        try:
+            bc.BOARD_MODEL_FILE = "/nonexistent/model"
+            with mock.patch.dict(os.environ, {"RUNTIME": "auto", "APP_HOME": "/home/arduino/ArduinoApps/x"}), \
+                    mock.patch("os.path.isdir", return_value=True):
+                self.assertEqual(bc.runtime(), "board")
+        finally:
+            bc.BOARD_MODEL_FILE = old

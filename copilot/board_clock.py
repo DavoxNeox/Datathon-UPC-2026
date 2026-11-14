@@ -20,16 +20,22 @@ GEN_TPS = float(CONFIG.get("BOARD_GEN_TPS", 5.5))
 EMBED_SECONDS = float(CONFIG.get("BOARD_EMBED_SECONDS", 0.25))
 
 
-BOARD_MODEL_FILE = "/proc/device-tree/model"  # reads "Arduino SA,Imola" on the UNO Q
+# The device tree names the board ("Arduino SA,Imola" on the UNO Q). On the host it is under
+# /proc; inside the App Lab app container only the /sys path is bind-mounted.
+BOARD_MODEL_FILE = "/proc/device-tree/model"
+BOARD_MODEL_FILES = (BOARD_MODEL_FILE, "/sys/firmware/devicetree/base/model")
 
 
 def on_board():
-    """True on the Arduino UNO Q: the device tree names it. False on any laptop."""
-    try:
-        with open(BOARD_MODEL_FILE, "rb") as f:
-            return b"Arduino" in f.read()
-    except OSError:
-        return False
+    """True on the Arduino UNO Q, on the host or inside its App Lab container. False on any laptop."""
+    for path in (BOARD_MODEL_FILE,) + tuple(p for p in BOARD_MODEL_FILES if p != BOARD_MODEL_FILE):
+        try:
+            with open(path, "rb") as f:
+                if b"Arduino" in f.read():
+                    return True
+        except OSError:
+            continue
+    return bool(os.environ.get("APP_HOME")) and os.path.isdir("/app")  # the App Lab container itself
 
 
 def runtime():
