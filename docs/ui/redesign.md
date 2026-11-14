@@ -325,9 +325,11 @@ and a hint button without icons.
 
 - Short options (every value up to 10 characters: "42 cm", "3√2 cm") go in one row of five
   cards with the value as the main text; longer ones keep one per row.
-- The figure takes at most 30 % of the column and is never taller than the question: its
-  height is set from the text's height (measured twice, since the text wraps around it), capped
-  at a third of the window and at 1.25 times its own size. On a phone it sits above the text
+- The figure takes at most 30 % of the column and, when it is wider than tall, is never taller
+  than the question: its height is set from the text's height (measured twice, since the text wraps around it), capped
+  at a third of the window and at 1.25 times its own size; a tall figure (height over 1.2 times
+  its width) may use the third of the window, and no figure goes under a fifth of the column
+  unless its crop is smaller. On a phone it sits above the text
   at its natural size, then the text, then the answers in a row.
 - Zoom shows the whole figure: the figure leaves the float and takes the column (up to 760 px),
   the image scales to fit; a second click puts it back.

@@ -340,6 +340,7 @@ function extractParts(img, clean) {
   };
 }
 
+const toCanvas = img => { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext("2d").drawImage(img, 0, 0); return c; };
 // one scan per problem: fetched once, cut once, then reused on every poll
 let scan = {id: null, figure: null, options: null, pieces: null, whole: null, full: null, showFull: false, colours: false};
 function loadScan(p, clean) {
@@ -350,10 +351,10 @@ function loadScan(p, clean) {
     const img = new Image();
     img.onload = () => {
       if (scan.id !== p.id) return;
-      scan.full = img;
+      scan.full = toCanvas(img);
       try { Object.assign(scan, extractParts(img, clean)); }
-      catch (e) { scan.whole = img; }   // anything odd: the whole scan, as before
-      if (!scan.figure && !scan.options && !scan.pieces && !clean) scan.whole = img;   // nothing found but the options are unreadable: show the scan
+      catch (e) { scan.whole = scan.full; }   // anything odd: the whole scan, as before
+      if (!scan.figure && !scan.options && !scan.pieces && !clean) scan.whole = scan.full;   // nothing found but the options are unreadable: show the scan
       applyScan();
     };
     img.src = "data:image/png;base64," + r.image_b64;
@@ -412,8 +413,12 @@ function fitFigure() {
   if (!img.naturalWidth || $("figure").hidden) return;
   if (matchMedia("(max-width: 640px)").matches || $("figure").classList.contains("zoomed")) { img.style.height = ""; return; }
   const once = () => {
-    const textH = $("text").getBoundingClientRect().height;
-    const h = Math.min(Math.max(90, textH), innerHeight * 0.34, img.naturalHeight * 1.25);
+    const textH = $("text").getBoundingClientRect().height, nw = img.naturalWidth, nh = img.naturalHeight;
+    const tall = nh / nw > 1.2;   // a tall, narrow figure (a hand, a tower) under a short question would become a thumbnail
+    let h = Math.min(tall ? Infinity : Math.max(90, textH), innerHeight * 0.34, nh * 1.25);
+    // never under a fifth of the column, unless the crop itself is smaller than that
+    const minW = Math.min(0.2 * $("app").getBoundingClientRect().width, nw * 1.25);
+    h = Math.min(Math.max(h, minW * nh / nw), innerHeight * 0.34);
     img.style.height = `${Math.round(h)}px`;
   };
   once(); requestAnimationFrame(once);
@@ -467,12 +472,13 @@ function renderAnswer(s) {
   $("feedback").className = "sheet " + (a ? (a.correct ? "ok" : "bad") : "");
   const solved = s.hints.some(h => h.kind === "solution");
   $("next").hidden = !(a || solved);
-  $("hint").hidden = solved; $("solution").hidden = solved;
+  $("hint").hidden = solved; $("solution").hidden = solved || !!a;   // answered: the right button itself becomes "Solució"
   // the hint button says what the next press gives: a hint (and how many are left) or, as the last use, the lesson
   const left = s.hints_left ?? Infinity, max = s.hints_max ?? 3, lessonLast = max >= 4;
-  $("hint").disabled = !!a || s.busy || left <= 0;
-  $("hint").title = left <= 0 ? t().no_hints : "";
-  $("hint-label").textContent = left <= 0 || !isFinite(left) ? t().hint : (lessonLast && left === 1 ? t().kinds.lesson : `${t().hint} · ${lessonLast ? left - 1 : left}`);
+  $("hint").disabled = s.busy || (!a && left <= 0);
+  $("hint").title = !a && left <= 0 ? t().no_hints : "";
+  $("hint").dataset.role = a ? "solution" : "hint";
+  $("hint-label").textContent = a ? t().solution : (left <= 0 || !isFinite(left) ? t().hint : (lessonLast && left === 1 ? t().kinds.lesson : `${t().hint} · ${lessonLast ? left - 1 : left}`));
   $("solution").disabled = s.busy || s.hints.some(h => h.kind === "solution");
   $("status").textContent = s.busy ? t().thinking : (a && !solved ? t().answered : "");
 }
@@ -500,7 +506,9 @@ function hintsHtml(s, pid) {
       return `<article class="lesson"><div class="kind">${esc(t().kinds.lesson)} · ${esc(t().lesson_sub)}</div>` +
         `<h3>${esc(txt(h, "title"))}</h3>${bullets(txt(h, "text"))}</article>`;
     }
-    let body = bullets(txt(h, "text"));
+    // the solution's text repeats its steps: keep its first sentence (the option) and the numbered steps
+    const hasTrace = h.kind === "solution" && h.trace && h.trace.length;
+    let body = hasTrace ? `<p>${esc(txt(h, "text").split(/(?<=[.!?])\s+/)[0])}</p>` : bullets(txt(h, "text"));
     if (h.kind === "neighbour" && h.problem) {
       const np = h.problem, opts = np.options || {}, long = (np.text || "").length > 160 && !expanded.has(pid + ":" + i);
       body += `<div class="neighbour ${long ? "clamped" : ""}">${esc((np.text || "").replace(/\s*\n\s*/g, " "))}${Object.keys(opts).length ? "\n" + "ABCDE".split("").filter(l => opts[l]).map(l => `${l}) ${esc(opts[l])}`).join("   ") : ""}</div>` +
@@ -578,7 +586,7 @@ $("letters").addEventListener("click", async e => { const b = e.target.closest("
 const pressed = b => { b.disabled = true; $("status").textContent = t().thinking; };
 $("translate").onclick = async () => render(await api("/api/translate/" + (state && state.translation ? "hide" : "show")));
 $("whole-toggle").onclick = () => { scan.showFull = !scan.showFull; applyScan(); };
-$("hint").onclick = async () => { pressed($("hint")); await api("/api/hint"); poll(); };
+$("hint").onclick = async () => { pressed($("hint")); await api($("hint").dataset.role === "solution" ? "/api/solution" : "/api/hint"); poll(); };
 $("solution").onclick = async () => { pressed($("solution")); await api("/api/solution"); poll(); };
 $("next").onclick = async () => render(await api("/api/next"));
 $("lang-cat").onclick = async () => render(await api("/api/lang/cat"));
