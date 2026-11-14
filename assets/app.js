@@ -12,7 +12,7 @@ const I18N = {
   cat: {title: "Copilot de mates", student: "Àlies", teacher: "Vista del professor", hint: "Pista",
         solution: "Solució", next: "Continua", mastery: "El teu progrés", close: "Tanca",
         level: "Nivell", topic: "Tema", thinking: "Un moment…", kinds: {neighbour: "Un problema semblant",
-        strategy: "Una estratègia", trace: "Un pas de la solució", llm: "Pista del model", solution: "Solució", lesson: "Lliçó"}, lesson_sub: "una idea per pensar-hi",
+        strategy: "Una estratègia", trace: "Un pas de la solució", demo_steps: "Un pas, pensat per a tu", llm: "Pista del model", solution: "Solució", lesson: "Lliçó"}, lesson_sub: "una idea per pensar-hi",
         manip: {rotate: "Gira i volteja", paths: "Comptador de camins", dice: "El dau"},
         time: "temps", laptop: "portàtil", board: "placa (estimat)", action: "acció", load: "temps de càrrega",
         over: "supera els 60 s", image: "Figura del problema", options_image: "Les opcions", answered: "Ja has respost. Si vols, mira la solució.",
@@ -30,7 +30,7 @@ const I18N = {
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", hint: "Hint",
         solution: "Solution", next: "Continue", mastery: "Your progress", close: "Close",
         level: "Level", topic: "Topic", thinking: "One moment…", kinds: {neighbour: "A similar problem",
-        strategy: "A strategy", trace: "A step of the solution", llm: "Model hint", solution: "Solution", lesson: "Lesson"}, lesson_sub: "an idea to think with",
+        strategy: "A strategy", trace: "A step of the solution", demo_steps: "A step, written for you", llm: "Model hint", solution: "Solution", lesson: "Lesson"}, lesson_sub: "an idea to think with",
         manip: {rotate: "Rotate and flip", paths: "Path counter", dice: "The die"},
         time: "time", laptop: "laptop", board: "board (estimated)", action: "action", load: "load time",
         over: "over 60 s", image: "Problem figure", options_image: "The options", answered: "Already answered. Have a look at the solution if you like.",
@@ -471,10 +471,14 @@ function renderAnswer(s) {
     b.classList.toggle("right", !!a && b.dataset.l === a.label);
     b.classList.toggle("wrong", !!a && b.dataset.l === a.letter && !a.correct);
   });
-  // the verdict stays on the sheet while the problem is open, even when a later hint clears the server's message
-  const msg = txt(s.message, "text") || (lang === "cat" ? s.message.ca : s.message.en) || "";
-  if (msg || !a) verdictKept = {id: s.problem && s.problem.id, lang, text: msg};
-  $("verdict").textContent = msg || (verdictKept.id === (s.problem && s.problem.id) && verdictKept.lang === lang ? verdictKept.text : "");
+  // the verdict is captured when the answer arrives and stays on the sheet while the problem is open, whatever
+  // the server's message does afterwards (a hint in progress, a lesson, a refusal); those go to the status line
+  const pid = s.problem && s.problem.id, say = m => (m && (txt(m, "text") || (lang === "cat" ? m.ca : m.en))) || "";
+  if (!a) verdictKept = {id: null, message: null};
+  else if (verdictKept.id !== pid) verdictKept = {id: pid, message: s.message};
+  const msg = say(s.message), kept = a ? say(verdictKept.message) : "";
+  $("verdict").textContent = a ? (kept || msg) : msg;
+  const aside = a && msg && msg !== kept && !s.busy ? msg : "";   // e.g. "no hints left", said after the verdict
   $("feedback").className = "sheet " + (a ? (a.correct ? "ok" : "bad") : "");
   const solved = s.hints.some(h => h.kind === "solution");
   $("next").hidden = !(a || solved);
@@ -489,12 +493,12 @@ function renderAnswer(s) {
   $("hint").dataset.role = offerSolution ? "solution" : "hint";
   $("hint-label").textContent = offerSolution ? t().solution : hintLabel;
   $("solution").disabled = s.busy || s.hints.some(h => h.kind === "solution");
-  $("status").textContent = s.busy ? t().thinking : (a && !solved ? t().answered : "");
+  $("status").textContent = s.busy ? t().thinking : (aside || (a && !solved ? t().answered : ""));
 }
 
 const expanded = new Set();   // "mostra-ho tot" pressed, by problem and hint index
 let scrolledSolution = null;   // the problem whose solution the page already scrolled to
-let verdictKept = {id: null, lang: null, text: ""};   // the last verdict shown, per problem and language
+let verdictKept = {id: null, message: null};   // the verdict captured when the answer arrived, in both languages
 let hintsSig = "";
 function renderHints(s) {
   const pid = s.problem ? s.problem.id : "";

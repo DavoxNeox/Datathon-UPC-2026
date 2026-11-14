@@ -421,3 +421,13 @@ options if they are clean and have no words (numbers, fractions, units: "110", "
 "3√2 cm"). Over the whole bank, 1688 problem versions lack clean options and 110 of them are
 rescued this way; the rest keep their options cut from the scan, because there is no text to
 show. `lvl-7_2008_3` in Catalan now shows 110 / 121 / 115,5 / 119 / 242 as text.
+
+### Twelfth round (branch `ui-fixes-7`)
+
+- The verdict is captured when the answer arrives (both languages) and stays on the sheet
+  while the problem is open, whatever the server's message does afterwards: a hint in
+  progress, a hand-written step, the lesson, a refusal or the solution. Other messages go to
+  the status line. Checked on `lvl-3_2021_20`: wrong answer, three hints, lesson, solution.
+- The settings popup has `role="dialog"`, `aria-modal="true"` and `aria-labelledby` pointing at
+  the student's name; the teacher link and "Canvia d'alumne" are 44 px tall.
+- The hand-written steps (`demo_steps`) have a label of their own in both languages.
