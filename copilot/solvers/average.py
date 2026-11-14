@@ -27,8 +27,8 @@ def matches(text):
     return bool(_MATCH.search(text)) and "geometric" not in text
 
 
-def extract(problem):
-    return llm.extract_json(problem["text"], GRAMMAR, HINT)
+def extract(problem, timeout=60):
+    return llm.extract_json(problem["text"], GRAMMAR, HINT, timeout=timeout)
 
 
 def _f(x):

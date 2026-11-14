@@ -5,11 +5,11 @@ import unittest
 import urllib.error
 from unittest import mock
 
-from copilot import pipeline, votes
+from copilot import pipeline, think, votes
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEACH_MODULES = ["hints.py", "webapp.py", "trainer.py", "topics.py", "retrieval.py", "leak_filter.py"]
-REASON_MODULES = {"ladder", "votes", "bias", "pipeline"}
+REASON_MODULES = {"ladder", "votes", "bias", "pipeline", "think"}
 
 PROBLEMS = [
     {"id": "p1", "text": "How many apples?", "options": {"A": "10", "B": "12", "C": "13", "D": "14", "E": "15"}},
@@ -88,6 +88,16 @@ class AlwaysALetterTest(unittest.TestCase):
         statuses = {pid: r["status"] for pid, (p, r) in results.items()}
         self.assertTrue(statuses["p1"].startswith("error"))
         self.assertEqual(statuses["p3"], "ok")  # no options: the experiments never ran, D at once
+
+
+    def test_think_on_but_no_server_still_answers_a_letter(self):
+        def failing_post(url, payload, timeout):
+            raise urllib.error.URLError("no server")
+        with mock.patch.object(think, "post", failing_post):
+            results = {p["id"]: r for p, r in self.check_all(THINK_LEVELS=set(range(8)), THINK_TEXT_ONLY=False,
+                                                              USE_MIDDLE_VALUE=True, USE_LETTER_MODEL=False)}
+        self.assertEqual(results["p1"]["answer"], "C")  # the rule answers after the failed working
+        self.assertEqual(results["p3"]["answer"], pipeline.FALLBACK)
 
 
 class BudgetGuardTest(unittest.TestCase):

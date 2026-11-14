@@ -18,7 +18,7 @@ import subprocess
 import time
 from collections import Counter, defaultdict
 
-from copilot import board_clock
+from copilot import board_clock, ladder
 from copilot.config import CONFIG
 from copilot.pipeline import TIME_LIMIT, solve
 
@@ -43,6 +43,7 @@ def main():
     p.add_argument("--input", default="data/val.jsonl")
     p.add_argument("--limit", type=int, default=50, help="0 means every problem")
     p.add_argument("--languages", default="", help="e.g. eng,cat")
+    p.add_argument("--ids", default="", help="a file with one problem id per line: only these problems (before --limit)")
     p.add_argument("--rag", type=int, default=0, metavar="K")
     p.add_argument("--index", default="data/index.db")
     p.add_argument("--name", default="", help="a label for this experiment in ablations.csv")
@@ -55,6 +56,10 @@ def main():
     languages = set(filter(None, args.languages.split(",")))
     if languages:
         problems = [x for x in problems if x["language"] in languages]
+    if args.ids:
+        with open(args.ids) as f:
+            wanted = {line.strip() for line in f if line.strip()}
+        problems = [x for x in problems if x["id"] in wanted]
     random.Random(42).shuffle(problems)  # the same sample every run, so runs compare
     if args.limit:
         problems = problems[:args.limit]
@@ -74,7 +79,7 @@ def main():
         writer = csv.writer(out)
         writer.writerow(["id", "language", "level", "has_options", "label", "answer",
                          "correct", "seconds", "board_seconds", "status", "prompt_tokens", "retrieved",
-                         "raw_letter", "margin", "family", "letter_logprobs", "rule", "extra"])
+                         "raw_letter", "margin", "family", "letter_logprobs", "rule", "extra", "text_only", "numeric"])
         for n, problem in enumerate(problems, 1):
             result = solve(problem, index=index, k=args.rag, exclude_id=problem["id"])
             if args.simulate_latency and result["board_seconds"] > result["seconds"]:
@@ -87,7 +92,8 @@ def main():
                              result["board_seconds"], result["status"], result["prompt_tokens"], result["retrieved"],
                              result.get("raw_letter", ""), result.get("margin", ""), result.get("family", ""),
                              json.dumps(result["letter_logprobs"]) if result.get("letter_logprobs") else "",
-                             result.get("rule", ""), json.dumps(result["extra"]) if result.get("extra") else ""])
+                             result.get("rule", ""), json.dumps(result["extra"]) if result.get("extra") else "",
+                             int(bool(problem.get("text_only"))), int(ladder.numeric_options(problem.get("options") or {}) is not None)])
             out.flush()
             running = 100 * sum(r["correct"] for r in rows) / len(rows)
             print(f"[{n}/{len(problems)}] {problem['id']} {problem['language']}: "
