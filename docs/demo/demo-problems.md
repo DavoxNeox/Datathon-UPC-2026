@@ -1,7 +1,7 @@
 # The demo problems: which, why, and the exact clicks
 
 Problems are referenced by M3Kang id only (research-only data: no statement, no options, no
-label, no image in git). What the speaker needs on the day (the correct letters, the option
+label, no image in git). What the speaker needs on the day (the correct values, the option
 values, what each figure shows) is in `docs/demo/local/demo-notes.md`, a file that
 `.gitignore` keeps out of the repository, and can be regenerated on any machine with the
 data linked (`~/m3kang-data`): `python3 dev/demo_pick.py --show <id>`.
@@ -52,7 +52,7 @@ promises what the next problem will be.
   rung 3 is also a strategy card.
 - **Answer on stage:** the correct one (in the speaker notes). Tick on the LED, mastery of
   boards 0 → 2.
-- **Clicks:** `Comença` → `Pista` (action sheet at the bottom) → `Pista` → the correct letter → wait for the tick (3 s) →
+- **Clicks:** `Comença` → `Pista` (action sheet at the bottom) → `Pista` → the correct value → wait for the tick (3 s) →
   `Continua` (or Enter).
 
 ### 2. `lvl-3_2019_18`, level 3, spatial (Raonament espacial), figure
@@ -63,9 +63,9 @@ promises what the next problem will be.
   only rung with something that moves on screen (it opens under the hints), good on camera.
 - **Rungs shown:** 1 (neighbour with image), 2 (strategy with manipulative; open it only if
   the demo is ahead of time).
-- **Answer on stage:** a wrong letter on purpose (in the speaker notes). This shows the cross
+- **Answer on stage:** a wrong value on purpose (in the speaker notes). This shows the cross
   on the LED, the correction message, mastery of spatial at 1.
-- **Clicks:** `Pista` → `Pista` → (`Gira i volteja`, opens under the hints, optional) → the wrong letter →
+- **Clicks:** `Pista` → `Pista` → (`Gira i volteja`, opens under the hints, optional) → the wrong value →
   wait 3 s → `Vista del professor` in the second tab.
 
 ### 3. `lvl-2_2020_4`, level 2, arithmetic (Aritmètica i problemes), text
@@ -76,7 +76,7 @@ promises what the next problem will be.
   works on pure text too.
 - **Rungs shown:** 1 (neighbour, text only), 2 (strategy card of arithmetic).
 - **Answer on stage:** the correct one. Tick, mastery of arithmetic 0 → 2.
-- **Clicks:** `Comença` (Guillem, 1r d'ESO) → `Pista` → `Pista` → the correct letter →
+- **Clicks:** `Comença` (Guillem, 1r d'ESO) → `Pista` → `Pista` → the correct value →
   wait 3 s → `Continua` (or Enter).
 
 ### 4. `lvl-4_2010_12`, level 4, digits (Xifres i nombres), text
@@ -85,8 +85,9 @@ promises what the next problem will be.
   `lvl-3_2016_29` (level 3, similarity 0.810) is another chain of the same kind, and the
   arithmetic strategy card about checking with the opposite operation is exactly the method.
 - **Rungs shown:** 1, then a wrong answer for the cross; or 1 then `Solució` (rung 4) if the
-  team wants to show the solution rung once (the answer afterwards does not raise mastery).
-- **Clicks:** `Pista` → the wrong letter → wait 3 s → `Vista del professor`.
+  team wants to show the solution rung once: the page scrolls to the solution card and leaves
+  only `Continua` (the answer afterwards does not raise mastery).
+- **Clicks:** `Pista` → the wrong value → wait 3 s → `Vista del professor`.
 
 ### Reserve 5. `lvl-3_2021_20`, level 3, areas (Àrees i fraccions), figure
 
@@ -94,14 +95,14 @@ promises what the next problem will be.
   similarity 0.859, with picture) is the same kind of figure: the same "cut into known
   pieces" strategy. Reserve only because the OCR text of its options is garbled on the page;
   the picture shows them correctly.
-- **Clicks:** `Comença` (Pau, 2n d'ESO) → `Pista` → `Pista` → the correct letter.
+- **Clicks:** `Comença` (Pau, 2n d'ESO) → `Pista` → `Pista` → the correct value.
 
 ### Reserve 6. `lvl-5_2022_30`, level 5, counting (Comptatge i camins), figure
 
 - **Why:** second problem of the `Pau` chain, an orderings problem with a small figure.
   Neighbour `lvl-4_2016_11` (similarity 0.729, no picture): weaker as a hint, acceptable as a
   filler.
-- **Clicks:** `Pista` → the correct letter.
+- **Clicks:** `Pista` → the correct value.
 
 ## Rehearsal in sim (14 Nov 2026, MacBook, servers up, `SIM_WEB_PORT=7006`)
 
@@ -118,7 +119,7 @@ and `... Guillem 2 A B --hints 2 --hints2 1`, then the same clicks by hand in th
 | Resposta (correction, LED frame) | 0.00 | 0.0 |
 | Continua (next problem) | 0.00 | 0.0 |
 | Vista del professor | 0.00 | – |
-| reset (`/api/reset`, the page's `Canvia d'alumne`) | 0.00 | – |
+| reset (`/api/reset`, the page's menu → `Canvia d'alumne`) | 0.00 | – |
 
 No step uses the LLM in Catalan (the model hint is gated by judged quality, under 70% for
 every topic), so the board estimate is 0.0 s everywhere: the only model work is one
