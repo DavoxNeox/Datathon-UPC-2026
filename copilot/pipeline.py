@@ -19,6 +19,11 @@ MARGIN = 3.0  # seconds kept free for Python and for writing the answer
 BIAS = bias.load()
 # Family solvers run first (copilot/solvers). Set SOLVERS=0 in the environment to measure without them.
 USE_SOLVERS = CONFIG.get("SOLVERS", "1") != "0"
+# When no solver applies: LETTER_MODEL=1 asks the model for a letter, LETTER_MODEL=0 answers
+# FALLBACK_ANSWER at once. Measured on 281 English validation problems: the model's letter is
+# 21.7% right, always D 23.1%, and its confidence is anti-correlated with being right, so the
+# default is 0. Turn it on to collect the letter logprobs for analysis.
+USE_LETTER_MODEL = CONFIG.get("LETTER_MODEL", "0") != "0"
 
 
 def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL,
@@ -61,6 +66,11 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
             result["examples"] = hits
             result["retrieved"] = ";".join(f"{p['id']}:{s:.2f}" for s, p in hits)
             clock.add_embeddings(1)  # the query is embedded once
+        if not USE_LETTER_MODEL and image_b64 is None:
+            result["status"] = "ok"
+            result["seconds"] = round(time.perf_counter() - start, 2)
+            result["board_seconds"] = round(clock.board_seconds(), 2)
+            return result  # answer stays FALLBACK
         remaining = time_limit - (time.perf_counter() - start) - MARGIN
         if image_b64 is None:
             # Always ask for the five letters' log probabilities: same request, same single
