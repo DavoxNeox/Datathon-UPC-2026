@@ -228,9 +228,12 @@ class TeacherLogTest(unittest.TestCase):
         fake.teacher_report = lambda: {"students": [{"student_id": "Mar", "mastery": {"areas": 2}, "by_level": {},
                                                      "by_topic": {"areas": {"answers": 1, "correct": 1}}}]}
         with mock.patch.object(webapp, "trainer", fake):
-            out = webapp.Session().teacher()
-        self.assertEqual(out["log"]["answers"][0]["student_id"], "Mar")
+            session = webapp.Session()
+            out, log = session.teacher(), session.teacher_log()
+        self.assertNotIn("log", out)   # the report stays light: the page polls it every 3 s
+        self.assertEqual(log["log"]["answers"][0]["student_id"], "Mar")
         self.assertEqual(out["by_topic"]["Mar"]["areas"]["answers"], 1)
+        self.assertIn(("GET", "/api/teacher/log", session.teacher_log), webapp.routes(session))
 
     def test_without_a_log_the_report_still_comes(self):
         fake = mock.MagicMock(wraps=webapp.trainer)
@@ -238,8 +241,9 @@ class TeacherLogTest(unittest.TestCase):
         del fake.answer_log
         del fake.teacher_report
         with mock.patch.object(webapp, "trainer", fake):
-            out = webapp.Session().teacher()
-        self.assertNotIn("log", out)
+            session = webapp.Session()
+            out, log = session.teacher(), session.teacher_log()
+        self.assertEqual(log, {})
         self.assertIn("students", out)
 
 

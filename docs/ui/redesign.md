@@ -563,3 +563,31 @@ language and the rest were noisy or mixed.
   page's background): bars, pips, segments and days carry a `data-tip`, and the trend chart
   answers to the cursor anywhere over it with the nearest answer (a dotted guide marks it) and
   the rolling accuracy at that point. No `title` attributes, so the text appears at once.
+
+### Sixteenth round (branch `ui-teacher-2`): the diagnosis only claims what its numbers carry
+
+The reviewer reproduced the thirteen statistics (`docs/reviews/review-ui-teacher.md`) and
+found three rules that overclaimed on small samples. Every sentence now names its n and uses
+the same p-values as the table:
+
+- **Trend** (U1): the firm sentence ("Millora: X punts... p = ...") needs both windows of 10
+  and p < 0.05 from the two-proportion test; with 15 points or more but no significance the
+  sentence says "sembla que millora... no és concloent (p = ...)". 2/5 against 6/10 no longer
+  speaks.
+- **Hints** (U2): "Encerta més amb pista (X % de n) que sense (Y % de n)" needs 8 answers on
+  each side and p < 0.05, and no longer prescribes a review.
+- **Little data** (U3): under 10 answers the only sentence about accuracy gives the Wilson
+  interval ("la taxa d'encerts és entre a i b %"); the band sentences with their
+  recommendation ("pot pujar de nivell", "baixa un nivell") appear from 10 answers and carry
+  the interval. 5/5 reads "entre el 57 i el 100 %", not "fiable".
+- **Guessing** (U4): the accuracy test against chance is the exact binomial P(X ≥ k | n, 0.2),
+  shown and used from 20 answers; the chi-square of the letters needs 5 expected per cell
+  (25 answers). Under that the table row says "– (n = ...)".
+- **Topics and level** (U5): the sentences carry the n ("en 4 respostes").
+- **Fast answers** (U6): hidden when the median gap is under a second (simulated databases).
+- **Keyboard** (U7): the heatmap rows are focusable buttons (Enter or Space picks the
+  student); the student dropdown opens with the arrow keys, moves with them, picks with Enter
+  and closes with Escape.
+- **Polling** (U8): `/api/teacher` no longer carries the log; `/api/teacher/log` serves it,
+  fetched at start, when a student is picked and every 30 s. The 3 s poll is the report alone.
+- `INTERFACES.md` lists `trainer.answer_log` under the trainer (U9).
