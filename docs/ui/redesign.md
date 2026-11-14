@@ -74,12 +74,28 @@ Student page (`index.html`, `style.css`, `app.js`, new `theme.css` and `theme.js
    text when open, as a reading aid, never on the buttons: 40 % of val problems have no OCR
    options and many of the rest are wrong. Without a picture the text is the statement and
    the options go on the buttons (rows).
-2. **One accent.** `--accent` #2f5fd6 (5.9:1 on white) for the primary action and the chosen
-   states; light #8aa6ff on dark cards. Success and error are pale tints with dark text:
-   `--ok` #1a7a47 on #e2f4e8 (5.1:1), `--bad` #b4231f on #fdeae8 (5.7:1); the dark pairs are
-   #8fd9ad on #1b3326 and #f3a59d on #44211e (both above 7:1). Text `--ink` #1f2430 on white
-   is 14.6:1, `--muted` #5f6673 is 5.6:1. Warm page #f7f4ee, white cards, 1 px borders,
-   14 px radius. System font stack, nothing fetched.
+2. **One accent, measured.** `--accent` #2f5fd6 for the primary action and the chosen
+   states; #8aa6ff on dark. Success and error are pale tints with dark text. Contrast ratios
+   (WCAG relative luminance, computed from the tokens):
+
+   | pair | light | dark |
+   |---|---|---|
+   | text `--ink` on `--card` / on `--bg` | 15.5 / 14.1 | 13.0 / 14.5 |
+   | secondary text `--muted` on `--card` / on `--bg` / on `--card-2` | 5.8 / 5.3 / 4.95 | 6.6 / 7.3 / 5.8 |
+   | `--accent` on `--card` / on `--bg` | 5.6 / 5.1 | 6.9 / 7.7 |
+   | button text `--accent-ink` on `--accent` | 5.6 | 7.8 |
+   | `--accent` on `--accent-soft` (chosen chip) | 4.8 | 5.4 |
+   | `--ok` on `--ok-bg` | 4.68 | 8.2 |
+   | `--bad` on `--bad-bg` | 5.7 | 7.2 |
+   | `--warn` on `--warn-bg` | 5.4 | 7.6 |
+   | control border `--control` on `--card` / on `--bg` | 3.7 / 3.4 | 3.7 / 4.2 |
+   | card border `--line` on `--card` (decorative) | 1.3 | 1.3 |
+
+   Every text pair is above 4.5:1 (the lowest is 4.68:1, the success text in light). Controls
+   (the A to E buttons, chips, Pista, CA/EN, the theme and Més buttons, the start fields, the
+   manipulatives' buttons) use `--control` (#7f858e light, #737a88 dark), which is at least
+   3:1 against both the control's fill and the page, as WCAG 1.4.11 asks; cards keep the soft
+   `--line`, which is decorative. Warm page #f7f4ee, white cards, 14 px radius, system fonts.
 3. **Dark mode.** Tokens in `:root`, redefined under `@media (prefers-color-scheme: dark)`
    for `:root:not([data-theme="light"])` and again for `:root[data-theme="dark"]`. The button
    in the bar cycles auto, light, dark (◐ ☀ ☾) and stores the choice in `localStorage`
@@ -87,10 +103,14 @@ Student page (`index.html`, `style.css`, `app.js`, new `theme.css` and `theme.js
    which the dialog passes to the manipulatives. The problem PNGs keep a white card: a soft
    inversion was rejected because grey and black cells carry meaning in many figures
    (boards, shading); the card is dimmed to 86 % in dark instead.
-4. **Calm states.** The verdict is a band under the options, with the space reserved so the
-   page never jumps; the only transitions are 150 ms colour changes on the buttons, disabled
+4. **Calm states.** The verdict is a band under the options (`aria-live="polite"`, so a
+   screen reader hears it), with the space reserved so the page never jumps; the only transitions are 150 ms colour changes on the buttons, disabled
    under `prefers-reduced-motion`. No timer in front of the student: the timeline and the load
-   time live in the panel behind "Temps (per al professor)". Progress is segments that fill.
+   time live in the panel behind "Temps (per al professor)". Progress is segments that fill: the
+   current topic's five segments with its name sit under the letters, always visible (the pitch
+   points at them at 48 s and 70 s), and the whole map is in the Més drawer. On a screen 1000 px
+   or wider the drawer pushes the page left (the content is 836 px wide at 1280) so it never
+   covers an answer button; on a narrower screen it closes by itself when the student answers.
 5. **Accessibility.** `:focus-visible` ring in the accent, every control at least 44 px tall
    (letters 68 px, 60 px on a phone), `aria-expanded` on the two toggles, `aria-label` on the
    letter buttons with the option text when it is shown, the theme button announces its state.
@@ -101,7 +121,7 @@ Student page (`index.html`, `style.css`, `app.js`, new `theme.css` and `theme.js
    by one; at zero the button is disabled with a tooltip and the server's bilingual message
    fills the reserved line, while "Solució" and rung 0 stay available (they do not count).
 7. **Catalan strings.** The corrections of `docs/content-review.md` that touch `assets/` are
-   applied (Nom o àlies, Canvia d'alumne, Que ho endevini el copilot, Un moment…, the hint
+   applied (Canvia d'alumne, Que ho endevini el copilot, Un moment…, the hint
    kinds without "Pista 1", mostra-ho tot, progrés, placa (estimat), temps de càrrega, the
    one-word topic labels Nombres / Comptar / Espai, "una reflexió (un mirall)" in the rotate
    manipulative, "a vegades" in the teacher legend). The ones in `copilot/` are for the controller.
@@ -153,3 +173,13 @@ topic; the server (D) will send it inside `hints` with `kind: "lesson"` and `tit
 - Until the server serves it, `dev/fixtures/lesson_hint.json` (own text, 99 words in Catalan
   and 105 in English, on counting in a grid) with the console recipe in `dev/fixtures/README.md`
   shows the card; the captures above were made that way on the sim with `HINT_MAX_USES=4`.
+
+## After the review (`docs/reviews/review-ui-redesign.md`)
+
+Applied on `ui-lesson`: the `--control` border token at 3:1 or more on every control in both
+themes (measured above); the current topic's progress under the letters, always visible, and
+the Més drawer that pushes the page on wide screens and closes on answer on narrow ones;
+`aria-live="polite"` on the verdict band; "Àlies" / "Nickname" again; the contrast table
+replaced by measured values; the text fold re-evaluated on resize until the student chooses.
+`review-letters-progress-verdict.png`: the letters with the new border, "Taulers i patrons"
+with two segments lit after a correct answer, and the green band with "Molt bé, correcte!".

@@ -14,10 +14,10 @@ a { color: var(--accent); }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 15px; color: var(--muted); font-weight: 600; }
 .brand .who { font-weight: 600; color: var(--ink); background: var(--card); border: 1px solid var(--line); padding: 4px 12px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; }
 .tools { display: flex; align-items: center; gap: 8px; }
-.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); }
+.lang { display: inline-flex; border: 1px solid var(--control); border-radius: 10px; overflow: hidden; background: var(--card); }
 .lang button { min-width: 44px; min-height: 44px; padding: 0 10px; border: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .lang button.on { background: var(--accent-soft); color: var(--accent); }
-.icon { min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; }
+.icon { min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid var(--control); border-radius: 10px; background: var(--card); color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; }
 .icon:hover, .lang button:hover { color: var(--ink); }
 .icon[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 
@@ -44,7 +44,7 @@ main#start { max-width: 520px; padding-top: 10vh; }
 section.start { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 28px 28px 24px; box-shadow: var(--shadow); }
 section.start h1 { font-size: 26px; margin: 0 0 14px; }
 .field { display: flex; flex-direction: column; gap: 4px; margin: 14px 0; font-size: 14px; color: var(--muted); }
-.field input, .field select { font: inherit; font-size: 20px; color: var(--ink); padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); min-height: 48px; }
+.field input, .field select { font: inherit; font-size: 20px; color: var(--ink); padding: 10px 12px; border: 1px solid var(--control); border-radius: 10px; background: var(--card); min-height: 48px; }
 .meta { color: var(--muted); font-size: 14px; }
 
 /* The problem: the picture first, the text behind a chip when the picture already carries it */
@@ -55,7 +55,7 @@ section.start h1 { font-size: 26px; margin: 0 0 14px; }
 .text { white-space: pre-wrap; font-size: 22px; line-height: 1.45; }
 .options-text { color: var(--muted); font-size: 17px; margin-top: 8px; white-space: pre-wrap; }
 .text-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
-.chip { min-height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--muted); font-size: 15px; cursor: pointer; }
+.chip { min-height: 44px; padding: 0 16px; border: 1px solid var(--control); border-radius: 999px; background: var(--card); color: var(--muted); font-size: 15px; cursor: pointer; }
 .chip:hover { color: var(--ink); }
 .chip.on, .chip[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 /* rung 0: the same problem in the other language */
@@ -65,7 +65,7 @@ section.start h1 { font-size: 26px; margin: 0 0 14px; }
 
 /* The answers: five big letters in the order of the picture, or full rows when the text has the options */
 .letters { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
-.letters button { flex: 1 1 0; min-width: 60px; min-height: 68px; padding: 10px 8px; border: 2px solid var(--line); border-radius: 14px; background: var(--card); cursor: pointer;
+.letters button { flex: 1 1 0; min-width: 60px; min-height: 68px; padding: 10px 8px; border: 2px solid var(--control); border-radius: 14px; background: var(--card); cursor: pointer;
                   display: flex; align-items: center; justify-content: center; gap: 12px; transition: border-color .15s, background-color .15s; }
 .letters button .l { font-size: 28px; font-weight: 700; line-height: 1; }
 .letters button:hover:not(:disabled) { border-color: var(--accent); }
@@ -80,6 +80,12 @@ section.start h1 { font-size: 26px; margin: 0 0 14px; }
 .letters.rows button.wrong .l { background: var(--bad); color: var(--bad-bg); }
 .letters.rows button .o { font-size: 19px; }
 
+/* The current topic's progress: five segments and the topic's name, always on the page (the pitch points at it) */
+.topic-progress { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin: 8px 2px 0; font-size: 13px; color: var(--muted); }
+.topic-progress .segs { display: flex; gap: 4px; }
+.topic-progress .segs span { width: 22px; height: 8px; border-radius: 999px; background: var(--line); }
+.topic-progress .segs span.on { background: var(--accent); }
+
 /* The verdict: a band under the options, never over them; the space is reserved so nothing jumps */
 .feedback { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; min-height: 64px; margin: 14px 0 0; padding: 10px 18px; border-radius: 14px; color: var(--muted); font-size: 18px; }
 .feedback.ok { background: var(--ok-bg); color: var(--ok); font-weight: 600; }
@@ -90,7 +96,7 @@ section.start h1 { font-size: 26px; margin: 0 0 14px; }
 /* Buttons */
 .primary { min-height: 48px; padding: 10px 22px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-size: 18px; font-weight: 600; cursor: pointer; }
 .primary.big { width: 100%; font-size: 21px; min-height: 56px; margin-top: 10px; }
-.secondary { min-height: 48px; padding: 10px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); font-size: 17px; cursor: pointer; }
+.secondary { min-height: 48px; padding: 10px 18px; border: 1px solid var(--control); border-radius: 12px; background: var(--card); font-size: 17px; cursor: pointer; }
 .secondary.small { min-height: 40px; padding: 6px 14px; font-size: 14px; color: var(--muted); }
 .link { min-height: 44px; padding: 8px 10px; border: 0; background: none; color: var(--muted); font-size: 16px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .link:hover { color: var(--accent); }
@@ -131,6 +137,9 @@ dialog iframe { width: 100%; height: min(520px, 75vh); border: 0; display: block
 .zoom-box { overflow: auto; max-height: 75vh; background: var(--figure-bg); filter: var(--figure-dim); }
 .zoom-box img { display: block; min-width: 1100px; width: 100%; padding: 12px; }
 dialog::backdrop { background: rgba(0, 0, 0, .45); }
+
+/* with the panel open on a wide screen the page moves left, so the drawer never covers the answers */
+@media (min-width: 1000px) { body.panel-open main#app { margin-left: auto; margin-right: 412px; max-width: min(920px, calc(100vw - 444px)); } }
 
 @media (max-width: 640px) {
   body { font-size: 17px; }

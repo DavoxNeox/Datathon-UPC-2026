@@ -7,7 +7,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
 const I18N = {
-  cat: {title: "Copilot de mates", student: "Nom o àlies", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
+  cat: {title: "Copilot de mates", student: "Àlies", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
         solution: "Solució", next: "Següent problema", mastery: "El teu progrés", close: "Tanca",
         level: "Nivell", topic: "Tema", thinking: "Un moment…", kinds: {neighbour: "Un problema semblant",
         strategy: "Una estratègia", trace: "Un pas de la solució", llm: "Pista del model", solution: "Solució", lesson: "Lliçó"},
@@ -24,7 +24,7 @@ const I18N = {
         timing: "Temps (per al professor)", problem: "Problema",
         theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"}, no_hints: "Ja no queden pistes en aquest problema",
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
-  eng: {title: "Maths copilot", student: "Name or nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
+  eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
         solution: "Solution", next: "Next problem", mastery: "Your progress", close: "Close",
         level: "Level", topic: "Topic", thinking: "One moment…", kinds: {neighbour: "A similar problem",
         strategy: "A strategy", trace: "A step of the solution", llm: "Model hint", solution: "Solution", lesson: "Lesson"},
@@ -46,7 +46,8 @@ const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
 // an open book, inline so nothing is fetched; it takes the colour of its parent
 const BOOK = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M1.5 3A.5.5 0 0 1 2 2.5h4A2.5 2.5 0 0 1 8 3.6 2.5 2.5 0 0 1 10 2.5h4a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-4c-.9 0-1.6.5-2 1.1-.4-.6-1.1-1.1-2-1.1H2a.5.5 0 0 1-.5-.5zm6 1.6c0-.6-.7-1.1-1.5-1.1H2.5v8H6c.6 0 1.1.1 1.5.4zm1 7.3c.4-.3.9-.4 1.5-.4h3.5v-8H10c-.8 0-1.5.5-1.5 1.1z"/></svg>';
 let lang = "cat", state = null, lastProblem = null, imageKey = null, loadReported = false;
-let textOpen = matchMedia("(max-width: 640px)").matches;   // the statement text when the picture already shows it: closed on a laptop, open on a phone (the picture is too wide to read there); the student's choice stays
+const NARROW = matchMedia("(max-width: 640px)");
+let textOpen = NARROW.matches, textChosen = false, hadAnswer = false;   // the statement text when the picture already shows it: closed on a laptop, open on a phone (the picture is too wide to read there); the student's choice stays
 const t = () => I18N[lang];
 const txt = (obj, key) => obj[key + "_" + (lang === "cat" ? "ca" : "en")] ?? obj[key + "_ca"] ?? "";
 
@@ -204,6 +205,14 @@ function renderMastery(s) {
     `<div class="segs" aria-label="${label[k][lang === "cat" ? 0 : 1]} ${s.mastery[k] || 0}/5">${[1, 2, 3, 4, 5].map(i => `<span class="${i <= (s.mastery[k] || 0) ? "on" : ""}"></span>`).join("")}</div>`).join("");
 }
 
+function renderTopicProgress(s) {
+  // the current topic's mastery, 0 to 5, as segments next to its name: what the pitch points at
+  const p = s.problem; if (!p) { $("topic-progress").innerHTML = ""; return; }
+  const name = lang === "cat" ? p.topic_name_ca : p.topic_name_en, m = s.mastery[p.topic] || 0;
+  $("topic-progress").innerHTML = `<span>${esc(name)}</span><div class="segs" role="img" aria-label="${esc(name)} ${m}/5">` +
+    [1, 2, 3, 4, 5].map(i => `<span class="${i <= m ? "on" : ""}"></span>`).join("") + "</div>";
+}
+
 function renderTimeline(s) {
   const rows = s.timeline.slice(-6).reverse();
   $("timeline").innerHTML = `<tr><th>${t().action}</th><th>${t().laptop}</th><th>${t().board}</th></tr>` +
@@ -218,7 +227,9 @@ function render(s) {
   $("who").textContent = s.student + (s.level !== null && s.level !== undefined ? ` · ${t().courses[s.level]}` : "");
   drawLed(s.led); renderTimeline(s);
   if (!s.started) { if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; } return; }
-  renderProblem(s.problem); renderTranslation(s); renderAnswer(s); renderHints(s); renderMastery(s);
+  renderProblem(s.problem); renderTranslation(s); renderAnswer(s); renderHints(s); renderMastery(s); renderTopicProgress(s);
+  if (s.answer && !hadAnswer && innerWidth < 1000) setPanel(false);
+  hadAnswer = !!s.answer;
   if (!loadReported) { loadReported = true; $("load").textContent = `${t().load}: ${Math.round(performance.now() - T0)} ms`; }
 }
 
@@ -242,11 +253,13 @@ $("dialog-close").onclick = () => $("dialog").close();
 $("dialog").addEventListener("close", () => { $("dialog-frame").src = "about:blank"; $("zoom").hidden = true; $("dialog-frame").hidden = false; });  // also after Escape
 // the picture, bigger: useful on a phone, where M3Kang's wide scans get small
 $("figure").onclick = () => { if (!$("img").src) return; $("dialog-title").textContent = t().image; $("zoom").src = $("img").src; $("zoom").hidden = false; $("dialog-frame").hidden = true; $("dialog").showModal(); };
-$("toggle-text").onclick = () => { textOpen = !textOpen; renderTextToggle(); if (state) renderProblem(state.problem); };
+$("toggle-text").onclick = () => { textOpen = !textOpen; textChosen = true; renderTextToggle(); if (state) renderProblem(state.problem); };
+NARROW.addEventListener("change", e => { if (textChosen) return; textOpen = e.matches; renderTextToggle(); if (state && state.problem) renderProblem(state.problem); });
 $("theme").onclick = () => { if (window.Theme) Theme.next(); renderTheme(); };
-$("more").onclick = () => { const open = $("panel").hidden; $("panel").hidden = !open; $("more").setAttribute("aria-expanded", String(open)); };
+function setPanel(open) { $("panel").hidden = !open; $("more").setAttribute("aria-expanded", String(open)); document.body.classList.toggle("panel-open", open); }
+$("more").onclick = () => setPanel($("panel").hidden);
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && !$("panel").hidden) { $("more").click(); return; }
+  if (e.key === "Escape" && !$("panel").hidden) { setPanel(false); return; }
   if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.metaKey || e.ctrlKey || e.altKey || $("dialog").open || !state || !state.started) return;
   const k = e.key.toUpperCase();
   if ("ABCDE".includes(k) && k.length === 1) { const b = document.querySelector(`#letters button[data-l="${k}"]`); if (b && !b.disabled) b.click(); }
