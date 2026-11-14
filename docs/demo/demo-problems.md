@@ -1,17 +1,20 @@
 # The demo problems: which, why, and the exact clicks
 
-Problems are referenced by M3Kang id only (research-only data: no statement, no image in
-git). To read one, on a machine with the data linked: `python3 dev/demo_pick.py --show <id>`.
+Problems are referenced by M3Kang id only (research-only data: no statement, no options, no
+label, no image in git). What the speaker needs on the day (the correct letters, the option
+values, what each figure shows) is in `docs/demo/local/demo-notes.md`, a file that
+`.gitignore` keeps out of the repository, and can be regenerated on any machine with the
+data linked (`~/m3kang-data`): `python3 dev/demo_pick.py --show <id>`.
 
 ## How a problem is chosen on stage
 
 The trainer is deterministic (`copilot/trainer.py`): the first problems of a fresh student
 depend only on `SEED` (42 in `config.env`), the pseudonym and the course chosen on the start
 screen. Problem 1 is at the chosen level, problem 2 two levels up, problem 3 four levels up
-(the diagnostic), each on a topic drawn from the pseudonym, **whatever the answers are**. So
-the demo controls which problem appears by typing a chosen pseudonym and course, nothing
-else; "Comença" resets that pseudonym first (`start_student`), so a pseudonym used in a
-rehearsal gives the same chain again.
+(the diagnostic, which needs at least three answers), each on a topic drawn from the
+pseudonym, **whatever the answers are**. So the demo controls which problem appears by
+typing a chosen pseudonym and course, nothing else; "Comença" resets that pseudonym first
+(`start_student`), so a pseudonym used in a rehearsal gives the same chain again.
 
 `dev/demo_pick.py` replays that choice for hundreds of pseudonyms and levels and keeps the
 pairs whose first problem has a Catalan text, five clean options, a picture when the topic is
@@ -22,8 +25,8 @@ statements across levels, and a copy is no hint). `dev/demo_pick.py --find <id>`
 
 Two conditions for the same chains to appear on the board: the same `data/train.jsonl` and
 `data/val.jsonl` as on the laptop (they were pushed from the same `~/m3kang-data`, see
-`docs/deploy-board.md`), and `SEED=42`. **Verify on the board the morning of the pitch**
-(`runbook.md`, step 6): the ids must match this table.
+`docs/deploy-board.md`), and `SEED=42`. Verified on the board on 14 Nov 2026 (below); verify
+again the morning of the pitch (`runbook.md`, step 6).
 
 ## The two chains (4 problems) and the reserve chain (2 problems)
 
@@ -33,75 +36,72 @@ Two conditions for the same chains to appear on the board: the same `data/train.
 | **A, text** | `Guillem` | 1r d'ESO (nivell 2) | `lvl-2_2020_4` | `lvl-4_2010_12` |
 | **R, reserve** | `Pau` | 2n d'ESO (nivell 3) | `lvl-3_2021_20` | `lvl-5_2022_30` |
 
-Checked with the real data on 14 Nov 2026 (`retrieval.neighbors` through `hints.get_hint`,
-images in `data/images`, rehearsal in sim with `dev/demo_rehearse.py`):
+The pseudonym must be typed exactly (`Mariona1`, capital M, no space): a different string
+gives a different chain. After the two problems of a chain the diagnostic continues with a
+third problem four levels above the start (Mariona1: level 5, areas), so the script never
+promises what the next problem will be.
 
 ### 1. `lvl-1_2024_2`, level 1, boards (Taulers i patrons), figure
 
-- **Why:** a counting-on-a-grid problem a sixth grader can follow on a projector: short text
-  (106 characters), options 10 / 12 / 15 / 18 / 21, the grid drawn in the picture. The
-  rung-1 neighbour is `lvl-0_2024_3` (level 0, similarity 0.935, with its picture): the same
-  idea with a smaller grid and one column fewer. It is the clearest "easier sibling" in the
-  whole bank, and the hint gives nothing away because the numbers differ.
-- **Rungs shown:** 1 (neighbour with image), 2 (strategy card of boards: look for the pattern
-  that repeats). No LLM: in Catalan rung 3 is also a strategy card.
-- **Correct answer:** C. The narration says the reasoning in one sentence (rows plus columns
-  minus their overlap).
-- **Clicks:** `Comença` → `Pista` → `Pista` → `C` → wait for the tick (3 s) → `Següent problema`.
+- **Why:** a count-on-a-grid problem a sixth grader can follow on a projector: short text,
+  five short numeric options, the grid drawn in the picture. The rung-1 neighbour is
+  `lvl-0_2024_3` (level 0, similarity 0.935, with its picture): the same idea on a smaller
+  grid. It is the clearest "easier sibling" in the whole bank, and the hint gives nothing away
+  because the numbers differ.
+- **Rungs shown:** 1 (neighbour with image), 2 (strategy card of boards). No LLM: in Catalan
+  rung 3 is also a strategy card.
+- **Answer on stage:** the correct one (in the speaker notes). Tick on the LED, mastery of
+  boards 0 → 2.
+- **Clicks:** `Comença` → `Pista` → `Pista` → the correct letter → wait for the tick (3 s) →
+  `Següent problema`.
 
 ### 2. `lvl-3_2019_18`, level 3, spatial (Raonament espacial), figure
 
-- **Why:** a sheet folded twice and cut twice; the picture does the explaining. Options
-  15 / 12 / 16 / 8 / 9. The neighbour is `lvl-2_2019_9` (level 2, similarity 0.914, with its
-  picture): the same sheet folded twice and cut once. Rung 2 is the strategy card with the
-  **"Gira i volteja" manipulative** button: the only rung that opens a dialog, good on camera.
+- **Why:** a paper-folding problem where the picture does the explaining. The neighbour is
+  `lvl-2_2019_9` (level 2, similarity 0.914, with its picture): the same action one step
+  simpler. Rung 2 is the strategy card with the **"Gira i volteja" manipulative** button, the
+  only rung that opens a dialog, good on camera.
 - **Rungs shown:** 1 (neighbour with image), 2 (strategy with manipulative; open it only if
   the demo is ahead of time).
-- **Answer on stage:** A, wrong on purpose (the label is E). This shows the cross on the LED,
-  the "La resposta era E" message, mastery of spatial at 1, and lets V2 say that the next
-  problem of this topic comes one level down.
-- **Clicks:** `Pista` → `Pista` → (`Gira i volteja` → `Tanca`, optional) → `A` → wait 3 s →
-  `Vista del professor` in the second tab.
+- **Answer on stage:** a wrong letter on purpose (in the speaker notes). This shows the cross
+  on the LED, the correction message, mastery of spatial at 1.
+- **Clicks:** `Pista` → `Pista` → (`Gira i volteja` → `Tanca`, optional) → the wrong letter →
+  wait 3 s → `Vista del professor` in the second tab.
 
 ### 3. `lvl-2_2020_4`, level 2, arithmetic (Aritmètica i problemes), text
 
-- **Why:** a word problem about buying boxes of eggs for a recipe: everyday numbers, options
-  2 / 8 / 4 / 1 / 3, no figure needed (`text_only`). The neighbour `lvl-1_2021_21` (level 1,
-  similarity 0.827) is also a sharing-into-boxes problem: the same "divide, then round up"
-  move. Shows that rung 1 works on pure text too.
-- **Rungs shown:** 1 (neighbour, text only), 2 (strategy card of arithmetic: write the data
-  and circle what is asked).
-- **Correct answer:** A.
-- **Clicks:** `Comença` (Guillem, 1r d'ESO) → `Pista` → `Pista` → `A` → wait 3 s →
-  `Següent problema`.
+- **Why:** an everyday word problem about buying in boxes, no figure needed (`text_only`),
+  five short numeric options. The neighbour `lvl-1_2021_21` (level 1, similarity 0.827) is
+  also a sharing-into-groups problem: the same "divide, then round" move. Shows that rung 1
+  works on pure text too.
+- **Rungs shown:** 1 (neighbour, text only), 2 (strategy card of arithmetic).
+- **Answer on stage:** the correct one. Tick, mastery of arithmetic 0 → 2.
+- **Clicks:** `Comença` (Guillem, 1r d'ESO) → `Pista` → `Pista` → the correct letter →
+  wait 3 s → `Següent problema`.
 
 ### 4. `lvl-4_2010_12`, level 4, digits (Xifres i nombres), text
 
-- **Why:** "think of a number, divide, add, multiply, the result is 777": a working-backwards
-  problem, options 7 / 111 / 722 / 567 / 728. The neighbour `lvl-3_2016_29` (level 3,
-  similarity 0.810) is another think-of-a-number chain. Rung 1 is useful (same inverse
-  operations strategy) and the arithmetic strategy card "check by going backwards with the
-  opposite operation" is exactly the method.
-- **Rungs shown:** 1, then answer wrong (B) for the cross, or 1 then `Solució` (rung 4) if
-  the team wants to show the solution rung once: it prints the letter and value and the
-  answer afterwards does not raise mastery.
-- **Correct answer:** E.
-- **Clicks:** `Pista` → `B` (wrong) → wait 3 s → `Vista del professor`.
+- **Why:** a think-of-a-number chain solved by working backwards; the neighbour
+  `lvl-3_2016_29` (level 3, similarity 0.810) is another chain of the same kind, and the
+  arithmetic strategy card about checking with the opposite operation is exactly the method.
+- **Rungs shown:** 1, then a wrong answer for the cross; or 1 then `Solució` (rung 4) if the
+  team wants to show the solution rung once (the answer afterwards does not raise mastery).
+- **Clicks:** `Pista` → the wrong letter → wait 3 s → `Vista del professor`.
 
 ### Reserve 5. `lvl-3_2021_20`, level 3, areas (Àrees i fraccions), figure
 
-- **Why:** grey area inside a 16 cm² square; the neighbour `lvl-2_2022_15` (level 2,
-  similarity 0.859, with picture) is a grey area inside a 100 cm² square: the same "cut the
-  figure into known pieces" strategy. Reserve only because the OCR of its options is noisy
-  on the page (`3cm2`, `2 11 cm2`, `4cm²2`); the picture shows them correctly. Label E.
-- **Clicks:** `Comença` (Pau, 2n d'ESO) → `Pista` → `Pista` → `E`.
+- **Why:** a grey-area-inside-a-square problem whose neighbour `lvl-2_2022_15` (level 2,
+  similarity 0.859, with picture) is the same kind of figure: the same "cut into known
+  pieces" strategy. Reserve only because the OCR text of its options is garbled on the page;
+  the picture shows them correctly.
+- **Clicks:** `Comença` (Pau, 2n d'ESO) → `Pista` → `Pista` → the correct letter.
 
 ### Reserve 6. `lvl-5_2022_30`, level 5, counting (Comptatge i camins), figure
 
-- **Why:** second problem of the `Pau` chain: five rings taken off one by one, how many
-  orders. Options 16 / 20 / 24 / 30 / 45, label B. Neighbour `lvl-4_2016_11` (paths in a park,
-  similarity 0.729, no picture): weaker as a hint, acceptable as a filler.
-- **Clicks:** `Pista` → `B`.
+- **Why:** second problem of the `Pau` chain, an orderings problem with a small figure.
+  Neighbour `lvl-4_2016_11` (similarity 0.729, no picture): weaker as a hint, acceptable as a
+  filler.
+- **Clicks:** `Pista` → the correct letter.
 
 ## Rehearsal in sim (14 Nov 2026, MacBook, servers up, `SIM_WEB_PORT=7006`)
 
@@ -118,15 +118,14 @@ and `... Guillem 2 A B --hints 2 --hints2 1`, then the same clicks by hand in th
 | Resposta (correction, LED frame) | 0.00 | 0.0 |
 | Següent problema | 0.00 | 0.0 |
 | Vista del professor | 0.00 | – |
-| Reinicia | 0.00 | – |
+| reset (`/api/reset`, the page's `Canvia d'alumne`) | 0.00 | – |
 
 No step uses the LLM in Catalan (the model hint is gated by judged quality, under 70% for
 every topic), so the board estimate is 0.0 s everywhere: the only model work is one
 embedding (0.12 s on the board) when a validation problem is the query. Nothing was over
 10 s. Both chains produced the ids above, the neighbours above, "easier=True", the pictures,
 the tick (mastery 0→2) and the cross (mastery 0→1), the teacher view with hits by level, and
-the reset back to the start screen. On the board, measured earlier the same day
-(`docs/results-A.md` §10), the same flow with the pseudonym `prova` ran without errors.
+the reset back to the start screen.
 
 ## Verified on the board (14 Nov 2026, main 8501c23, over `adb forward` from the laptop)
 
@@ -143,11 +142,12 @@ call, teacher view and reset working. The pseudonyms were reset afterwards.
 - The problem's picture (the statement as Kangaroo printed it) is shown **small** above the
   text, and the neighbour's picture smaller still inside the hint card. On a projector set
   the browser zoom to 150% (`Cmd` + `+` twice) before the pitch; the page still fits.
-- The teacher view is empty after `Reinicia` (the student is forgotten): open it **before**
+- The first `Pista` of a session loads the retrieval index (0.2 s on the laptop, more on the
+  board): the runbook warms it up before the jury arrives.
+- The teacher view is empty after a reset (the student is forgotten): open it **before**
   resetting, as in the click script.
 - In the pitch nothing shows the LLM working. If the jury asks, the honest answer is in the
   lessons block: the model's hint (rung 3) is off until its judged quality passes 70%; the
   model's letter was measured and discarded.
-- The pseudonym must be typed exactly (`Mariona1`, capital M, no space); a different string
-  gives a different chain. `dev/demo_pick.py --chain <name> <level>` tells what any
-  pseudonym would get, in case someone wants a real name on the day.
+- `dev/demo_pick.py --chain <name> <level>` tells what any pseudonym would get, in case
+  someone wants a real name on the day.

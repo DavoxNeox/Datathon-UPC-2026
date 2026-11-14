@@ -32,3 +32,6 @@ docs/ui/*rung0*.png
 docs/ui/*hints*.png
 docs/ui/*no-picture*.png
 docs/ui/*panel*.png
+
+# Speaker notes for the demo: option values, labels and figure descriptions of M3Kang problems
+docs/demo/local/
