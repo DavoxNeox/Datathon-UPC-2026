@@ -25,6 +25,7 @@ const I18N = {
         read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
         other_kind: {eng: "En anglès · no compta com a pista", cat: "En català · no compta com a pista"},
         show_scan: "veure l'escaneig original", hide_scan: "amagar l'escaneig", original_scan: "Escaneig original",
+        no_hints_after: "Aquest servidor no dona pistes després de respondre.",
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", hint: "Hint",
         solution: "Solution", next: "Continue", mastery: "Your progress", close: "Close",
@@ -42,6 +43,7 @@ const I18N = {
         read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
         other_kind: {eng: "In English · not counted as a hint", cat: "In Catalan · not counted as a hint"},
         show_scan: "see the original scan", hide_scan: "hide the scan", original_scan: "Original scan",
+        no_hints_after: "This server gives no hints after an answer.",
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
 const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
@@ -596,7 +598,7 @@ $("hint").onclick = async () => {
   pressed($("hint"));
   if ($("hint").dataset.role === "solution") { await api("/api/solution"); return poll(); }
   const r = await api("/api/hint");
-  if (r.error === "already answered") await api("/api/solution");   // a server that still refuses hints after the answer: the solution, as before
+  if (r.error === "already answered") $("status").textContent = t().no_hints_after;   // an old server: say so, never show the solution unasked
   poll();
 };
 $("solution").onclick = async () => { pressed($("solution")); await api("/api/solution"); poll(); };
