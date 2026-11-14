@@ -79,8 +79,8 @@ Expected: JSON starting with `{"student": ..., "started": false`.
 Every pseudonym played in a rehearsal is still in the board's `data/students.db`, and the
 teacher view lists them all. Two ways to clean, pick one:
 
-- **From the page**, one alias at a time: if a problem is shown, press **Canvia d'alumne**
-  and confirm (the current student is forgotten and the start screen comes back); for every
+- **From the page**, one alias at a time: if a problem is shown, open the **Més** panel (top
+  right), press **Canvia d'alumne** and confirm (the current student is forgotten and the start screen comes back); for every
   other alias that was used (`Mariona1`, `Guillem`, `Pau`, `prova`, any name typed in
   rehearsals) type it in the start screen, press `Comença`, then `Canvia d'alumne` and
   confirm. From the terminal the same is `curl -s http://127.0.0.1:7002/api/start/<alias>/1`
@@ -130,13 +130,13 @@ at 150% zoom.
 1. **Warm-up click.** The first `Pista` of a session loads the retrieval index from
    `data/index.db` (0.2 s on the laptop, longer on the board's SD card); do it now, not on
    stage: type any alias (for example `escalfament`), `Comença`, `Pista` once, wait for the
-   card, then `Canvia d'alumne` and confirm. The index stays in memory while the app runs.
+   card, then **Més** → `Canvia d'alumne` and confirm. The index stays in memory while the app runs.
    From the terminal: `curl -s http://127.0.0.1:7002/api/start/escalfament/1`, then
    `curl -s http://127.0.0.1:7002/api/hint`, wait 2 s, then `curl -s http://127.0.0.1:7002/api/reset`.
 2. Pseudonym **`Mariona1`**, course **6è de primària (nivell 1)**, typed in the start screen
    but **not** started: the first click of the demo is `Comença`. (The pseudonym gives the
    chain in `demo-problems.md`; `Comença` resets it, so earlier rehearsals do not matter.)
-3. Language buttons: **CA** selected.
+3. Language buttons: **CA** selected; the **Més** panel closed.
 4. The LED matrix is dark except the resting frame; V1 holds the board with the matrix
    towards the jury and the USB cable with slack.
 

@@ -51,9 +51,9 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | 13 | Primer problema, de taulers i patrons. La Mariona no ho veu clar i, en lloc d'arriscar, demana una pista. | clic **Pista** |
 | 21 | Pista u: el copilot busca dins la placa, amb embeddings, un problema semblant del mateix tema, un nivell més fàcil, amb la seva figura. Cap resposta, cap model que raoni. | assenyala la targeta "Un problema semblant" |
 | 34 | Pista dos: una estratègia del tema. Ara sí: respon. | clic **Pista**; després clic **C** |
-| 40 | Tick a la matriu LED, i el progrés de taulers puja: encerta amb pistes. | V1 gira la placa cap al jurat |
+| 40 | Tick a la matriu LED, i el progrés de taulers puja: encerta amb pistes. | V1 gira la placa cap al jurat; V3 clic **Més** per mostrar "El teu progrés" (i un altre clic per tancar-lo), fins que l'indicador del tema torni sota les lletres |
 | 47 | Següent problema: el diagnòstic puja dos cursos. Raonament espacial. Pista u, el problema germà amb la seva imatge; pista dos, l'estratègia "gira i volteja". | clic **Següent problema**; clic **Pista**; clic **Pista** |
-| 60 | Avui la Mariona s'equivoca. Les pistes no li han dit la resposta; la correcció arriba només ara. Creu a la LED. Quan acabi el diagnòstic, aquest tema li arribarà un nivell més fàcil. | clic **A**; V1 mostra la creu |
+| 60 | Avui la Mariona s'equivoca. Les pistes no li han dit la resposta; la correcció arriba només ara. Creu a la LED. Quan acabi el diagnòstic, aquest tema li arribarà un nivell més fàcil. | clic **A**; V1 mostra la creu; V3 clic **Més** quan diu "un nivell més fàcil" (progrés d'espacial a 1), i el tanca |
 | 75 | I el professor ho veu tot: progrés per tema i alumne, encerts per nivell. Cada pas ha trigat menys d'un segon dins la placa. | clic **Vista del professor** (pestanya 2) |
 | 84 | *(V3 torna a la pestanya 1 i parla)* | |
 
@@ -111,9 +111,9 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | 13 | First problem, boards and patterns. Mariona is not sure and, instead of guessing, asks for a hint. | click **Pista** |
 | 21 | Hint one: the copilot searches on the board, with embeddings, for a similar problem of the same topic, one level easier, with its figure. No answer, no model reasoning. | point at the "Un problema semblant" card |
 | 34 | Hint two: a strategy for the topic. Now she answers. | click **Pista**; then click **C** |
-| 40 | A tick on the LED matrix, and the progress of boards goes up: correct with hints. | V1 turns the board to the jury |
+| 40 | A tick on the LED matrix, and the progress of boards goes up: correct with hints. | V1 turns the board to the jury; V3 clicks **Més** to show "El teu progrés" (and again to close it), until the topic indicator is back under the letters |
 | 47 | Next problem: the diagnostic climbs two grades. Spatial reasoning. Hint one, the sister problem with its picture; hint two, the strategy "rotate and flip". | click **Següent problema**; click **Pista**; click **Pista** |
-| 60 | Today Mariona gets it wrong. The hints never told her the answer; the correction comes only now. A cross on the LED. Once the diagnostic ends, this topic will come one level easier. | click **A**; V1 shows the cross |
+| 60 | Today Mariona gets it wrong. The hints never told her the answer; the correction comes only now. A cross on the LED. Once the diagnostic ends, this topic will come one level easier. | click **A**; V1 shows the cross; V3 clicks **Més** at "one level easier" (spatial progress at 1), then closes it |
 | 75 | And the teacher sees everything: progress by topic and student, hits by level. Every step took under a second on the board. | click **Vista del professor** (tab 2) |
 | 84 | *(V3 returns to tab 1 and speaks)* | |
 
@@ -143,6 +143,14 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 ---
 
 ## Rehearsal notes
+
+- The redesigned page keeps "El teu progrés", the drawn LED matrix and `Canvia d'alumne` inside
+  the **Més** panel (top right). The design session was asked to put an always-visible progress
+  indicator of the current topic under the letters; until it lands, V3 opens **Més** at 40 s and
+  60 s as the click column says, and closes it before the next click.
+- The hint button shows one dot per use left. The script never says how many there are: if a
+  sentence needs the number, say "tres pistes i una lliçó" / "three hints and a lesson" and check
+  `HINT_MAX_USES` in `config.env` that morning (the fourth use is a lesson).
 
 - The clicks are instant (under 0.5 s measured on the board, no model time), so the
   narration sets the pace. The demo block has about 14 s of slack for the clicks and the LED; the whole script is about 164 s spoken.
