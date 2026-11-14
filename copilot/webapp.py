@@ -352,6 +352,9 @@ class Session:
         with self.lock:
             if not self.problem or self.busy:
                 return {"error": "busy" if self.busy else "no problem"}
+            # Hints stay available after the answer: a student who got it wrong may want to try
+            # again by themselves with a hint before reading the solution (mastery was already
+            # recorded with the rung used before answering, so this changes no score).
             if self.hint_uses >= HINT_MAX_USES:
                 # The ladder is capped: three hints per problem, then the student answers or asks
                 # for the solution on purpose. Rung 0 (the other language) does not count.
