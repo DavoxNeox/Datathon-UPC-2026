@@ -7,10 +7,25 @@ import json
 import os
 import unittest
 
-from copilot.leak_filter import leaks
+from copilot.leak_filter import leak_reason, leaks
 from copilot.signatures import SIGNATURE_KEYS, diagnose, option_value, statement_numbers
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _fixed_texts():
+    """{signature: {text_ca, text_en}} of every signature whose text carries no statement number."""
+    from copilot.signatures import NONE_TEXT, _candidates
+    from fractions import Fraction as F
+    out = {"none": NONE_TEXT}
+    pairs = [(F(12), F(24)), (F(24), F(12)), (F(12), F(13)), (F(12), F(11)), (F(12), F(120)), (F(12), F(6, 5)),
+             (F(12), F(21)), (F(12), F(-12)), (F(12), F(5))]
+    for correct, chosen in pairs:
+        for key, texts, _ in _candidates(correct, chosen, [F(5)]):
+            out[key] = texts
+    assert set(out) >= {"none", "double", "half", "plus_one", "minus_one", "times_10", "div_10", "digits_swapped",
+                        "sign", "statement_number"}, set(out)
+    return out
 
 
 def problem(options, label, text=""):
@@ -235,12 +250,38 @@ class NeverLeaksTest(unittest.TestCase):
         self.assertGreater(checked, 10)
 
     def test_a_leaking_text_is_dropped_and_the_next_signature_is_tried(self):
-        # Correct value 2: the Catalan "dues vegades" of `double` names it, so `double` is dropped.
-        p = problem({"A": "1", "B": "2", "C": "4", "D": "5", "E": "6"}, "B", "Two friends...")
+        # 5 x 1 = 5 and 5 + 1 = 6, but the correct value is 5: "Has sumat 5 i 1" would name it.
+        p = problem({"A": "1", "B": "5", "C": "6", "D": "7", "E": "8"}, "B", "5 boxes with 1 ball each.")
         d = diagnose(p, "C")
-        self.assertNotEqual(d["signature"], "double")
-        self.assertIn("double", d["evidence"]["dropped_by_leak_filter"])
+        self.assertEqual(d["evidence"]["candidates"], ["sum_vs_product", "plus_one"])
+        self.assertEqual(d["evidence"]["dropped_by_leak_filter"], ["sum_vs_product"])
+        self.assertEqual(d["signature"], "plus_one")
         self.assertFalse(leaks(d["text_ca"], "B", p["options"]))
+
+    def test_fixed_texts_never_leak_any_value_or_letter(self):
+        # The texts without a statement number must pass the filter for every answer 0..200 and every letter:
+        # the filter reads "un", "una", "dues", "set" (Catalan for 7), "answer is A" as leaks.
+        for value in range(0, 201):
+            for label in "ABCDE":
+                options = {L: str(value if L == label else value + 1000 + i) for i, L in enumerate("ABCDE")}
+                for key, texts in _fixed_texts().items():
+                    for lang in ("text_ca", "text_en"):
+                        self.assertIsNone(leak_reason(texts[lang], label, options), (key, lang, value, label))
+
+    @unittest.skipUnless(os.path.exists(os.path.join(ROOT, "data", "val.jsonl")), "no M3Kang data linked")
+    def test_no_text_leaks_on_the_validation_set(self):
+        with open(os.path.join(ROOT, "data", "val.jsonl"), encoding="utf-8") as f:
+            rows = [json.loads(line) for line in f if line.strip()]
+        checked = 0
+        for r in rows:
+            for letter in "ABCDE":
+                d = diagnose(r, letter)
+                if d is None:
+                    continue
+                checked += 1
+                for lang in ("text_ca", "text_en"):
+                    self.assertIsNone(leak_reason(d[lang], r["label"], r["options"]), (r["id"], letter, d[lang]))
+        self.assertGreater(checked, 100)
 
     def test_statement_number_equal_to_the_answer_is_dropped(self):
         # The difference 5 is the correct value itself: "el 5 de l'enunciat" would leak it.

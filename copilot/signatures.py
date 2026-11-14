@@ -51,13 +51,12 @@ _NUMBER_TOKEN = re.compile(r"-?\d+(?:[.,]\d+)?(?:\s*/\s*\d+)?")
 _LEADING_INDEX = re.compile(r"^\s*\d{1,2}\s*[.)]\s*")
 
 _POWERS_OF_TEN = (10, 100, 1000)
-_ZEROS_EN = {10: "one zero", 100: "two zeros", 1000: "three zeros"}
 
 NONE_TEXT = {
     "text_ca": "El teu resultat no s'assembla al correcte per cap relliscada típica: "
                "torna a llegir l'enunciat i planteja el problema des del principi.",
     "text_en": "Your result is not a typical slip away from the right one: "
-               "read the statement again and set the problem up from scratch.",
+               "read the statement again and start the problem from scratch.",
 }
 
 
@@ -121,7 +120,7 @@ def _candidates(correct, chosen, numbers):
     if dc and dw and len(dc) >= 2 and dc != dw and sorted(dc) == sorted(dw) \
             and (correct >= 0) == (chosen >= 0):
         out.append(("digits_swapped", {
-            "text_ca": "Has intercanviat les xifres: tens les xifres bones però en un altre ordre. "
+            "text_ca": "Has intercanviat les xifres: tens les xifres bones però desordenades. "
                        "Torna a escriure el nombre amb calma.",
             "text_en": "You swapped the digits: right digits, wrong order. "
                        "Write the number again carefully.",
@@ -139,23 +138,23 @@ def _candidates(correct, chosen, numbers):
         for p in _POWERS_OF_TEN:
             if chosen == correct * p:
                 out.append(("times_10", {
-                    "text_ca": "Se t'ha escapat la coma o algun zero: el teu resultat és massa gran. "
-                               "Revisa les unitats i la coma decimal.",
-                    "text_en": f"You have {_ZEROS_EN[p]} too many: your result is too big. "
-                               "Check the units and the decimal point.",
+                    "text_ca": "Has desplaçat la coma o has afegit xifres de més: el teu resultat és massa gran. "
+                               "Revisa les unitats.",
+                    "text_en": "You shifted the decimal point or added digits: your result is too big. "
+                               "Check the units.",
                 }, {"factor": p}))
             elif chosen * p == correct:
                 out.append(("div_10", {
-                    "text_ca": "Se t'ha escapat la coma o algun zero: el teu resultat és massa petit. "
-                               "Revisa les unitats i la coma decimal.",
-                    "text_en": f"You dropped {_ZEROS_EN[p]}: your result is too small. "
-                               "Check the units and the decimal point.",
+                    "text_ca": "Has desplaçat la coma o t'has menjat xifres: el teu resultat és massa petit. "
+                               "Revisa les unitats.",
+                    "text_en": "You shifted the decimal point or dropped digits: your result is too small. "
+                               "Check the units.",
                 }, {"factor": p}))
 
     # 5. Double / half (1 <-> 2 is off by one, not a doubling)
     if correct != 0 and chosen == 2 * correct and not (correct == 1 and chosen == 2):
         out.append(("double", {
-            "text_ca": "Has comptat cada cas dues vegades: el teu resultat és el doble del que toca. "
+            "text_ca": "Has comptat cada cas per duplicat: el teu resultat és el doble del que toca. "
                        "Pensa quins casos són en realitat el mateix.",
             "text_en": "You counted every case twice: your result is double the right one. "
                        "Think about which cases are really the same.",
@@ -202,8 +201,8 @@ def _candidates(correct, chosen, numbers):
     # 8. The chosen option is a number copied from the statement
     if chosen in numbers:
         out.append(("statement_number", {
-            "text_ca": "La teva resposta és una dada de l'enunciat, no el resultat: encara falta fer-hi alguna operació.",
-            "text_en": "Your answer is a number given in the statement, not the result: an operation is still missing.",
+            "text_ca": "La teva resposta surt escrita a l'enunciat, no és el resultat: encara falta fer-hi alguna operació.",
+            "text_en": "Your answer appears in the statement itself, so it is not the result: an operation is still missing.",
         }, {}))
     return out
 
