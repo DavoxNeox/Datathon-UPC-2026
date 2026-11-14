@@ -190,6 +190,37 @@ Backend is chosen by `RUNTIME` in `config.env` / environment: `sim` prints the f
 ASCII and keeps the last frame for the web page; `board` sends it over the App Lab Bridge.
 Callers never know which one runs.
 
+### `copilot/signatures.py` (innovation: error signatures)
+
+```python
+diagnose(problem: dict, chosen_letter: str) -> dict | None
+    # -> {"signature": "plus_one",                     # one of SIGNATURE_KEYS below
+    #     "text_ca": "...", "text_en": "...",          # diagnostic for the student, never the value or the letter
+    #     "evidence": {"chosen_letter": "D", "chosen_value": "19", "correct_value": "18", "difference": "1",
+    #                  "ratio": "19/18", "statement_numbers": ["1", "3", "10"],
+    #                  "candidates": ["plus_one"], "dropped_by_leak_filter": [], ...}}
+SIGNATURE_KEYS = ["sum_vs_product", "product_vs_sum", "statement_number", "digits_swapped", "sign",
+                  "times_10", "div_10", "double", "half", "plus_one", "minus_one",
+                  "missing_add", "missing_subtract", "none"]
+```
+
+`None` when there is nothing to diagnose: the answer is right, the letter is not an
+option, or the chosen or the correct option is not a single number (pictures, sets,
+ratios, OCR noise). `"none"` when both are numbers but no signature fits; its text asks
+the student to start again from the statement. Pure stdlib; every text passes
+`copilot/leak_filter.py` before it is returned (a matching signature whose text would
+name the correct value is dropped and the next one is tried). `evidence` holds the
+correct value and the difference for logs and the teacher page: never send it to the
+student's browser. Order of the signatures and the measured coverage (39% of the numeric
+distractors, 74% of the problems with a numeric correct option have at least one) in
+`docs/error-signatures.md`.
+
+Web proposal (two lines): after a wrong answer, `record_answer` is followed by
+`diagnose(problem, letter)` and the page shows `text_ca` under the cross as a yellow
+"Per què?" line, keeping the options enabled for one more try. A relation hint narrows
+the five options, so that second answer is recorded with `hint_rung_used=3` and never
+raises mastery.
+
 ## Phase 0 stubs
 
 Every module above exists as a stub that returns fixed test data and raises nothing.
