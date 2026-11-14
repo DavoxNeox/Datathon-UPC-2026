@@ -192,9 +192,17 @@ function classifyParts(comps, W, H, clean, ink, cw, ch) {
   const hs = comps.filter(c => c.h >= 12 && c.h <= 64 && c.w >= 0.05 * W).map(c => c.h).sort((a, b) => a - b);
   const lineH = hs.length ? hs[hs.length >> 1] : 30;
   const textlike = c => c.h >= 0.45 * lineH && c.h <= 1.8 * lineH;
+  // the statement's long lines at the margin come first: option rows live under them, never inside them
+  const longAtMargin = comps.filter(c => textlike(c) && c.w >= 0.2 * W);
+  const marginLeft = longAtMargin.length ? Math.min(...longAtMargin.map(c => c.x0)) : 0;
+  const stmtBottom = Math.max(0, ...longAtMargin.filter(c => c.x0 <= marginLeft + 2 * lineH).map(c => c.y1));
+  // the first big thing on the right is the figure: its labels ("A", "6 cm", "B") never join an option row
+  const bigRight = comps.filter(c => !textlike(c) && c.h > 1.8 * lineH && c.x0 > 0.45 * W);
+  const figLeft = bigRight.length ? Math.min(...bigRight.map(c => c.x0)) : W;
+  const inRows = c => textlike(c) && c.y0 >= stmtBottom - 0.3 * lineH && c.x1 <= figLeft - 0.5 * lineH;
   // option rows: bands of at least three options with wide gaps, spread across the page
   const bands = [];
-  for (const c of comps.filter(textlike).sort((a, b) => a.y0 - b.y0)) {
+  for (const c of comps.filter(inRows).sort((a, b) => a.y0 - b.y0)) {
     const b = bands.find(b => c.y0 < b.y1 - 0.3 * lineH && c.y1 > b.y0 + 0.3 * lineH);
     if (b) { b.items.push(c); b.y0 = Math.min(b.y0, c.y0); b.y1 = Math.max(b.y1, c.y1); } else bands.push({y0: c.y0, y1: c.y1, items: [c]});
   }
@@ -208,11 +216,17 @@ function classifyParts(comps, W, H, clean, ink, cw, ch) {
   };
   const opt = new Set(), pieces = [];   // the options one by one, in reading order, for the buttons
   const optBands = bands.filter(isOptions).sort((a, b) => a.y0 - b.y0);
+  // "D) ... E) ..." on a second row: two text-like pieces right under an option row, starting where it starts
+  for (const b of bands) {
+    if (optBands.includes(b) || b.items.length < 2) continue;
+    const above = optBands.find(o => b.y0 - o.y1 >= 0 && b.y0 - o.y1 <= 1.5 * lineH && Math.abs(Math.min(...b.items.map(c => c.x0)) - Math.min(...o.items.map(c => c.x0))) <= lineH);
+    if (above && b.items.every(textlike)) { optBands.push(b); optBands.sort((x, y) => x.y0 - y.y0); }
+  }
   for (const b of optBands) {
     b.items.forEach(c => opt.add(c));
     // a numerator, a superscript or a unit that the band missed: anything small whose middle lies on the row
     for (const c of comps) {
-      if (opt.has(c) || c.w >= 0.3 * W || c.h >= 3 * lineH) continue;
+      if (opt.has(c) || c.w >= 0.3 * W || c.h >= 3 * lineH || c.x1 > figLeft - 0.5 * lineH) continue;
       const mid = (c.y0 + c.y1) / 2;
       if (mid >= b.y0 - 0.6 * lineH && mid <= b.y1 + 0.6 * lineH && c.x0 >= b.items[0].x0 - 2 * lineH) { b.items.push(c); opt.add(c); b.y0 = Math.min(b.y0, c.y0); b.y1 = Math.max(b.y1, c.y1); }
     }
@@ -226,10 +240,9 @@ function classifyParts(comps, W, H, clean, ink, cw, ch) {
   // the text column: its left margin from the long lines, its right limit from the first big thing on the right
   const longLines = comps.filter(c => textlike(c) && c.w >= 0.25 * W && !opt.has(c));
   const textLeft = longLines.length ? Math.min(...longLines.map(c => c.x0)) : 0;
-  const bigRight = comps.filter(c => !textlike(c) && !opt.has(c) && c.h > 1.8 * lineH && c.x0 > 0.45 * W);
-  const figLeft = bigRight.length ? Math.min(...bigRight.map(c => c.x0)) : W;
-  const paragraph = c => c.x0 <= textLeft + lineH && c.w >= 0.35 * W && c.h <= 6 * lineH && c.x1 <= figLeft;
-  const stmt = new Set(comps.filter(c => !opt.has(c) && ((textlike(c) && c.x0 <= textLeft + lineH && c.w >= 0.08 * W) || paragraph(c))));
+  const margin = textLeft + 2 * lineH;   // wrapped lines sit after the problem's number: up to two letters in
+  const paragraph = c => c.x0 <= margin && c.w >= 0.35 * W && c.h <= 6 * lineH && c.x1 <= figLeft;
+  const stmt = new Set(comps.filter(c => !opt.has(c) && ((textlike(c) && c.x0 <= margin && c.w >= 0.08 * W) || paragraph(c))));
   let grew = true;
   while (grew) {   // pieces of a justified line, and short last lines, that belong to the statement
     grew = false;
@@ -238,7 +251,7 @@ function classifyParts(comps, W, H, clean, ink, cw, ch) {
       let sameRow = false, nextLine = false;
       for (const s of stmt) {
         if (c.y0 < s.y1 - 0.2 * lineH && c.y1 > s.y0 + 0.2 * lineH && c.x0 >= s.x1 - lineH) sameRow = true;
-        if (c.x0 <= textLeft + lineH && c.y0 - s.y1 >= 0 && c.y0 - s.y1 <= 1.5 * lineH) nextLine = true;
+        if (c.x0 <= margin && c.y0 - s.y1 >= 0 && c.y0 - s.y1 <= 1.5 * lineH) nextLine = true;
       }
       if (sameRow || nextLine) { stmt.add(c); grew = true; }
     }
@@ -297,34 +310,60 @@ function cropPart(img, box, masks) {
 // The scans are black on white. On the page the white goes: every pixel becomes ink with the alpha of its
 // darkness. Strokes and the edges of shapes take the theme's ink colour, so lines read on a dark page;
 // the inside of a filled shape (dark pixels with dark neighbours 3 px away in every direction) keeps its
-// own colour, so "the black square" stays black and grey stays grey, with a light rim around it. A
+// own colour, so "the black square" stays black, with a light rim around it; a flat grey area (a shaded
+// triangle, a shaded hand) keeps its grey level in both themes, lifted a fixed step on a dark page. A
 // saturated colour keeps its hue (lightened in the dark theme). The light theme tints the same way:
 // black ink on the warm page. No white card anywhere.
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 function isDarkTheme() { const [br, bg, bb] = hexRgb(cssVar("--bg") || "#ffffff"); return br * 299 + bg * 587 + bb * 114 < 128000; }
-function tinted(raw) {
+const tinted = raw => tintedCanvas(raw).toDataURL("image/png");
+function tintedCanvas(raw) {
   const [ir, ig, ib] = hexRgb(cssVar("--ink") || "#1f2430"), dark = isDarkTheme();
   const w = raw.width, h = raw.height;
   const c = document.createElement("canvas"); c.width = w; c.height = h;
   const ctx = c.getContext("2d"); ctx.drawImage(raw, 0, 0);
   const im = ctx.getImageData(0, 0, w, h), d = im.data;
-  const darkAt = (x, y) => x >= 0 && y >= 0 && x < w && y < h && Math.min(d[4 * (y * w + x)], d[4 * (y * w + x) + 1], d[4 * (y * w + x) + 2]) < 110;
+  const lvl = new Uint8Array(w * h), neutral = new Uint8Array(w * h);   // the darkest channel, and whether the pixel is grey
+  for (let p = 0, i = 0; p < w * h; p++, i += 4) { const mn = Math.min(d[i], d[i + 1], d[i + 2]); lvl[p] = mn; neutral[p] = Math.max(d[i], d[i + 1], d[i + 2]) - mn < 40 ? 1 : 0; }
+  const at = (x, y) => x >= 0 && y >= 0 && x < w && y < h ? y * w + x : -1;
+  const darkAt = (x, y) => { const p = at(x, y); return p >= 0 && lvl[p] < 110; };
+  // a grey patch: no solid ink (nothing under 25) within one pixel, and around it (two pixels) a grey mean rather
+  // than paper, with white specks (the scan's grain in a shaded area) at most three fifths of the window; the
+  // pixel takes the window's mean over its non-ink pixels, which also smooths the grain. Pixels right next
+  // to a line stay edges, in ink: the rim of the shape
+  const win = (x, y) => {
+    let sum = 0, n = 0, white = 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const p = at(x + dx, y + dy); if (p < 0 || !neutral[p]) return null;
+      const v = lvl[p];
+      if (v < 25) { if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return null; continue; }   // solid ink; the grain's dark specks are lighter
+      if (v > 240) white++; sum += v; n++;
+    }
+    return n >= 12 ? {mean: sum / n, white: white / n} : null;
+  };
   const out = new Uint8ClampedArray(d.length);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const i = 4 * (y * w + x), r = d[i], g = d[i + 1], b = d[i + 2], mn = Math.min(r, g, b), mx = Math.max(r, g, b);
+    const p = y * w + x, i = 4 * p, r = d[i], g = d[i + 1], b = d[i + 2], mn = lvl[p], mx = Math.max(r, g, b);
+    if (neutral[p] && mn >= 40 && mn <= 245) {
+      const k = win(x, y);
+      if (k && k.mean >= 55 && k.mean <= 228 && k.white <= 0.6) {
+        const v = dark ? Math.min(210, Math.round(k.mean) + 35) : Math.round(k.mean);   // lifted a step on a dark page, never as light as the ink
+        out[i] = out[i + 1] = out[i + 2] = v; out[i + 3] = 255; continue;
+      }
+    }
     const darkness = 255 - mn;   // 0 on white; the scan's faint noise (under 60) goes, ink reaches full by 170
     const a = darkness < 60 ? 0 : Math.min(255, Math.round((darkness - 60) * 255 / 110));
     out[i + 3] = Math.min(d[i + 3], a);
     if (!a) continue;
     const interior = dark && mn < 110 && darkAt(x - 3, y) && darkAt(x + 3, y) && darkAt(x, y - 3) && darkAt(x, y + 3);
-    if (interior) { out[i] = r; out[i + 1] = g; out[i + 2] = b; out[i + 3] = 255; }   // a fill keeps its colour, black stays black
+    if (interior) { out[i] = r; out[i + 1] = g; out[i + 2] = b; out[i + 3] = 255; }   // a black fill stays black
     else if (mx - mn < 40) { out[i] = ir; out[i + 1] = ig; out[i + 2] = ib; }         // strokes and edges in the theme's ink
     else if (dark) { out[i] = r + (255 - r) * .4; out[i + 1] = g + (255 - g) * .4; out[i + 2] = b + (255 - b) * .4; }
     else { out[i] = r; out[i + 1] = g; out[i + 2] = b; }
   }
   im.data.set(out); ctx.putImageData(im, 0, 0);
-  return c.toDataURL("image/png");
+  return c;
 }
 
 function extractParts(img, clean) {
