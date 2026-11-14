@@ -10,7 +10,7 @@ const I18N = {
   cat: {title: "Copilot de mates", student: "Àlies", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
         solution: "Solució", next: "Continua", mastery: "El teu progrés", close: "Tanca",
         level: "Nivell", topic: "Tema", thinking: "Un moment…", kinds: {neighbour: "Un problema semblant",
-        strategy: "Una estratègia", trace: "Un pas de la solució", llm: "Pista del model", solution: "Solució", lesson: "Lliçó"},
+        strategy: "Una estratègia", trace: "Un pas de la solució", llm: "Pista del model", solution: "Solució", lesson: "Lliçó"}, lesson_sub: "una idea per pensar-hi",
         manip: {rotate: "Gira i volteja", paths: "Comptador de camins", dice: "El dau"},
         time: "temps", laptop: "portàtil", board: "placa (estimat)", action: "acció", load: "temps de càrrega",
         over: "supera els 60 s", image: "Imatge del problema", answered: "Ja has respost. Si vols, mira la solució.",
@@ -27,7 +27,7 @@ const I18N = {
   eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
         solution: "Solution", next: "Continue", mastery: "Your progress", close: "Close",
         level: "Level", topic: "Topic", thinking: "One moment…", kinds: {neighbour: "A similar problem",
-        strategy: "A strategy", trace: "A step of the solution", llm: "Model hint", solution: "Solution", lesson: "Lesson"},
+        strategy: "A strategy", trace: "A step of the solution", llm: "Model hint", solution: "Solution", lesson: "Lesson"}, lesson_sub: "an idea to think with",
         manip: {rotate: "Rotate and flip", paths: "Path counter", dice: "The die"},
         time: "time", laptop: "laptop", board: "board (estimated)", action: "action", load: "load time",
         over: "over 60 s", image: "Problem picture", answered: "Already answered. Have a look at the solution if you like.",
@@ -179,8 +179,8 @@ function renderAnswer(s) {
   const left = s.hints_left ?? Infinity, max = s.hints_max ?? 3;
   $("hint").disabled = !!a || s.busy || left <= 0;
   $("hint").title = left <= 0 ? t().no_hints : "";
-  // the dots are the hints left on this problem: they go out from the left as hints are used (solution and
-  // rung 0 do not count). The last use is not a hint but a short lesson on the topic: a small book, not a dot.
+  // the dots are the hints left on this problem: they go out from the left as hints are used. The solution
+  // and rung 0 are not uses; the last use is a short lesson on the topic (a book, not a dot) and does count.
   const dots = $("rungs");
   if (dots.children.length !== max || dots.dataset.lang !== lang) {
     dots.dataset.lang = lang;
@@ -195,8 +195,9 @@ function renderAnswer(s) {
 function renderHints(s) {
   $("hints").innerHTML = s.hints.map(h => {
     if (h.kind === "lesson") {
-      // the fourth use of the button: a short lesson on the topic, its own card, never timed
-      return `<article class="lesson"><div class="kind">${BOOK} ${esc(t().kinds.lesson)}</div>` +
+      // the fourth use of the button: a short lesson on the topic, its own card, never timed.
+      // It counts as a use like any rung (the kicker says what it is, never that it is free).
+      return `<article class="lesson"><div class="kind">${BOOK} ${esc(t().kinds.lesson)} · ${esc(t().lesson_sub)}</div>` +
         `<h3>${esc(txt(h, "title"))}</h3><p>${esc(txt(h, "text"))}</p></article>`;
     }
     let body = `<div>${esc(txt(h, "text"))}</div>`;
