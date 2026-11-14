@@ -10,8 +10,12 @@ Standard library only, so it also runs on the board. Three banks:
   that respects level and topic (what B's retrieval promises), so the trainer's rules can
   be checked before the real data exists. The numbers say nothing about M3Kang itself.
 - `stub`: the Phase 0 retrieval stub over data/sample_problems.jsonl (5 problems).
-- `data`: `copilot.retrieval` as it is, over data/train.jsonl. Each step then costs one
-  real embedding; these are the numbers to report.
+- `data`: data/train.jsonl and data/val.jsonl as the bank. `--neighbors retrieval` uses
+  `copilot.retrieval` as it is (the Phase 0 stub until B's lands); `--neighbors index` is a
+  stop-gap that reads the stored vectors of data/index.db directly and filters by level and
+  topic, so the trainer can be measured on the real problems before B's retrieval is merged.
+  Topics come from `topics.get_topic` either way (one topic for every problem while that is
+  the stub, so the topic columns mean nothing until B's topics.py lands).
 
 Student models (answer(problem) -> (letter, hint_rung)):
 
@@ -91,6 +95,46 @@ def make_synthetic_neighbors(problems):
                     hits.extend(others)
             if hits:
                 return [dict(p) for p in hits[:k]]
+        return []
+
+    return neighbors
+
+
+# ----------------------------------------------------------------------------- index neighbours
+
+def make_index_neighbors(db_path):
+    """Stop-gap with retrieval's contract over the vectors in data/index.db (copilot.rag schema).
+
+    The query vector is the stored English vector of the same id, so no embedding is
+    computed; candidates are the rows in `lang` at the wanted level (nearest level with
+    candidates), same topic when asked, ranked by dot product. Not B's retrieval.
+    """
+    from .rag import Index
+    from .topics import get_topic
+    rows = {}
+    for key, problem, vec in Index(db_path).rows:
+        rows[(problem["id"], problem["language"])] = (problem, vec)
+    topic_cache = {}
+
+    def topic(pid):
+        if pid not in topic_cache:
+            topic_cache[pid] = get_topic(pid)
+        return topic_cache[pid]
+
+    def neighbors(problem_id, level_delta=0, same_topic=True, lang="cat", k=1):
+        query = rows.get((problem_id, "eng")) or next((v for (pid, _), v in rows.items() if pid == problem_id), None)
+        if query is None:
+            return []
+        problem, qvec = query
+        wanted = max(0, min(7, problem["level"] + level_delta))
+        pool = [(p, v) for (pid, lg), (p, v) in rows.items()
+                if lg == lang and pid != problem_id and (not same_topic or topic(pid) == topic(problem_id))]
+        for distance in range(8):
+            levels = {max(0, wanted - distance), min(7, wanted + distance)}
+            hits = [(p, v) for p, v in pool if p["level"] in levels]
+            if hits:
+                scored = sorted(hits, key=lambda pv: -sum(a * b for a, b in zip(qvec, pv[1])))
+                return [dict(p) for p, _ in scored[:k]]
         return []
 
     return neighbors
@@ -252,16 +296,22 @@ def markdown_table(rows):
     return "\n".join(lines)
 
 
-def setup_bank(kind, db_path):
+def setup_bank(kind, db_path, neighbors="retrieval", index_path=None):
     if kind == "synthetic":
         problems = synthetic_problems()
         trainer.configure(db_path=db_path, problems=problems, neighbors_fn=make_synthetic_neighbors(problems))
     elif kind == "stub":
         trainer.configure(db_path=db_path, bank_paths=[trainer.SAMPLE_BANK])
     elif kind == "data":
-        trainer.configure(db_path=db_path)
         if not any(os.path.exists(p) for p in trainer.DEFAULT_BANK):
             raise SystemExit("no data/train.jsonl or data/val.jsonl: link ~/m3kang-data first")
+        fn = None
+        if neighbors == "index":
+            index_path = index_path or os.path.join(trainer.ROOT, "data", "index.db")
+            if not os.path.exists(index_path):
+                raise SystemExit(f"no {index_path}: link ~/m3kang-data/index.db first")
+            fn = make_index_neighbors(index_path)
+        trainer.configure(db_path=db_path, neighbors_fn=fn)
     else:
         raise SystemExit(f"unknown bank: {kind}")
 
@@ -269,6 +319,8 @@ def setup_bank(kind, db_path):
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--bank", default="synthetic", choices=["synthetic", "stub", "data"])
+    p.add_argument("--neighbors", default="retrieval", choices=["retrieval", "index"],
+                   help="with --bank data: copilot.retrieval, or the stop-gap over data/index.db")
     p.add_argument("--steps", type=int, default=40)
     p.add_argument("--students", default="threshold2,threshold5,random20-1,random20-2,random20-3,always,improving,hints_only")
     p.add_argument("--db", default="", help="SQLite file (default: a fresh temporary file)")
@@ -280,7 +332,7 @@ def main():
     if not db_path:
         tmp = tempfile.TemporaryDirectory()
         db_path = os.path.join(tmp.name, "students.db")
-    setup_bank(args.bank, db_path)
+    setup_bank(args.bank, db_path, args.neighbors)
     students = parse_students(args.students)
 
     rows = []
@@ -293,12 +345,16 @@ def main():
                 print(f"  {n:3} {x['id']:28} L{x['level']} {x['topic']:10} "
                       f"{'ok ' if x['correct'] else 'KO '} m{x['mastery_before']}->{x['mastery_after']}"
                       f"{' review' if x['review'] else ''}{' REPEAT' if x['repeat'] else ''}")
-    print(f"\nBank: {args.bank}, {args.steps} problems per student, trainer db {db_path}")
+    print(f"\nBank: {args.bank}" + (f", neighbours: {args.neighbors}" if args.bank == "data" else "")
+          + f", {args.steps} problems per student, bank size {len(trainer.bank().ids)} problems")
     print(markdown_table(rows))
     print("\nboard s/step = embeddings x BOARD_EMBED_SECONDS + Python time as measured on the laptop "
           "(the board's Python is slower; not yet measured).")
     if args.bank != "data":
         print("These numbers test the trainer's rules, not M3Kang: rerun with --bank data for the real figures.")
+    elif args.neighbors == "index":
+        print("Neighbours from the stored vectors (no embedding call); B's retrieval may differ. "
+              "emb/step counts neighbour calls as if each cost one embedding.")
     trainer.configure()
     if tmp:
         tmp.cleanup()
