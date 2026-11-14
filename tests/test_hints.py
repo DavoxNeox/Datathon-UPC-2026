@@ -2,6 +2,8 @@
 import contextlib
 import io
 import unittest
+
+from copilot import board_clock
 from unittest import mock
 
 from copilot import hints
@@ -123,7 +125,7 @@ class LlmHintTest(unittest.TestCase):
         self.assertEqual(r["attempts"], 1)
         self.assertEqual(r["prompt_n"], 80)
         self.assertEqual(r["predicted_n"], 15)
-        self.assertAlmostEqual(r["estimated_board_seconds"], 80 / 11 + 15 / 5.5, places=3)
+        self.assertAlmostEqual(r["estimated_board_seconds"], 80 / board_clock.PREFILL_TPS + 15 / board_clock.GEN_TPS, places=3)
 
     def test_leaking_hint_is_retried_once_with_a_strict_prompt(self):
         calls = []
