@@ -67,6 +67,24 @@ validation problems against 30.0% raw and 34.0% always D on the same 50; it was 
   hidden test they add at most about one point over always-D. The Reason track stays near the
   always-D floor; the project's value is the Teach track.
 
+## Phase 10: the real board (Arduino UNO Q 4 GB, 14 Nov 2026)
+
+Debian 13, 4 cores, 3.6 GB RAM (2.9 GB available after boot, 2.8 GB with both servers up),
+llama.cpp `2cbe0ec` built on the board in about 35 minutes, both models verified, services active.
+Our 125 tests pass on the board; `predict.py` on the sample problems answers at once.
+
+`board/calibrate_speed.py`, 2 rounds, nothing else using the servers:
+
+| what | README | measured | config.env now |
+| --- | --- | --- | --- |
+| reading (prefill), 119 to 269-token prompts | about 11 tok/s | 11.3 to 11.6 tok/s | `BOARD_PREFILL_TPS=11.4` |
+| writing, 52 tokens | about 6 tok/s | 5.6 to 5.7 tok/s | `BOARD_GEN_TPS=5.6` |
+| one embedding request | a fraction of a second | 0.10 to 0.15 s (0.05 s per text in a batch of 20) | `BOARD_EMBED_SECONDS=0.12` |
+| hello world, 27 tokens read, 10 written | about 4 s | 10.7 and 5.7 tok/s | |
+
+So every "board estimate" printed on the laptop before this date (constants 11 / 5.5 / 0.25) was
+within about 4% on the model work and twice too pessimistic on embeddings.
+
 ## Known measurement artifact
 
 Several sessions share one `llama-server` with `--parallel 1 --cache-ram 0`: the system prompt

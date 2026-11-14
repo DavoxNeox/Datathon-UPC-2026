@@ -7,7 +7,7 @@ class EstimateTest(unittest.TestCase):
     def test_readme_hello_world(self):
         # README step 5.5: 27 prompt tokens, 10 written, took about 4 s on the board
         seconds = board_clock.estimate({"prompt_n": 27, "predicted_n": 10})
-        self.assertAlmostEqual(seconds, 27 / 11 + 10 / 5.5, places=6)
+        self.assertAlmostEqual(seconds, 27 / board_clock.PREFILL_TPS + 10 / board_clock.GEN_TPS, places=6)
         self.assertTrue(3.5 < seconds < 5.0)
 
     def test_baseline_problem_is_about_nine_seconds(self):
@@ -23,7 +23,7 @@ class EstimateTest(unittest.TestCase):
         clock.add_llm({"prompt_n": 110, "predicted_n": 1})
         clock.add_llm({"prompt_n": 20, "predicted_n": 30})
         clock.add_embeddings(2)
-        expected = 130 / 11 + 31 / 5.5 + 2 * 0.25
+        expected = 130 / board_clock.PREFILL_TPS + 31 / board_clock.GEN_TPS + 2 * board_clock.EMBED_SECONDS
         self.assertAlmostEqual(clock.board_seconds(), expected, places=6)
         self.assertGreaterEqual(clock.real_seconds(), 0.0)
 
