@@ -440,3 +440,29 @@ by level 0 to 7: 142, 106, 146, 123, 339, 296, 305, 290.
 - The settings popup has `role="dialog"`, `aria-modal="true"` and `aria-labelledby` pointing at
   the student's name; the teacher link and "Canvia d'alumne" are 44 px tall.
 - The hand-written steps (`demo_steps`) have a label of their own in both languages.
+
+### Thirteenth round (branch `ui-fixes-8`): grey stays grey, and two cutting fixes
+
+- **Grey fills** (G1). A neutral pixel whose 3x3 core holds no solid ink (nothing under 25) and
+  whose 5x5 window has a grey mean (55 to 228) with at most three fifths of white specks is a
+  grey patch: it takes the window's mean (smoothing the scan's grain), lifted by 35 and capped
+  at 210 in the dark theme so it never reaches the ink's lightness. Pixels right next to a line
+  stay edges, in ink: the rim of the shape. Measured by reading pixels, counting the neutral
+  pixels of level 60 to 200 in the figure crop and what they became:
+
+  | crop | grey pixels | still grey, dark | still grey, light | to ink (the rim) | transparent |
+  |---|---|---|---|---|---|
+  | `lvl-3_2021_20` (triangles), before | 4104 | 28 | 0 | 3320 / 3348 | 820 |
+  | `lvl-3_2021_20`, after | 4104 | 3060 | 2944 | 1032 / 1148 | 12 |
+  | `lvl-5_2022_30` (hand, grey 217), after | 3049 | 2954 | 2953 | 27 / 28 | 68 |
+
+  Tinting the hand's crop takes 3 ms. The light grey of the hand (G2) is covered by the same
+  rule, since the window's mean (up to 228) tells it from paper (the scan's paper is 250 and
+  above); a shaded region lighter than about 230 would still be lost, which is the limit.
+- **Indented statement lines.** Wrapped lines of a statement sit after the problem's number;
+  the margin test now allows two line heights, so they are statement, not figure.
+- **Two-row options.** A row with only two options ("D) ... E) ...") right under an option row
+  and aligned with it is an option row too; option rows are looked for only under the
+  statement's long lines (a justified line of text is never an option row) and never include
+  the figure's labels. `lvl-1_2021_24` (three rectangles) now gives the figure alone and five
+  option pieces without their letters.
