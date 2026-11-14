@@ -403,3 +403,21 @@ cursor all the time), which also settles the keyboard problem of the previous ro
   removed in `copilot/webapp.py`, with a test): a student who got it wrong may retry by
   themselves with a hint before reading the solution. Mastery is unchanged (recorded at the
   answer). The verdict stays on the sheet when a later hint clears the server's message.
+
+### Ninth round: no white card anywhere
+
+The user does not want a white background on any picture. Every crop is transparent in both
+themes. In the dark theme strokes and the edges of shapes take the light ink, while the inside
+of a filled shape (dark pixels with dark neighbours 3 px away in every direction) keeps its own
+colour: "the black square" stays black, inside a light rim that shows where it is; grey stays
+grey. This replaces the white card of the fifth round and keeps the reviewer's point (black is
+never shown as white). Checked on `lvl-3_2021_20` (black corner squares, grey triangles) and
+`lvl-5_2022_30` (the hand) in both themes.
+
+### Tenth round: options from the other language's OCR
+
+When this language's OCR options are missing or noisy, the page takes the other language's
+options if they are clean and have no words (numbers, fractions, units: "110", "115,5",
+"3√2 cm"). Over the whole bank, 1688 problem versions lack clean options and 110 of them are
+rescued this way; the rest keep their options cut from the scan, because there is no text to
+show. `lvl-7_2008_3` in Catalan now shows 110 / 121 / 115,5 / 119 / 242 as text.
