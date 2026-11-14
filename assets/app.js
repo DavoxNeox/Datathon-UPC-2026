@@ -7,39 +7,39 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
 const I18N = {
-  cat: {title: "Copilot de mates", student: "Àlies", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
+  cat: {title: "Copilot de mates", student: "Nom o àlies", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
         solution: "Solució", next: "Següent problema", mastery: "El teu progrés", close: "Tanca",
-        level: "Nivell", topic: "Tema", thinking: "Pensant…", kinds: {neighbour: "Pista 1 · problema semblant",
-        strategy: "Estratègia", trace: "Pas de la solució", llm: "Pista del model", solution: "Solució"},
+        level: "Nivell", topic: "Tema", thinking: "Un moment…", kinds: {neighbour: "Un problema semblant",
+        strategy: "Una estratègia", trace: "Un pas de la solució", llm: "Pista del model", solution: "Solució"},
         manip: {rotate: "Gira i volteja", paths: "Comptador de camins", dice: "El dau"},
-        time: "temps", laptop: "portàtil", board: "placa (est.)", action: "acció", load: "càrrega de la pàgina",
-        over: "supera els 60 s", image: "Imatge del problema", answered: "Ja has respost. Pots veure la solució.",
-        welcome: "Hola! Com et dius?", course: "Curs", course_help: "Si no tries curs, el copilot el descobreix amb tres o quatre problemes.",
-        begin: "Comença", reset: "Reinicia l'alumne", auto: "Deixa que el copilot ho descobreixi",
-        confirm_reset: "Vols esborrar l'historial d'aquest alumne i tornar a l'inici?",
-        more: "mostra'l sencer", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
+        time: "temps", laptop: "portàtil", board: "placa (estimat)", action: "acció", load: "temps de càrrega",
+        over: "supera els 60 s", image: "Imatge del problema", answered: "Ja has respost. Si vols, mira la solució.",
+        welcome: "Hola! Com et dius?", course: "Curs", course_help: "Si no tries cap curs, el copilot l'endevina amb tres o quatre problemes.",
+        begin: "Comença", reset: "Canvia d'alumne", auto: "Que ho endevini el copilot",
+        confirm_reset: "Vols esborrar el progrés d'aquest alumne i tornar a l'inici?",
+        more: "mostra-ho tot", less: "mostra'n menys", levelName: "Nivell", in_english: "en anglès",
         read_in: {eng: "Llegeix-lo en anglès", cat: "Llegeix-lo en català"}, hide_other: {eng: "Amaga l'anglès", cat: "Amaga el català"},
         other_kind: {eng: "Esglaó 0 · en anglès · no compta com a pista", cat: "Esglaó 0 · en català · no compta com a pista"},
         show_text: "Mostra el text", hide_text: "Amaga el text", more_panel: "Més", board_led: "La placa",
         timing: "Temps (per al professor)", problem: "Problema",
-        theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"},
+        theme: {auto: "Tema: automàtic", light: "Tema: clar", dark: "Tema: fosc"}, no_hints: "Ja no queden pistes en aquest problema",
         courses: ["5è de primària", "6è de primària", "1r d'ESO", "2n d'ESO", "3r d'ESO", "4t d'ESO", "1r de batxillerat", "2n de batxillerat"]},
-  eng: {title: "Maths copilot", student: "Nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
+  eng: {title: "Maths copilot", student: "Name or nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
         solution: "Solution", next: "Next problem", mastery: "Your progress", close: "Close",
-        level: "Level", topic: "Topic", thinking: "Thinking…", kinds: {neighbour: "Hint 1 · similar problem",
-        strategy: "Strategy", trace: "Solution step", llm: "Model hint", solution: "Solution"},
+        level: "Level", topic: "Topic", thinking: "One moment…", kinds: {neighbour: "A similar problem",
+        strategy: "A strategy", trace: "A step of the solution", llm: "Model hint", solution: "Solution"},
         manip: {rotate: "Rotate and flip", paths: "Path counter", dice: "The die"},
-        time: "time", laptop: "laptop", board: "board (est.)", action: "action", load: "page load",
-        over: "over 60 s", image: "Problem picture", answered: "Already answered. You can see the solution.",
-        welcome: "Hi! What's your name?", course: "School year", course_help: "If you don't choose one, the copilot finds it out with three or four problems.",
-        begin: "Start", reset: "Reset student", auto: "Let the copilot find out",
-        confirm_reset: "Erase this student's history and go back to the start?",
+        time: "time", laptop: "laptop", board: "board (estimated)", action: "action", load: "load time",
+        over: "over 60 s", image: "Problem picture", answered: "Already answered. Have a look at the solution if you like.",
+        welcome: "Hi! What's your name?", course: "School year", course_help: "If you don't choose a year, the copilot finds it out with three or four problems.",
+        begin: "Start", reset: "Change student", auto: "Let the copilot find out",
+        confirm_reset: "Erase this student's progress and go back to the start?",
         more: "show it all", less: "show less", levelName: "Level", in_english: "in English",
         read_in: {eng: "Read it in English", cat: "Read it in Catalan"}, hide_other: {eng: "Hide the English", cat: "Hide the Catalan"},
         other_kind: {eng: "Rung 0 · in English · not counted as a hint", cat: "Rung 0 · in Catalan · not counted as a hint"},
         show_text: "Show the text", hide_text: "Hide the text", more_panel: "More", board_led: "The board",
         timing: "Timings (for the teacher)", problem: "Problem",
-        theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"},
+        theme: {auto: "Theme: automatic", light: "Theme: light", dark: "Theme: dark"}, no_hints: "No hints left on this problem",
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
 const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
@@ -148,10 +148,15 @@ function renderAnswer(s) {
   $("verdict").textContent = txt(s.message, "text") || (lang === "cat" ? s.message.ca : s.message.en) || "";
   $("feedback").className = "feedback " + (a ? (a.correct ? "ok" : "bad") : "");
   $("next").hidden = !a;
-  $("hint").disabled = !!a || s.busy;
+  const left = s.hints_left ?? Infinity, max = s.hints_max ?? 3;
+  $("hint").disabled = !!a || s.busy || left <= 0;
+  $("hint").title = left <= 0 ? t().no_hints : "";
+  // the dots are the hints left on this problem: they go out one by one (solution and rung 0 do not count)
+  const dots = $("rungs");
+  if (dots.children.length !== max) dots.innerHTML = Array.from({length: max}, () => "<span></span>").join("");
+  [...dots.children].forEach((dot, i) => dot.classList.toggle("on", i < Math.min(left, max)));
   $("solution").disabled = s.busy || s.hints.some(h => h.kind === "solution");
   $("status").textContent = s.busy ? t().thinking : (a && !s.hints.some(h => h.kind === "solution") ? t().answered : "");
-  document.querySelectorAll("#rungs span").forEach((dot, i) => dot.classList.toggle("on", i < Math.min(s.rung, 3)));
 }
 
 function renderHints(s) {
@@ -180,9 +185,9 @@ function renderHints(s) {
 function renderMastery(s) {
   // something that grows: five segments per topic that light up, never a mark
   const topics = ["arithmetic", "logic", "digits", "counting", "areas", "angles", "spatial", "boards"];
-  const label = {arithmetic: ["Aritmètica", "Arithmetic"], logic: ["Lògica", "Logic"], digits: ["Xifres", "Digits"],
-    counting: ["Comptatge", "Counting"], areas: ["Àrees", "Areas"], angles: ["Angles", "Angles"],
-    spatial: ["Espacial", "Spatial"], boards: ["Taulers", "Boards"]};
+  const label = {arithmetic: ["Aritmètica", "Arithmetic"], logic: ["Lògica", "Logic"], digits: ["Nombres", "Numbers"],
+    counting: ["Comptar", "Counting"], areas: ["Àrees", "Areas"], angles: ["Angles", "Angles"],
+    spatial: ["Espai", "Space"], boards: ["Taulers", "Boards"]};
   $("mastery").innerHTML = topics.map(k => `<span>${label[k][lang === "cat" ? 0 : 1]}</span>` +
     `<div class="segs" aria-label="${label[k][lang === "cat" ? 0 : 1]} ${s.mastery[k] || 0}/5">${[1, 2, 3, 4, 5].map(i => `<span class="${i <= (s.mastery[k] || 0) ? "on" : ""}"></span>`).join("")}</div>`).join("");
 }

@@ -96,7 +96,16 @@ Student page (`index.html`, `style.css`, `app.js`, new `theme.css` and `theme.js
    letter buttons with the option text when it is shown, the theme button announces its state.
    Keys unchanged. All student text through the existing `cat`/`eng` tables; new keys:
    `show_text`, `hide_text`, `more_panel`, `board_led`, `timing`, `problem`, `theme`.
-6. **Nothing flashes.** No animation repeats; the LED canvas is redrawn on each poll with the
+6. **Hint limit (merged from main, `HINT_MAX_USES=3`).** The three dots on "Pista" are the
+   hints left on this problem (`hints_left` of `hints_max` from `/api/state`): they go out one
+   by one; at zero the button is disabled with a tooltip and the server's bilingual message
+   fills the reserved line, while "Solució" and rung 0 stay available (they do not count).
+7. **Catalan strings.** The corrections of `docs/content-review.md` that touch `assets/` are
+   applied (Nom o àlies, Canvia d'alumne, Que ho endevini el copilot, Un moment…, the hint
+   kinds without "Pista 1", mostra-ho tot, progrés, placa (estimat), temps de càrrega, the
+   one-word topic labels Nombres / Comptar / Espai, "una reflexió (un mirall)" in the rotate
+   manipulative, "a vegades" in the teacher legend). The ones in `copilot/` are for the controller.
+8. **Nothing flashes.** No animation repeats; the LED canvas is redrawn on each poll with the
    same frame, as before.
 
 ## Measurements (laptop, sim mode, port 7007, no network)
@@ -110,7 +119,7 @@ Student page (`index.html`, `style.css`, `app.js`, new `theme.css` and `theme.js
 | `index.html` / `style.css` / `theme.css` / `theme.js` / `app.js` | 4.1 / 11.7 / 2.3 / 1.4 / 16.6 KB |
 | Before: `index.html` + `style.css` + `app.js` | 24.4 KB |
 | Each asset over HTTP from the sim server | under 1 ms |
-| Tests (`python3 -m unittest discover tests`) | 168 OK, 1 skipped |
+| Tests (`python3 -m unittest discover tests`), after merging main `1c5534b` | 181 OK, 1 skipped |
 
 The phone captures were taken with the app's browser pane at 390x844 (headless Chrome does
 not go under about 500 px wide, so its phone captures were discarded); the laptop captures
