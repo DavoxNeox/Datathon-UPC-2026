@@ -345,6 +345,11 @@ def _solved(problem, state):
     return state["solved"]
 
 
+def _step_leaks(step, label, options):
+    """True when a step's own text (without the "Pas i de n" prefix) names the answer."""
+    return any(leak_reason(step.get(k) or "", label, options) for k in ("text_ca", "text_en") if step.get(k))
+
+
 def _step_text(step, i, n, lang_key):
     text = step.get(lang_key) or step.get("text_en") or ""
     head = f"Pas {i} de {n}: " if lang_key == "text_ca" else f"Step {i} of {n}: "
@@ -360,12 +365,13 @@ def _rung3(problem, state, lang):
         while state["demo_step"] < shown:
             i = state["demo_step"]
             state["demo_step"] = i + 1
-            text_ca = _step_text(steps[i], i + 1, shown, "text_ca")
-            text_en = _step_text(steps[i], i + 1, shown, "text_en")
-            # hand-written, but checked at run time too: a step that names the answer is skipped
-            if leak_reason(text_ca, label, options) or leak_reason(text_en, label, options):
+            # hand-written, but checked at run time too: a step that names the answer is skipped.
+            # The check runs on the step itself, not on the "Pas i de n" prefix (its digits are not hints).
+            if _step_leaks(steps[i], label, options):
                 continue
-            return {"kind": "demo_steps", "step": i + 1, "steps_total": shown, "text_ca": text_ca, "text_en": text_en}
+            return {"kind": "demo_steps", "step": i + 1, "steps_total": shown,
+                    "text_ca": _step_text(steps[i], i + 1, shown, "text_ca"),
+                    "text_en": _step_text(steps[i], i + 1, shown, "text_en")}
     solved = _solved(problem, state)
     if solved and len(solved.get("trace") or []) >= 2:
         trace = solved["trace"]
@@ -373,12 +379,11 @@ def _rung3(problem, state, lang):
         if state["trace_step"] < shown:
             i = state["trace_step"]
             step = trace[i]
-            text_ca = _step_text(step, i + 1, shown, "text_ca")
-            text_en = _step_text(step, i + 1, shown, "text_en")
             # An intermediate value equal to the answer would give it away: check anyway
-            if leak_reason(text_ca, label, options) is None and leak_reason(text_en, label, options) is None:
+            if not _step_leaks(step, label, options):
                 state["trace_step"] = i + 1
-                return {"kind": "trace", "text_ca": text_ca, "text_en": text_en}
+                return {"kind": "trace", "text_ca": _step_text(step, i + 1, shown, "text_ca"),
+                        "text_en": _step_text(step, i + 1, shown, "text_en")}
             state["trace_step"] = shown  # skip the rest of the trace
     if llm_allowed(_topic_of(problem), _llm_lang(lang)):
         result = _prefetched(state) or llm_hint(problem, lang)
