@@ -1,131 +1,117 @@
 {
-  "_about": "The fourth hint: a short lesson per topic (and per frequent solver family) that teaches how to think about this kind of problem. Never a formula that produces the answer, never the solution of a problem. 60 to 110 words per language; the tiny example uses numbers that belong to no demo problem. Contract in INTERFACES.md ('The fourth hint'). Draft by the content curator; the team validates.",
+  "_about": "The fourth hint: a short lesson per topic (and per frequent solver family). A lesson is a concept, not a strategy: the idea with the name used in class, why it is true, one tiny example with numbers that belong to no demo problem, and a question to recognise the idea in a new problem. Never steps, never a formula that produces the answer, never the solution. 60 to 110 words per language. Contract in INTERFACES.md ('The fourth hint'). Draft by the content curator; the team validates.",
   "status": "draft",
   "lessons": [
     {
-      "key": "arithmetic",
-      "family": null,
-      "title_ca": "Problemes amb paraules: primer la història, després els càlculs",
-      "title_en": "Word problems: first the story, then the sums",
-      "text_ca": "Un problema amb paraules amaga una història: algú té una quantitat, en perd o en guanya, la reparteix. Abans de calcular, explica't la història i dibuixa-la: una barra per cada quantitat, més llarga si n'hi ha més. El dibuix et diu quina operació toca, perquè veus si una part s'afegeix, es treu o es reparteix. Exemple minúscul: la Laia té el triple de cromos que en Marc i en tenen 36 entre tots plegats. Dibuixa una barra per a en Marc i tres d'iguals per a la Laia: ja saps entre quantes barres repartir el 36. Pregunta't: què em demanen exactament, i la meva resposta respon això?",
-      "text_en": "A word problem hides a story: someone has an amount, loses or gains some, shares it out. Before calculating, retell the story in your own words and draw it: one bar per amount, longer when there is more. The drawing tells you which operation is needed, because you see whether a part is added, removed or shared. Tiny example: Laia has three times as many cards as Marc and together they have 36. Draw one bar for Marc and three equal bars for Laia: now you know among how many bars the 36 is shared. Ask yourself: what exactly is asked, and does my answer address that?",
+      "key": "arithmetic", "family": null,
+      "title_ca": "Parts i total",
+      "title_en": "Parts and whole",
+      "text_ca": "Moltes quantitats d'un problema estan lligades per la relació parts i total: el total és la suma de les parts, i cada part és el total menys les altres. Frases com \"el triple\", \"la meitat\" o \"vuit més que\" descriuen com són les parts entre elles, no el total. Exemple minúscul: la Laia i en Marc tenen 36 cromos i la Laia en té el triple: el total són una part d'en Marc i tres d'iguals de la Laia. Pregunta't: en aquest problema, què és el total i què són les parts?",
+      "text_en": "Many quantities in a problem are tied by the parts-and-whole relation: the whole is the sum of the parts, and each part is the whole minus the others. Phrases such as \"three times\", \"half\" or \"eight more than\" describe how the parts relate to each other, not the whole. Tiny example: Laia and Marc have 36 cards and Laia has three times as many: the whole is one part for Marc and three equal ones for Laia. Ask yourself: in this problem, what is the whole and what are the parts?",
+      "strategy_ref": 4
+    },
+    {
+      "key": "logic", "family": null,
+      "title_ca": "La contradicció",
+      "title_en": "Contradiction",
+      "text_ca": "Una afirmació i el seu contrari no poden ser certes alhora: això és una contradicció, i és el motor de la lògica. Si suposem una cosa i, seguint les pistes, arribem a una contradicció, la suposició era falsa; i si totes les possibilitats menys una porten a contradicció, la que queda és la certa. Exemple minúscul: l'Anna diu que en Biel menteix i en Biel diu que l'Anna i ell diuen la veritat; si en Biel digués la veritat, l'Anna també, però aleshores en Biel mentiria. Contradicció: en Biel menteix. Pregunta't: quina suposició puc posar a prova fins que peti?",
+      "text_en": "A statement and its opposite cannot both be true: that is a contradiction, and it is the engine of logic. If we assume something and, following the clues, reach a contradiction, the assumption was false; and if every possibility but one leads to a contradiction, the remaining one is true. It works because the clues of a problem are all true at the same time. Tiny example: Anna says Biel lies and Biel says both of them tell the truth; if Biel told the truth, so would Anna, but then Biel would be lying. Contradiction: Biel lies. Ask yourself: which assumption can I test until it breaks?",
+      "strategy_ref": 2
+    },
+    {
+      "key": "digits", "family": null,
+      "title_ca": "Operacions inverses",
+      "title_en": "Inverse operations",
+      "text_ca": "Cada operació té una operació inversa que la desfà: sumar i restar són inverses, i multiplicar i dividir també. Si a un nombre li fem una operació i tot seguit la inversa, tornem al nombre inicial, com obrir i tancar una porta. Per això una cadena d'operacions es pot recórrer enrere: el que es va fer en últim lloc és el que es desfà abans. Exemple minúscul: 11 multiplicat per 3 dona 33, i 33 dividit per 3 torna a ser 11. Pregunta't: quines operacions han transformat el nombre que busco, i quina és la inversa de cadascuna?",
+      "text_en": "Every operation has an inverse operation that undoes it: adding and subtracting are inverses, and so are multiplying and dividing. If we apply an operation to a number and then its inverse, we are back at the starting number, like opening and closing a door. That is why a chain of operations can be walked backwards: what was done last is what gets undone soonest. Tiny example: 11 times 3 gives 33, and 33 divided by 3 is 11 again. Ask yourself: which operations transformed the number I am looking for, and what is the inverse of each?",
       "strategy_ref": 0
     },
     {
-      "key": "logic",
-      "family": null,
-      "title_ca": "Lògica: descartar és avançar",
-      "title_en": "Logic: ruling out is progress",
-      "text_ca": "En lògica no cal endevinar: cada pista elimina possibilitats, i quan només en queda una, és la bona. Funciona perquè les pistes són certes totes alhora: qualsevol cas que en contradigui una ja no pot ser. Comença per la pista més estricta, la que deixa menys casos, i fes-ne una taula. Exemple minúscul: tres amics tenen un gos, un gat i un peix. L'Anna no té cap animal amb pèl i en Biel és al·lèrgic als gats. La primera pista deixa l'Anna amb el peix; la segona, en Biel amb el gos; la resta cau sola. Pregunta't: quina pista fa més feina si la miro primer?",
-      "text_en": "In logic you do not guess: every clue removes possibilities, and the last one standing is right. It works because all the clues are true at once: any case that contradicts one of them is out. Start with the strictest clue, the one that leaves the fewest cases, and table what remains. Tiny example: three friends own a dog, a cat and a fish. Anna has no furry pet and Biel is allergic to cats. The first clue leaves Anna with the fish; the second, Biel with the dog; the rest falls into place. Ask yourself: which clue does the most work if I look at it first?",
+      "key": "counting", "family": null,
+      "title_ca": "Producte o suma: tries alhora o tries excloents",
+      "title_en": "Product or sum: choices together or choices apart",
+      "text_ca": "Comptar sense repetir ni oblidar depèn d'una distinció: quan un cas es descriu amb tries independents que es fan alhora, el total és el producte, perquè cada opció de la primera tria es combina amb totes les de la segona; quan les tries s'exclouen, una o altra, el total és la suma. Si una tria té l'ordre decidit per les regles, ja no aporta opcions noves. Exemple minúscul: 3 camises i 7 pantalons donen 21 conjunts, però triar una camisa o bé un pantaló són 10 opcions. Pregunta't: les meves tries són alhora, o són una o altra? I n'hi ha alguna que ja vingui decidida?",
+      "text_en": "Counting rests on one distinction: when a case is described by independent choices made together, the total is the product, because every option of the first choice combines with all the options of the second; when the choices exclude each other, one or the other, the total is the sum. Tiny example: 3 shirts and 7 pairs of trousers give 21 outfits, but choosing a shirt or else a pair of trousers is 10 options. Ask yourself: are my choices made together, or one or the other? And is any of them already decided?",
+      "strategy_ref": 2
+    },
+    {
+      "key": "areas", "family": null,
+      "title_ca": "L'àrea es conserva",
+      "title_en": "Area is conserved",
+      "text_ca": "L'àrea d'una figura no canvia quan la talles i en mous els trossos sense estirar-los ni superposar-los: és la conservació de l'àrea. Per això una figura estranya sovint es pot recompondre en un rectangle, i per això un triangle val exactament la meitat del rectangle que el tanca, perquè els trossos que sobren omplen el que falta. El perímetre, en canvi, sí que pot canviar amb els mateixos talls: àrea i contorn són coses diferents. Exemple minúscul: un paral·lelogram inclinat, tallat per una punta i encaixat per l'altra, es converteix en un rectangle de la mateixa base i altura. Pregunta't: en quins trossos coneguts es pot recompondre aquesta figura?",
+      "text_en": "The area of a shape does not change when you cut it and move the pieces without stretching or overlapping them: this is conservation of area. That is why an odd shape can often be rearranged into a rectangle, and why a triangle is exactly half of the rectangle that encloses it, since the spare pieces fill what is missing. The perimeter, however, can change under the same cuts: area and outline are different things. Tiny example: a slanted parallelogram, cut at one end and fitted at the other, becomes a rectangle with the same base and height. Ask yourself: into which known pieces can this shape be rearranged?",
+      "strategy_ref": 4
+    },
+    {
+      "key": "angles", "family": null,
+      "title_ca": "La suma dels angles d'un triangle",
+      "title_en": "The angle sum of a triangle",
+      "text_ca": "Els tres angles d'un triangle sumen sempre 180°, siguin com siguin els seus costats. És veritat perquè una recta paral·lela a la base que passa pel vèrtex de dalt reparteix l'angle pla de 180° en tres angles que són exactament els del triangle, copiats per les paral·leles. D'aquí surt la resta: angles sobre una recta, voltes senceres, polígons tallats en triangles. Exemple minúscul: un triangle amb angles de 50° i 60° té el tercer de 70°, perquè és el que falta fins a 180°. Pregunta't: quin triangle de la figura conté l'angle que no conec, i quins altres angles seus ja sé?",
+      "text_en": "The three angles of a triangle always add up to 180°, whatever its sides. It is true because a line through the top vertex parallel to the base splits the straight angle of 180° into three angles that are exactly those of the triangle, copied by the parallels. The rest follows: angles on a line, full turns, polygons cut into triangles. Tiny example: a triangle with angles of 50° and 60° has a third of 70°, because that is what is missing up to 180°. Ask yourself: which triangle in the figure contains the angle I do not know, and which of its angles do I know?",
+      "strategy_ref": 0
+    },
+    {
+      "key": "spatial", "family": null,
+      "title_ca": "El plec és un mirall",
+      "title_en": "A fold is a mirror",
+      "text_ca": "Quan un full es plega, el plec actua com un mirall: cada punt d'una banda va a parar al punt simètric de l'altra. Per això tot el que passa al paper plegat, un forat o un tall, apareix repetit i reflectit a banda i banda quan es desplega, i cada plec de més duplica les capes i les còpies. Això és la simetria axial: el mirall intercanvia esquerra i dreta, cosa que un gir no fa. Exemple minúscul: un full plegat un cop i retallat sobre el plec s'obre amb un forat simètric al mig. Pregunta't: on és l'eix de simetria, i què hi ha reflectit?",
+      "text_en": "When a sheet is folded, the fold acts as a mirror: every point on one side lands on the symmetric point on the other. That is why whatever happens to the folded paper, a hole or a cut, appears repeated and reflected on both sides when it is unfolded, and each new fold doubles the layers and the copies. This is reflection symmetry: the mirror swaps left and right, which a turn does not. Tiny example: a sheet folded once and snipped on the fold opens with a symmetrical hole in the middle. Ask yourself: where is the axis of symmetry, and what is reflected across it?",
       "strategy_ref": 1
     },
     {
-      "key": "digits",
-      "family": null,
-      "title_ca": "Xifres i nombres: desfer el camí",
-      "title_en": "Digits and numbers: walking the path backwards",
-      "text_ca": "Molts problemes de nombres expliquen un camí d'operacions i et donen el final; et demanen el principi. La idea: cada operació té una contrària que la desfà, sumar i restar, multiplicar i dividir. Si recorres el camí al revés, de l'última operació a la primera, desfent-les una per una, arribes al nombre inicial. Funciona perquè desfer l'última cosa feta et torna just al pas anterior. Exemple minúscul: penso un nombre, el multiplico per 3 i hi sumo 5, i obtinc 38. Al revés: primer treu el 5, després divideix per 3. Pregunta't: quina va ser l'última operació, i quina operació la desfà?",
-      "text_en": "Many number problems describe a path of operations and give you the end; they ask for the start. The idea: every operation has an opposite that undoes it, adding and subtracting, multiplying and dividing. If you walk the path in reverse, from the last operation to the first, undoing each one, you reach the starting number. It works because undoing the last thing done takes you exactly one step back. Tiny example: I think of a number, multiply it by 3 and add 5, and I get 38. Backwards: first take away the 5, then divide by 3. Ask yourself: what was the last operation, and which operation undoes it?",
+      "key": "boards", "family": null,
+      "title_ca": "El bloc que es repeteix",
+      "title_en": "The repeating block",
+      "text_ca": "Un patró que es repeteix es pot comptar per blocs: hi ha un tros, el període, que torna a aparèixer sempre igual, i tot el patró són còpies senceres d'aquest bloc més, potser, un tros final incomplet. En una fila llarga no cal mirar cada casella: n'hi ha prou amb el bloc, quants n'hi caben i què queda al final. Exemple minúscul: la seqüència vermell, blau, blau es repeteix en una filera de 17 boles: hi caben 5 blocs de 3 i en sobren un parell, vermell i blau. Pregunta't: quin és el bloc que es repeteix, i on acaba l'última còpia sencera?",
+      "text_en": "A repeating pattern can be counted by blocks: a piece, the period, reappears always the same, and the pattern is whole copies of it plus, perhaps, an incomplete piece at the end. In a long row there is no need to look at every cell: the block, how many fit and what is left are enough. Tiny example: the sequence red, blue, blue repeats along a row of 17 beads: 5 blocks of 3 fit and a pair of beads is left, red and blue. Ask yourself: what is the repeating block, and where does the last whole copy end?",
       "strategy_ref": 0
     },
     {
-      "key": "counting",
-      "family": null,
-      "title_ca": "Comptar sense perdre'n cap",
-      "title_en": "Counting without missing any",
-      "text_ca": "Comptar bé vol dir comptar cada cas una sola vegada i no deixar-se'n cap. El truc és posar ordre: decideix una primera elecció, després una segona, i recorre-les sempre en el mateix ordre, com qui llegeix una llista. Si les eleccions són independents, el total és el producte; si algunes vénen obligades per les altres, compta només les que són lliures. Exemple minúscul: amb tres jaquetes i cinc gorres, cada jaqueta admet les mateixes cinc gorres, i surten tres grups de cinc conjunts. Pregunta't: quines decisions puc prendre lliurement, i quines ja estan decidides per les regles del problema?",
-      "text_en": "Counting well means counting each case exactly once and leaving none out. The trick is order: fix a first choice, then a second, and run through them always in the same order, like reading a list. If the choices are independent, the total is the product; if some are forced by the others, count only the free ones. Tiny example: with three jackets and five caps, every jacket goes with the same five caps, so you get three groups of five outfits. Ask yourself: which decisions can I make freely, and which are already decided by the rules of the problem?",
+      "key": "digits", "family": "digit_sum",
+      "title_ca": "El valor posicional",
+      "title_en": "Place value",
+      "text_ca": "El valor d'una xifra depèn de la posició que ocupa: un 3 a les desenes val 30 i a les centenes 300, perquè cada posició val deu vegades la de la dreta. Això és el valor posicional, i explica per què la suma de les xifres d'un nombre no és el nombre, i per què intercanviar xifres el canvia en un múltiple de 10 − 1. Exemple minúscul: 53 i 35 tenen les mateixes xifres, però la diferència entre ells és 18, perquè el 5 ha passat de valer cinquanta a valer cinc. Pregunta't: quina posició ocupa cada xifra, i quant val realment?",
+      "text_en": "The value of a digit depends on the place it occupies: a 3 in the tens is worth 30 and in the hundreds 300, because each place is worth ten times the next. This is place value, and it explains why the sum of the digits of a number is not the number, and why swapping digits changes it by a multiple of 10 − 1. Tiny example: 53 and 35 have the same digits, but the difference between them is 18, because the 5 went from being worth fifty to being worth five. Ask yourself: which place does each digit occupy, and what is it really worth?",
       "strategy_ref": 0
     },
     {
-      "key": "areas",
-      "family": null,
-      "title_ca": "Àrees: tallar, moure i tornar a comptar",
-      "title_en": "Areas: cut, move and count again",
-      "text_ca": "L'àrea d'una figura no canvia si la talles en trossos i els mous sense estirar-los. Per això, davant d'una figura estranya, busca peces que coneguis: quadrats, rectangles i triangles, o quadradets iguals que puguis comptar. Un triangle és sempre la meitat del rectangle que el tanca, i això et permet mesurar formes amb punta. Exemple minúscul: una fletxa dibuixada en una quadrícula es pot partir en un rectangle de 6 quadradets i un triangle que n'ocupa la meitat d'un altre rectangle de 6; en total, 6 més 3. Pregunta't: quins trossos coneguts amaga aquesta figura, i quin tros sobra o falta respecte d'una forma senzilla?",
-      "text_en": "The area of a shape does not change if you cut it into pieces and move them without stretching. So, faced with an odd shape, look for pieces you know: squares, rectangles and triangles, or equal small squares you can count. A triangle is always half of the rectangle that encloses it, which lets you measure pointed shapes. Tiny example: an arrow drawn on a grid splits into a rectangle of 6 small squares and a triangle that is half of another rectangle of 6; in total, 6 plus 3. Ask yourself: which known pieces does this shape hide, and what is extra or missing compared with a simple shape?",
+      "key": "arithmetic", "family": "speed_time",
+      "title_ca": "Magnituds proporcionals",
+      "title_en": "Proportional quantities",
+      "text_ca": "A velocitat constant, la distància i el temps són magnituds directament proporcionals: el doble de temps, el doble de distància, i la meitat de temps, la meitat de distància. La velocitat és precisament la constant que les lliga, la distància recorreguda en cada unitat de temps, i per això s'escriu amb les unitats de l'una i de l'altra, com quilòmetres per hora. Exemple minúscul: un tren que fa 80 km en una hora en fa 40 en mitja hora i 240 en tres hores. Pregunta't: quina quantitat es manté constant en aquest problema, i quines creixen juntes?",
+      "text_en": "At constant speed, distance and time are directly proportional quantities: double the time, double the distance, and half the time, half the distance. Speed is precisely the constant that links them, the distance covered in each unit of time, which is why it carries the units of both, such as kilometres per hour. The proportionality holds because every unit of time contributes the same stretch of road. Tiny example: a train that covers 80 km in one hour covers 40 in half an hour and 240 in three hours. Ask yourself: which quantity stays constant in this problem, and which ones grow together?",
       "strategy_ref": 0
     },
     {
-      "key": "angles",
-      "family": null,
-      "title_ca": "Angles: tot gira al voltant d'unes poques sumes",
-      "title_en": "Angles: it all turns on a few sums",
-      "text_ca": "Gairebé tots els problemes d'angles es resolen amb tres fets: els angles d'un triangle sumen 180°, els que hi ha sobre una recta també sumen 180°, i una volta sencera són 360°. Funciona perquè un angle desconegut sempre comparteix un vèrtex o un costat amb algun que sí que coneixes. El mètode: escriu a la figura tots els angles que saps i, cada vegada que en descobreixis un, mira quin altre et desbloqueja. Exemple minúscul: en un triangle amb angles de 50° i 60°, el tercer és el que falta fins a 180°, és a dir 70°. Pregunta't: quin angle conegut toca el que em demanen?",
-      "text_en": "Almost every angle problem is solved with three facts: the angles of a triangle add up to 180°, angles on a straight line also add up to 180°, and a full turn is 360°. It works because an unknown angle always shares a vertex or a side with one you do know. The method: write every angle you know on the figure and, each time you find one, look for the next one it unlocks. Tiny example: in a triangle with angles of 50° and 60°, the third is what is missing up to 180°, that is 70°. Ask yourself: which known angle touches the one I am asked for?",
-      "strategy_ref": 0
-    },
-    {
-      "key": "spatial",
-      "family": null,
-      "title_ca": "Raonament espacial: fes l'experiment amb les mans",
-      "title_en": "Spatial reasoning: do the experiment with your hands",
-      "text_ca": "Quan una figura es plega, es gira o es talla, imaginar-ho tot de cop és difícil. La idea: segueix un sol detall cada vegada i mira on va a parar, i si pots, fes-ho de debò amb un paper. Un plec duplica les capes, i tot el que fas al paquet plegat apareix repetit en desplegar, reflectit a banda i banda del plec. Exemple minúscul: plega un full una vegada i retalla una cantonada del plec; en obrir-lo, el forat és al mig i té forma simètrica, perquè el tall ha travessat les capes alhora. Pregunta't: si marco un punt abans de moure la figura, on serà després?",
-      "text_en": "Imagining a shape folded, turned or cut all at once is hard. The idea: follow one detail at a time and see where it ends up; if you can, do it for real with paper. A fold doubles the layers, and everything you do to the folded bundle appears repeated when you unfold, mirrored on each side of the fold. Tiny example: fold a sheet once and snip a corner on the fold; when you open it, the hole is in the middle and symmetrical, because the cut went through all the layers. Ask yourself: if I mark a point before moving the shape, where will it be afterwards?",
+      "key": "arithmetic", "family": "sharing",
+      "title_ca": "La raó: comparar per parts iguals",
+      "title_en": "Ratio: comparing by equal parts",
+      "text_ca": "Quan una quantitat es reparteix de manera desigual, la raó diu quantes parts iguals rep cadascú: \"el triple\" vol dir tres parts contra una, \"tres per cada cinc\" vol dir tres i cinc. La part és la unitat del repartiment, i el total és un nombre sencer de parts. És una idea de proporció: les quantitats canvien, però la raó entre elles es manté. Exemple minúscul: 60 euros repartits a raó de cinc per cada un són sis parts de 10 euros: 50 per a l'una i 10 per a l'altra. Pregunta't: quantes parts iguals rep cadascú, i quantes parts fan el total?",
+      "text_en": "When an amount is shared unequally, the ratio says how many equal parts each one gets: \"three times\" means three parts against one, \"three for every five\" means three and five. The part is the unit of the share, and the whole is a whole number of parts. It is an idea of proportion: the amounts change, but the ratio between them stays. Tiny example: 60 euros shared five to one are six parts of 10 euros: 50 for one person and 10 for the other. Ask yourself: how many equal parts does each one get, and how many parts make the whole?",
       "strategy_ref": 4
     },
     {
-      "key": "boards",
-      "family": null,
-      "title_ca": "Taulers: el que es creua, compta un sol cop",
-      "title_en": "Boards: what crosses counts only once",
-      "text_ca": "En un tauler, files i columnes es creuen, i una casella pot ser d'una fila i d'una columna alhora. Si sumes les caselles de les files i les de les columnes, les del creuament queden comptades per duplicat: cal restar-les un cop. Sumar i després treure el repetit serveix per a molts recomptes amb solapaments. Exemple minúscul: en una graella de 6 per 10, una fila pintada i una columna pintada sumen 10 més 6 caselles, però comparteixen la casella on es creuen; les pintades són 10 més 6 menys 1. Pregunta't: hi ha caselles que són de tots els grups alhora, i les he comptades un cop o més?",
-      "text_en": "On a board, rows and columns cross, and a cell can belong to both at once. If you add the cells of the rows and the cells of the columns, the crossing cells are counted twice: subtract them once. Adding and then removing the repeats serves many counts with overlaps. Tiny example: on a 6 by 10 grid, one painted row and one painted column add up to 10 plus 6 cells, but they share the cell where they cross; the painted cells are 10 plus 6 minus 1. Ask yourself: are there cells that belong to both groups, and have I counted them once or twice?",
+      "key": "arithmetic", "family": "money",
+      "title_ca": "Preu, pagament i canvi",
+      "title_en": "Price, payment and change",
+      "text_ca": "Amb diners hi ha tres quantitats lligades: el preu del que es compra, el que es paga i el canvi que es torna. El canvi és el pagament menys el preu, i el preu total és la suma dels preus. La trampa habitual són les unitats: un euro són cent cèntims, i només es poden sumar quantitats expressades en la mateixa unitat. Exemple minúscul: tres llibretes a 1,30 euros costen 3,90 euros; pagades amb un bitllet de 10 euros, el canvi és la diferència entre 10 i 3,90. Pregunta't: quina d'aquestes tres quantitats em demanen, i estan totes en la mateixa unitat?",
+      "text_en": "With money there are three linked quantities: the price of what is bought, what is paid and the change given back. The change is the payment minus the price, and the total price is the sum of the prices. The usual trap is units: one euro is one hundred cents, and only amounts in the same unit can be added. Tiny example: three notebooks at 1.30 euros cost 3.90 euros; paid with a 10 euro note, the change is the difference between 10 and 3.90. Ask yourself: which of these three quantities am I asked for, and are they all in the same unit?",
       "strategy_ref": 0
     },
     {
-      "key": "digits",
-      "family": "digit_sum",
-      "title_ca": "Les xifres d'un nombre: cada posició val diferent",
-      "title_en": "The digits of a number: each place is worth something different",
-      "text_ca": "Un nombre és una fila de xifres, i cada posició val deu vegades més que la de la dreta: unitats, desenes, centenes. Per això moure una xifra canvia molt el nombre, i la suma de xifres no és el nombre. Quan un problema parla de xifres, escriu-les separades, amb el valor de cada posició, i mira què passa si en mous una. Exemple minúscul: el 53 i el 35 tenen les mateixes xifres i la mateixa suma de xifres, però es diferencien en 18, perquè el 5 ha passat de valer cinquanta a valer cinc. Pregunta't: quina xifra decideix, i a quina posició és?",
-      "text_en": "A number is a row of digits, and each place is worth ten times the one to its right: units, tens, hundreds. That is why moving a digit changes the number a lot, and the digit sum is not the number. When a problem talks about digits, write them apart, with the value of each place, and see what happens if you move one. Tiny example: 53 and 35 have the same digits and the same digit sum, but they differ by 18, because the 5 went from being worth fifty to being worth five. Ask yourself: which digit decides, and in which place is it?",
+      "key": "arithmetic", "family": "ages",
+      "title_ca": "La diferència d'edats no canvia",
+      "title_en": "The age difference never changes",
+      "text_ca": "El temps passa igual per a tothom: si han passat 5 anys, cada persona té 5 anys més. Per això la diferència d'edat entre persones és un invariant, una quantitat que no canvia mai, mentre que la raó entre les edats sí que canvia: una mare pot tenir avui el triple d'anys que la filla i més endavant només el doble. Exemple minúscul: si avui tinc 12 anys i la meva cosina 8, d'aquí a 10 anys tindrem 22 i 18, i la diferència segueix sent la mateixa. Pregunta't: què es manté igual en aquest problema quan passa el temps, i què canvia?",
+      "text_en": "Time passes equally for everyone: if 5 years have gone by, every person is 5 years older. That is why the age difference between people is an invariant, a quantity that never changes, while the ratio between ages does change: a mother can be three times her daughter's age today and only double later on. Tiny example: if I am 12 today and my cousin is 8, in 10 years we will be 22 and 18, and the difference is still the same. Ask yourself: what stays the same in this problem as time passes, and what changes?",
       "strategy_ref": 0
     },
     {
-      "key": "arithmetic",
-      "family": "speed_time",
-      "title_ca": "Velocitat, temps i distància: tres amics que sempre van junts",
-      "title_en": "Speed, time and distance: three friends that always travel together",
-      "text_ca": "La velocitat diu quanta distància es recorre en cada unitat de temps. Per això, si en coneixes un parell de les tres (velocitat, temps, distància), la tercera surt sola: més temps a la mateixa velocitat vol dir més distància, i la mateixa distància a més velocitat vol dir menys temps. Abans de calcular, comprova que les unitats encaixen: quilòmetres per hora amb hores, no amb minuts. Exemple minúscul: un ciclista fa 12 km en una hora; en mitja hora en farà la meitat, i per fer 36 km necessitarà el triple d'una hora. Pregunta't: quina de les tres quantitats em falta, i quina es manté igual al llarg del problema?",
-      "text_en": "Speed tells how much distance is covered in each unit of time. So, if you know any pair of the three (speed, time, distance), the third one follows: more time at the same speed means more distance, and the same distance at a higher speed means less time. Before calculating, check that the units match: kilometres per hour go with hours, not with minutes. Tiny example: a cyclist rides 12 km in an hour; in half an hour she rides half of that, and for 36 km she needs three times one hour. Ask yourself: which of the three quantities is missing, and which one stays the same throughout?",
-      "strategy_ref": 0
-    },
-    {
-      "key": "arithmetic",
-      "family": "sharing",
-      "title_ca": "Repartir en parts: busca la part petita",
-      "title_en": "Sharing in parts: find the small part",
-      "text_ca": "Quan una quantitat es reparteix de manera desigual (\"el doble\", \"tres vegades més\", \"la meitat\"), tot es pot escriure amb una mateixa part petita. Dibuixa una barra per a la part petita i tantes barres iguals com calgui per a les altres; el total són totes les barres juntes. Funciona perquè converteixes un repartiment complicat en comptar barres iguals. Exemple minúscul: tres germans es reparteixen 60 euros i el gran rep el triple que el petit, el mitjà el doble: una barra, un parell i tres, sis en total, de 10 euros cadascuna. Pregunta't: quina és la part més petita, i quantes vegades hi cap en cada quantitat?",
-      "text_en": "When an amount is shared unequally (\"twice as much\", \"three times more\", \"half\"), everything can be written with one small part. Draw a bar for the small part and as many equal bars as needed for the others; the total is all the bars together. It works because you turn a complicated share into counting equal bars. Tiny example: three siblings share 60 euros and the eldest gets three times the youngest's share, the middle one double: that is one, then a pair, then three bars, six in all, of 10 euros each. Ask yourself: what is the smallest part, and how many times does it fit in each amount?",
-      "strategy_ref": 4
-    },
-    {
-      "key": "arithmetic",
-      "family": "money",
-      "title_ca": "Diners: el que pago i el que em tornen",
-      "title_en": "Money: what I pay and what I get back",
-      "text_ca": "Els problemes de diners són sumes i restes disfressades: el preu total és la suma del que compro, i el canvi és el que he donat menys el que costava. L'única trampa són les unitats: passa-ho tot a cèntims o tot a euros abans de començar. Si un preu es repeteix, multiplica en lloc de sumar moltes vegades. Exemple minúscul: tres llibretes a 1,30 euros costen 3,90 euros; si pago amb un bitllet de 10, el canvi és el que falta de 3,90 fins a 10. Pregunta't: sumo el que surt de la butxaca o el que hi torna, i tot és en la mateixa unitat?",
-      "text_en": "Money problems are additions and subtractions in disguise: the total price is the sum of what I buy, and the change is what I handed over minus what it cost. The only trap is units: turn everything into cents or everything into euros before you start. If a price repeats, multiply instead of adding many times. Tiny example: three notebooks at 1.30 euros each cost 3.90 euros; if I pay with a 10 note, the change is what is missing from 3.90 up to 10. Ask yourself: am I adding what leaves my pocket or what comes back, and is everything in the same unit?",
-      "strategy_ref": 0
-    },
-    {
-      "key": "arithmetic",
-      "family": "ages",
-      "title_ca": "Edats: tothom es fa gran alhora",
-      "title_en": "Ages: everyone grows older at the same time",
-      "text_ca": "Als problemes d'edats, un fet ho ordena tot: el temps passa igual per a tothom. Si han passat 5 anys, cada persona té 5 anys més, i la diferència d'edat entre persones no canvia mai. El que canvia és la proporció: una mare pot tenir avui el triple d'anys que la filla i més endavant només el doble. Escriu les edats d'ara en una fila i les altres en una altra. Exemple minúscul: si avui tinc 12 anys i la meva cosina 8, d'aquí a 10 anys tindrem 22 i 18, amb la mateixa diferència. Pregunta't: què es manté igual i què canvia quan passa el temps?",
-      "text_en": "In age problems one fact puts everything in order: time passes equally for everyone. If 5 years have gone by, every person is 5 years older, and the age difference between people never changes. What does change is the ratio: a mother can be three times her daughter's age today and only double it some years later. Write today's ages in one row and the earlier or later ages in another. Tiny example: if I am 12 today and my cousin is 8, in 10 years we will be 22 and 18, with the same difference. Ask yourself: what stays the same and what changes as time passes?",
-      "strategy_ref": 0
-    },
-    {
-      "key": "arithmetic",
-      "family": "percent",
-      "title_ca": "Percentatges: sempre, per cent de què?",
-      "title_en": "Percentages: always ask, per cent of what?",
-      "text_ca": "Un percentatge no és una quantitat: és una part d'alguna cosa, i aquesta cosa pot canviar al llarg del problema. Per això un descompte del 10% i després una pujada del 10% no et retornen al preu inicial: la pujada es calcula sobre un preu més petit. Abans de res, pregunta de quina quantitat és el tant per cent, i troba primer què val l'1% dividint per cent. Exemple minúscul: una samarreta de 30 euros amb un 10% de descompte costa 27; si després la pugen un 10%, la pujada és el 10% de 27, no de 30. Pregunta't: el percentatge és sobre el preu d'abans o sobre el d'ara?",
-      "text_en": "A percentage is not an amount: it is a part of something, and that something can change during the problem. That is why a 10% discount followed by a 10% rise does not bring you back to the starting price: the rise is calculated on a smaller price. First ask what quantity the percentage is of, and find what 1% is worth by dividing by one hundred. Tiny example: a 30 euro T-shirt with a 10% discount costs 27; if it then rises by 10%, the rise is 10% of 27, not of 30. Ask yourself: is the percentage of the earlier price or of the current one?",
+      "key": "arithmetic", "family": "percent",
+      "title_ca": "El tant per cent és una part d'alguna cosa",
+      "title_en": "A percentage is a part of something",
+      "text_ca": "Un percentatge no és una quantitat per si sol: és una fracció amb denominador cent d'una altra quantitat, la base. Per això un descompte del 10% i després una pujada del 10% no tornen al preu inicial: la pujada té una base més petita que el descompte, i el resultat queda per sota. Exemple minúscul: una samarreta de 30 euros amb un 10% de descompte costa 27; si després puja un 10%, la pujada és el 10% de 27, no de 30. Pregunta't: de quina quantitat és aquest tant per cent, i aquesta base és la mateixa al llarg de tot el problema?",
+      "text_en": "A percentage is not an amount on its own: it is a fraction with denominator one hundred of another amount, the base. That is why a 10% discount followed by a 10% rise does not return to the starting price: the rise has a smaller base than the discount, and the result ends up lower. Tiny example: a 30 euro T-shirt with a 10% discount costs 27; if it then rises by 10%, the rise is 10% of 27, not of 30. Ask yourself: of which amount is this percentage, and is that base the same throughout the problem?",
       "strategy_ref": 0
     }
   ]
