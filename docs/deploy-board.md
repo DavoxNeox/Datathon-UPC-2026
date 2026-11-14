@@ -124,6 +124,11 @@ Make the app start on its own at boot, next to the two model services and the re
 arduino-app-cli properties set default user:math-copilot
 ```
 
+Measured cold start on our board (`sudo reboot`, 14 Nov 2026): about two minutes until the
+Linux side is back; the two model services and `math-relay` were already answering when `adb`
+reconnected, and the app page answered 20 s later. 2796 MB available after boot with everything
+running. Nothing to start by hand.
+
 Wi-Fi off, services started at boot, the laptop only shows the page over USB:
 
 ```bash

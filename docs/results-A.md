@@ -117,6 +117,10 @@ a cross frame (22 LEDs) to the matrix over the Bridge, with no errors in the app
 RAM with both servers, the relay and the app container: 2609 MB available; the container uses
 91 MB. Nothing listens on the Wi-Fi interface except App Lab's own port 7000 for the page.
 
+Cold start (`sudo reboot`): about two minutes to the Linux prompt; the two model services and
+the relay answer as soon as `adb` reconnects, the app page 20 s later, with the app set as App
+Lab's default. 2796 MB available after boot with everything running.
+
 Pitfalls met on the way, all in `docs/deploy-board.md`: the container sees only the app folder;
 `127.0.0.1` inside it is the container; `adb shell` sets a `TMPDIR` that breaks the sketch build;
 `/proc/device-tree` is absent in the container; `app start` does not restart a running app.
