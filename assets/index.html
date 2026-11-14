@@ -10,19 +10,21 @@
 </head>
 <body>
 <header class="bar">
-  <button class="icon" id="more" aria-expanded="false" aria-controls="panel"><span data-i18n="more_panel">Més</span></button>
-  <div class="brand"><span class="who" id="who" hidden></span></div>
+  <button class="icon" id="more" aria-expanded="false" aria-controls="panel"><span data-i18n="more_panel">Menú</span></button>
   <div class="progress" id="progress" hidden>
     <div class="label" id="progress-label"></div>
     <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" id="progress-track"><div class="fill" id="progress-fill"></div></div>
   </div>
-  <div class="tools">
-    <span class="lang" role="group" aria-label="CA / EN"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
-    <button class="icon" id="theme" aria-live="polite"><span id="theme-label">◐</span></button>
-  </div>
 </header>
 
 <aside id="panel" class="panel" hidden>
+  <section class="panel-block">
+    <div class="who" id="who"></div>
+    <div class="row">
+      <span class="lang" role="group" aria-label="CA / EN"><button id="lang-cat" class="on">CA</button><button id="lang-eng">EN</button></span>
+      <button class="icon" id="theme" aria-live="polite"><span id="theme-label">◐</span></button>
+    </div>
+  </section>
   <section class="panel-block">
     <h2 data-i18n="mastery">El teu progrés</h2>
     <div class="mastery" id="mastery"></div>
@@ -48,35 +50,25 @@
 <main id="start">
   <section class="start">
     <h1 data-i18n="welcome">Hola! Com et dius?</h1>
-    <label class="field"><span data-i18n="student">Àlies</span>
-      <input id="student" maxlength="32" placeholder="per exemple: Mar" autocomplete="off"></label>
+    <div class="field"><span id="alias-label" data-i18n="student">Àlies</span>
+      <input id="student" maxlength="32" placeholder="per exemple: Mar" autocomplete="off" aria-labelledby="alias-label"></div>
     <div class="field"><span id="course-label" data-i18n="course">Curs</span>
       <select id="level" hidden aria-hidden="true"></select>
       <div class="dropdown">
         <button type="button" class="dd-button" id="level-button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="course-label level-text"><span id="level-text"></span><span class="dd-caret" aria-hidden="true"></span></button>
         <ul class="dd-list" id="level-list" role="listbox" aria-labelledby="course-label" tabindex="-1" hidden></ul>
       </div></div>
-    <p class="meta" data-i18n="course_help">Si no tries cap curs, el copilot l'endevina amb tres o quatre problemes.</p>
+    <p class="meta" data-i18n="course_help">Si no tries cap curs, el copilot l'endevina.</p>
     <button class="primary big" id="begin" data-i18n="begin">Comença</button>
   </section>
 </main>
 
 <main id="app" hidden>
   <div class="meta" id="meta">…</div>
-  <figure class="figure" id="figure" title="" hidden><img id="img" alt=""></figure>
-  <div class="statement" id="statement">
-    <div class="text" id="text"></div>
-    <div class="options-text" id="options-text"></div>
-  </div>
-  <div class="text-tools">
-    <button class="chip" id="toggle-text" aria-expanded="false" aria-controls="statement" hidden></button>
-    <button class="chip translate" id="translate" title="esglaó 0" hidden></button>
-  </div>
-  <div class="other" id="other" hidden>
-    <div class="kind" id="other-kind"></div>
-    <div class="text" id="other-text"></div>
-    <div class="options-text" id="other-options"></div>
-  </div>
+  <!-- the problem, in three parts: the statement as text, the figure cut out of the scan, the options -->
+  <div class="text" id="text"></div>
+  <figure class="figure" id="figure" hidden><img id="img" alt=""></figure>
+  <figure class="figure strip" id="strip" hidden><img id="strip-img" alt=""></figure>
   <div class="letters" id="letters"></div>
   <section class="help">
     <div class="hints" id="hints"></div>
@@ -91,7 +83,7 @@
 <div class="sheet" id="feedback" aria-live="polite" hidden>
   <div class="inner">
     <div class="actions">
-      <button class="secondary" id="hint"><span data-i18n="hint">Pista</span><span class="rungs" id="rungs"><span></span><span></span><span></span></span></button>
+      <button class="secondary" id="hint"><span id="hint-label">Pista</span></button>
       <button class="link" id="solution" data-i18n="solution">Solució</button>
       <button class="secondary manip-btn" id="manip" hidden></button>
     </div>

@@ -231,3 +231,38 @@ The user asked for no modals and one background everywhere, with a dropdown of o
   sideways at 1100 px; click again to shrink), and "Canvia d'alumne" asks inline: the first
   press turns the button red with "Segur? Esborra el progrés" for four seconds, the second
   press erases. The `Escape` and letter keys no longer need a dialog guard.
+
+## For young readers: text, figure, options, and nothing twice (branch `ui-young`, 15 November)
+
+The user asked for a page a ten-year-old reads at a glance: short texts as bullets, one menu
+button instead of five controls, a much bigger progress bar, the statement never shown twice,
+and a hint button without icons.
+
+- **The problem in three parts.** The statement is the dataset's text (the scan's line breaks
+  and the problem number removed, 24 px bold). The figure is cut out of the scan in the browser
+  (`scanComponents`, `classifyParts`, `cropPart` in `app.js`): the PNG is read on a canvas at
+  2 px cells, blanks inside a line are bridged, 4-connected components are found, the text line
+  height is the median of the wide low components, option rows are bands of three or more
+  pieces spread across the page, the statement is the left-margin text lines plus the pieces
+  that share their row left of the first big thing on the right, and the figure is everything
+  else; the statement's rectangle is painted white inside the crop. When the OCR options are
+  readable text they go on the option rows and the scan's option row is dropped; when they are
+  pictures or symbols the option strip of the scan is kept, glued to the figure when it sits
+  under it (keys, cubes, balances) or shown as its own strip otherwise. Nothing fetched, no
+  server change: `/api/image` is read once per problem and cut once. Prototyped in Python
+  against 32 scans of train and val (all topics, text-only and figure problems, figure on the
+  right and below, options as pictures): every crop was right by eye; if anything fails at
+  run time the whole scan is shown as before. Small crops are drawn at 1.6 times.
+- **Menu and progress.** One "Menú" button on the left; the current topic's mastery as a 26 px
+  bar across the rest of the header (20 px on a phone). The sidebar holds the student and the
+  course, CA/EN, the theme, the map of topics, the LED, the timings and the teacher link; it is
+  in the flow on a phone and a fixed left column that pushes the page on a wide screen.
+- **No chips.** "Mostra el text" and "Llegeix-lo en anglès" are gone: the text is always shown
+  and the language changes in the menu. Rung 0 is therefore not reachable from the student
+  page any more (the route stays; the teacher view keeps its section).
+- **Plain hint button.** "PISTA · 3" says how many hints are left; the last use, when the
+  server allows four, reads "LLIÇÓ"; no dots, no book.
+- **Bullets.** Strategy, step and lesson texts are split into sentences and shown as a list
+  when there is more than one sentence; the statement and the neighbour problem stay as prose.
+- **Compact sheet.** 76 px tall on a laptop; on a phone the message sits on its own line and
+  the buttons share one row, nothing wraps.
