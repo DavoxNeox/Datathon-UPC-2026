@@ -1,18 +1,33 @@
 """Error signatures: what a wrong Kangaroo option says about the student's mistake.
 
+POST-ANSWER EXPLANATION ONLY, NEVER A HINT. A signature states the relation between the
+chosen value and the correct one ("double", "one too many", "the 12 of the statement was
+not added"): a student who still has the options in front of them can invert that
+relation and find the correct option in one step. The leak filter does not catch this,
+because no text writes the value. So `diagnose()` is called only once the problem is
+closed (the answer recorded, "La resposta era C" shown) and its text is displayed as the
+explanation of the error, next to the solution. It must never be shown while the options
+are still enabled, and never counts as a hint rung.
+
 The five options of a Kangaroo problem are designed: every distractor captures one
 concrete slip (counting both ends, doubling, a dropped zero, swapped digits...). When
-the student picks a wrong option we compare, in code, the value of the chosen option
+the student picked a wrong option we compare, in code, the value of the chosen option
 with the value of the correct one, both read from the OCR `options`, and name the slip
 with a bilingual diagnostic that never states the correct value or letter.
 
-    diagnose(problem, "B") -> None | {"signature": key, "text_ca": ..., "text_en": ..., "evidence": {...}}
+    diagnose(problem, "B") -> None | {"signature": key, "confidence": "high" | "low",
+                                      "text_ca": ..., "text_en": ..., "evidence": {...}}
 
 `None` means there is nothing to diagnose: the answer is right, the letter is not an
 option, or one of the two options is not a single number (pictures, sets, ratios,
 OCR noise such as "77 2"). A numeric pair that matches no signature returns the key
 "none" with a generic "start again from the statement" text, so the caller can always
 show something after a failure.
+
+`confidence` is "low" when the relation is likely a coincidence: the correct value is
+below 10 (an off-by-one, a half or a statement difference happen by chance among small
+numbers), or two or more signatures fit, or no signature fits ("none"). The web shows
+the text only when it is "high"; the teacher page may show every row.
 
 Order of the signatures, most specific first (the first match wins; a tie between two
 signatures is documented in tests/test_signatures.py):
@@ -56,6 +71,8 @@ _NUMBER_TOKEN = re.compile(r"-?\d+(?:[.,]\d+)?(?:\s*/\s*\d+)?")
 _LEADING_INDEX = re.compile(r"^\s*\d{1,2}\s*[.)]\s*")
 
 _POWERS_OF_TEN = (10, 100, 1000)
+# Below this correct value a matching relation is as likely a coincidence as a slip: confidence "low"
+SMALL_VALUE = 10
 
 NONE_TEXT = {
     "text_ca": "El teu resultat no s'assembla al correcte per cap relliscada típica: "
@@ -244,13 +261,15 @@ def diagnose(problem, chosen_letter):
         "candidates": [key for key, _, _ in candidates],
         "dropped_by_leak_filter": [],
     }
+    confidence = "high" if abs(correct) >= SMALL_VALUE and len(candidates) == 1 else "low"
     for key, texts, extra in candidates:
         if leaks(texts["text_ca"], label, options) or leaks(texts["text_en"], label, options):
             evidence["dropped_by_leak_filter"].append(key)
             continue
         evidence.update(extra)
-        return {"signature": key, "text_ca": texts["text_ca"], "text_en": texts["text_en"], "evidence": evidence}
-    return {"signature": "none", "text_ca": NONE_TEXT["text_ca"], "text_en": NONE_TEXT["text_en"],
+        return {"signature": key, "confidence": confidence, "text_ca": texts["text_ca"], "text_en": texts["text_en"],
+                "evidence": evidence}
+    return {"signature": "none", "confidence": "low", "text_ca": NONE_TEXT["text_ca"], "text_en": NONE_TEXT["text_en"],
             "evidence": evidence}
 
 

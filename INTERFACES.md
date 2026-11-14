@@ -192,10 +192,21 @@ Callers never know which one runs.
 
 ### `copilot/signatures.py` (innovation: error signatures)
 
+**POST-ANSWER EXPLANATION ONLY, NEVER A HINT.** A signature states the relation between
+the chosen value and the correct one (double, one too many, "the 12 of the statement was
+not added"): with the options still in front of them a student inverts it and finds the
+correct option in one step, and the leak filter cannot see it because no text writes the
+value (every signature except `statement_number` pins the correct option this way: 85%
+of the signed distractors, 1176/1381). So the
+web calls `diagnose()` only once the problem is closed, the answer recorded and "La
+resposta era C" shown, and displays the text as the explanation of the error next to the
+solution. Never while the options are enabled, never as a hint rung.
+
 ```python
 diagnose(problem: dict, chosen_letter: str) -> dict | None
     # -> {"signature": "plus_one",                     # one of SIGNATURE_KEYS below
-    #     "text_ca": "...", "text_en": "...",          # diagnostic for the student, never the value or the letter
+    #     "confidence": "high" | "low",                # low: correct value < 10, or two signatures fit, or "none"
+    #     "text_ca": "...", "text_en": "...",          # explanation for the student, never the value or the letter
     #     "evidence": {"chosen_letter": "D", "chosen_value": "19", "correct_value": "18", "difference": "1",
     #                  "ratio": "19/18", "statement_numbers": ["1", "3", "10"],
     #                  "candidates": ["plus_one"], "dropped_by_leak_filter": [], ...}}
@@ -206,20 +217,22 @@ SIGNATURE_KEYS = ["sum_vs_product", "product_vs_sum", "statement_number", "digit
 
 `None` when there is nothing to diagnose: the answer is right, the letter is not an
 option, or the chosen or the correct option is not a single number (pictures, sets,
-ratios, OCR noise). `"none"` when both are numbers but no signature fits; its text asks
-the student to start again from the statement. Pure stdlib; every text passes
-`copilot/leak_filter.py` before it is returned (a matching signature whose text would
-name the correct value is dropped and the next one is tried). `evidence` holds the
-correct value and the difference for logs and the teacher page: never send it to the
-student's browser. Order of the signatures and the measured coverage (39% of the numeric
-distractors, 74% of the problems with a numeric correct option have at least one) in
-`docs/error-signatures.md`.
+ratios, OCR noise). `"none"` when both are numbers but no signature fits. Pure stdlib;
+every text passes `copilot/leak_filter.py` (a matching signature whose text would name
+the correct value is dropped and the next one is tried). The web shows the text only when
+`confidence` is `"high"`; the teacher page may list every row. `evidence` holds the
+correct value and the difference for logs and the teacher page.
 
-Web proposal (two lines): after a wrong answer, `record_answer` is followed by
-`diagnose(problem, letter)` and the page shows `text_ca` under the cross as a yellow
-"Per què?" line, keeping the options enabled for one more try. A relation hint narrows
-the five options, so that second answer is recorded with `hint_rung_used=3` and never
-raises mastery.
+Measured (val + train, 938 problems with a numeric correct option): 39% of the numeric
+distractors get a signature, 16% with high confidence; a null model with the design
+removed estimates that about three in four signatures below 10 and one in two above 10
+(high confidence included) would also fire on a random option of the same size. Details,
+order of the signatures and the manual judgement in `docs/error-signatures.md`.
+
+Web wiring (controller): after `record_answer` returns `correct: False` and the solution
+panel is drawn, `d = signatures.diagnose(problem, letter)`; if `d` and
+`d["confidence"] == "high"`, show `d["text_ca"]` as a "Per què m'he equivocat?" line under
+"La resposta era C". Nothing changes in the hint ladder or in mastery.
 
 ## Phase 0 stubs
 

@@ -4,39 +4,39 @@ Rows: 1747 problems in `eng` from val.jsonl, train.jsonl; 1078 with OCR options 
 
 ### Topic
 
-| Topic | problems | distractors | numeric | signed | % signed | problems ≥1 signed | % |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| arithmetic | 289 | 1156 | 1132 | 466 | 41% | 225 | 78% |
-| logic | 21 | 84 | 79 | 45 | 57% | 18 | 86% |
-| digits | 241 | 964 | 933 | 357 | 38% | 187 | 78% |
-| counting | 42 | 168 | 164 | 52 | 32% | 30 | 71% |
-| areas | 149 | 596 | 511 | 167 | 33% | 91 | 61% |
-| angles | 39 | 156 | 135 | 42 | 31% | 24 | 62% |
-| spatial | 119 | 476 | 461 | 188 | 41% | 89 | 75% |
-| boards | 38 | 152 | 142 | 64 | 45% | 32 | 84% |
-| **all** | 938 | 3752 | 3557 | 1381 | 39% | 696 | 74% |
+| Topic | problems | distractors | numeric | signed | % signed | high conf. | % high | problems ≥1 signed | % | problems ≥1 high | % |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| arithmetic | 289 | 1156 | 1132 | 466 | 41% | 186 | 16% | 225 | 78% | 116 | 40% |
+| logic | 21 | 84 | 79 | 45 | 57% | 9 | 11% | 18 | 86% | 6 | 29% |
+| digits | 241 | 964 | 933 | 357 | 38% | 162 | 17% | 187 | 78% | 103 | 43% |
+| counting | 42 | 168 | 164 | 52 | 32% | 23 | 14% | 30 | 71% | 15 | 36% |
+| areas | 149 | 596 | 511 | 167 | 33% | 79 | 15% | 91 | 61% | 50 | 34% |
+| angles | 39 | 156 | 135 | 42 | 31% | 18 | 13% | 24 | 62% | 11 | 28% |
+| spatial | 119 | 476 | 461 | 188 | 41% | 74 | 16% | 89 | 75% | 41 | 34% |
+| boards | 38 | 152 | 142 | 64 | 45% | 26 | 18% | 32 | 84% | 18 | 47% |
+| **all** | 938 | 3752 | 3557 | 1381 | 39% | 577 | 16% | 696 | 74% | 360 | 38% |
 
 ### Level
 
-| Level | problems | distractors | numeric | signed | % signed | problems ≥1 signed | % |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 0 | 68 | 272 | 264 | 130 | 49% | 56 | 82% |
-| 1 | 51 | 204 | 190 | 81 | 43% | 42 | 82% |
-| 2 | 58 | 232 | 221 | 96 | 43% | 46 | 79% |
-| 3 | 61 | 244 | 229 | 110 | 48% | 52 | 85% |
-| 4 | 195 | 780 | 755 | 269 | 36% | 143 | 73% |
-| 5 | 178 | 712 | 682 | 242 | 35% | 129 | 72% |
-| 6 | 170 | 680 | 634 | 230 | 36% | 121 | 71% |
-| 7 | 157 | 628 | 582 | 223 | 38% | 107 | 68% |
-| **all** | 938 | 3752 | 3557 | 1381 | 39% | 696 | 74% |
+| Level | problems | distractors | numeric | signed | % signed | high conf. | % high | problems ≥1 signed | % | problems ≥1 high | % |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 68 | 272 | 264 | 130 | 49% | 44 | 17% | 56 | 82% | 24 | 35% |
+| 1 | 51 | 204 | 190 | 81 | 43% | 33 | 17% | 42 | 82% | 22 | 43% |
+| 2 | 58 | 232 | 221 | 96 | 43% | 29 | 13% | 46 | 79% | 17 | 29% |
+| 3 | 61 | 244 | 229 | 110 | 48% | 49 | 21% | 52 | 85% | 28 | 46% |
+| 4 | 195 | 780 | 755 | 269 | 36% | 119 | 16% | 143 | 73% | 80 | 41% |
+| 5 | 178 | 712 | 682 | 242 | 35% | 100 | 15% | 129 | 72% | 67 | 38% |
+| 6 | 170 | 680 | 634 | 230 | 36% | 112 | 18% | 121 | 71% | 68 | 40% |
+| 7 | 157 | 628 | 582 | 223 | 38% | 91 | 16% | 107 | 68% | 54 | 34% |
+| **all** | 938 | 3752 | 3557 | 1381 | 39% | 577 | 16% | 696 | 74% | 360 | 38% |
 
 ### Source
 
-| Source | problems | distractors | numeric | signed | % signed | problems ≥1 signed | % |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| train.jsonl | 799 | 3196 | 3021 | 1168 | 39% | 587 | 73% |
-| val.jsonl | 139 | 556 | 536 | 213 | 40% | 109 | 78% |
-| **all** | 938 | 3752 | 3557 | 1381 | 39% | 696 | 74% |
+| Source | problems | distractors | numeric | signed | % signed | high conf. | % high | problems ≥1 signed | % | problems ≥1 high | % |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| train.jsonl | 799 | 3196 | 3021 | 1168 | 39% | 482 | 16% | 587 | 73% | 304 | 38% |
+| val.jsonl | 139 | 556 | 536 | 213 | 40% | 95 | 18% | 109 | 78% | 56 | 40% |
+| **all** | 938 | 3752 | 3557 | 1381 | 39% | 577 | 16% | 696 | 74% | 360 | 38% |
 
 ### Distribution, simulated student (each numeric distractor picked once)
 
@@ -89,6 +89,36 @@ Rows: 1747 problems in `eng` from val.jsonl, train.jsonl; 1078 with OCR options 
 | none | 215 | 28% |
 | (not numeric) | 385 | 50% |
 | **wrong answers** | 765 | 100% |
+
+### Small values and confidence
+
+Signed distractors whose correct value is below 10: 774/1381 (56%); with two or more fitting signatures: 134/1381 (10%); `confidence: high` (neither): 577/1381 (42%).
+
+| signature | signed | correct < 10 | % | high conf. | % |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| sum_vs_product | 6 | 5 | 83% | 1 | 17% |
+| product_vs_sum | 18 | 16 | 89% | 0 | 0% |
+| statement_number | 205 | 104 | 51% | 77 | 38% |
+| digits_swapped | 21 | 0 | 0% | 19 | 90% |
+| sign | 7 | 7 | 100% | 0 | 0% |
+| times_10 | 6 | 3 | 50% | 3 | 50% |
+| div_10 | 13 | 1 | 8% | 12 | 92% |
+| double | 115 | 83 | 72% | 31 | 27% |
+| half | 124 | 57 | 46% | 67 | 54% |
+| plus_one | 321 | 218 | 68% | 102 | 32% |
+| minus_one | 336 | 208 | 62% | 128 | 38% |
+| missing_add | 104 | 32 | 31% | 72 | 69% |
+| missing_subtract | 105 | 40 | 38% | 65 | 62% |
+
+### False-positive estimate (null model)
+
+Every numeric distractor is replaced by a numeric distractor of another problem of the same level and the same size (below 10, two digits, more), seed 1; a signature that fires on that pair is a coincidence. `FP share` = null rate / real rate: the share of the real signatures that a random option of the same size would also have earned.
+
+| correct value | distractors | real signed | null signed | FP share | real high | null high | FP share (high) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| < 10 | 1381 | 774 (56%) | 602 (44%) | 78% | 0 (0%) | 0 (0%) | 0% |
+| >= 10 | 2176 | 607 (28%) | 283 (13%) | 47% | 577 (27%) | 273 (13%) | 47% |
+| **all** | 3557 | 1381 (39%) | 885 (25%) | 64% | 577 (16%) | 273 (8%) | 47% |
 
 ### Candidates dropped by the leak filter
 

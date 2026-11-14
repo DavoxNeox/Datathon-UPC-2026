@@ -23,10 +23,11 @@ import os
 import random
 import sys
 from collections import Counter, OrderedDict, defaultdict
+from fractions import Fraction
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-from copilot.signatures import SIGNATURE_KEYS, diagnose, option_value  # noqa: E402
+from copilot.signatures import SIGNATURE_KEYS, SMALL_VALUE, diagnose, option_value  # noqa: E402
 from copilot.topics import TOPIC_KEYS, get_topic  # noqa: E402
 
 LETTERS = "ABCDE"
@@ -74,16 +75,20 @@ def coverage_table(title, items, key, order):
     for item in items:
         groups[key(item[0])].append(item)
     lines = [f"### {title}", "",
-             f"| {title} | problems | distractors | numeric | signed | % signed | problems ≥1 signed | % |",
-             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+             f"| {title} | problems | distractors | numeric | signed | % signed | high conf. | % high | "
+             "problems ≥1 signed | % | problems ≥1 high | % |",
+             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
 
     def row(name, its):
         ids = {p["id"] for p, _, _ in its}
         numeric = [r for _, _, r in its if r is not None]
         signed = [r for r in numeric if r["signature"] != "none"]
+        high = [r for r in signed if r["confidence"] == "high"]
         signed_ids = {p["id"] for p, _, r in its if r is not None and r["signature"] != "none"}
-        return (f"| {name} | {len(ids)} | {len(its)} | {len(numeric)} | {len(signed)} | "
-                f"{pct(len(signed), len(numeric))} | {len(signed_ids)} | {pct(len(signed_ids), len(ids))} |")
+        high_ids = {p["id"] for p, _, r in its if r is not None and r["confidence"] == "high"}
+        return (f"| {name} | {len(ids)} | {len(its)} | {len(numeric)} | {len(signed)} | {pct(len(signed), len(numeric))} | "
+                f"{len(high)} | {pct(len(high), len(numeric))} | {len(signed_ids)} | {pct(len(signed_ids), len(ids))} | "
+                f"{len(high_ids)} | {pct(len(high_ids), len(ids))} |")
 
     for k in order:
         if k in groups:
@@ -99,6 +104,88 @@ def distribution_table(title, counter, total_label="all"):
         if counter.get(key):
             lines.append(f"| {key} | {counter[key]} | {pct(counter[key], n)} |")
     lines.append(f"| **{total_label}** | {n} | 100% |")
+    return "\n".join(lines) + "\n"
+
+
+def small_values_section(items):
+    """How many signed distractors sit on a small correct value, where coincidences are likely."""
+    signed = [(p, l, r) for p, l, r in items if r is not None and r["signature"] != "none"]
+    small = [x for x in signed if abs(Fraction(x[2]["evidence"]["correct_value"])) < SMALL_VALUE]
+    two = [x for x in signed if len(x[2]["evidence"]["candidates"]) >= 2]
+    high = [x for x in signed if x[2]["confidence"] == "high"]
+    lines = ["### Small values and confidence", "",
+             f"Signed distractors whose correct value is below {SMALL_VALUE}: {len(small)}/{len(signed)} "
+             f"({pct(len(small), len(signed))}); with two or more fitting signatures: {len(two)}/{len(signed)} "
+             f"({pct(len(two), len(signed))}); `confidence: high` (neither): {len(high)}/{len(signed)} "
+             f"({pct(len(high), len(signed))}).", "",
+             "| signature | signed | correct < 10 | % | high conf. | % |", "| --- | ---: | ---: | ---: | ---: | ---: |"]
+    for key in SIGNATURE_KEYS:
+        rows = [x for x in signed if x[2]["signature"] == key]
+        if not rows:
+            continue
+        sm = sum(1 for x in rows if abs(Fraction(x[2]["evidence"]["correct_value"])) < SMALL_VALUE)
+        hi = sum(1 for x in rows if x[2]["confidence"] == "high")
+        lines.append(f"| {key} | {len(rows)} | {sm} | {pct(sm, len(rows))} | {hi} | {pct(hi, len(rows))} |")
+    return "\n".join(lines) + "\n"
+
+
+def null_model_section(items, seed):
+    """False-positive estimate: the same problems with each distractor swapped for one of another problem.
+
+    A distractor of another problem of the same level carries no design: whatever signature
+    fires on it is a coincidence. The signed rate under this null, divided by the real signed
+    rate, estimates the share of real signatures that would have fired anyway.
+    """
+    rng = random.Random(seed)
+
+    def magnitude(text):
+        v = abs(option_value(text))
+        return 0 if v < SMALL_VALUE else 1 if v < 100 else 2
+
+    # Replacements keep the level and the size of the number (below 10, two digits, more): only the design goes
+    pool = defaultdict(list)
+    for p, letter, r in items:
+        if r is not None:
+            pool[p["level"], magnitude(p["options"][letter])].append(p["options"][letter])
+    real = Counter()
+    null = Counter()
+    for p, letter, r in items:
+        if r is None:
+            continue
+        correct = Fraction(r["evidence"]["correct_value"])
+        band = "small" if abs(correct) < SMALL_VALUE else "large"
+        real[band, "n"] += 1
+        real[band, "signed"] += r["signature"] != "none"
+        real[band, "high"] += r["confidence"] == "high"
+        fake = dict(p, options=dict(p["options"]))
+        for _ in range(20):
+            candidate = rng.choice(pool[p["level"], magnitude(p["options"][letter])])
+            if option_value(candidate) not in (None, correct):
+                break
+        fake["options"][letter] = candidate
+        d = diagnose(fake, letter)
+        if d is None:
+            continue
+        null[band, "n"] += 1
+        null[band, "signed"] += d["signature"] != "none"
+        null[band, "high"] += d["confidence"] == "high"
+    lines = ["### False-positive estimate (null model)", "",
+             f"Every numeric distractor is replaced by a numeric distractor of another problem of the same level and "
+             f"the same size (below {SMALL_VALUE}, two digits, more), seed {seed}; a signature that fires on that pair is "
+             "a coincidence. `FP share` = null rate / real rate: the share of the real signatures that a random option "
+             "of the same size would also have earned.", "",
+             "| correct value | distractors | real signed | null signed | FP share | real high | null high | FP share (high) |",
+             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for band in ("small", "large", "all"):
+        def get(c, k):
+            return c[band, k] if band != "all" else c["small", k] + c["large", k]
+        rn, rs, rh = get(real, "n"), get(real, "signed"), get(real, "high")
+        nn, ns, nh = get(null, "n"), get(null, "signed"), get(null, "high")
+        fp = (ns / nn) / (rs / rn) if rn and nn and rs else 0
+        fph = (nh / nn) / (rh / rn) if rn and nn and rh else 0
+        name = {"small": f"< {SMALL_VALUE}", "large": f">= {SMALL_VALUE}", "all": "**all**"}[band]
+        lines.append(f"| {name} | {rn} | {rs} ({pct(rs, rn)}) | {ns} ({pct(ns, nn)}) | {fp:.0%} | "
+                     f"{rh} ({pct(rh, rn)}) | {nh} ({pct(nh, nn)}) | {fph:.0%} |")
     return "\n".join(lines) + "\n"
 
 
@@ -139,14 +226,15 @@ def main():
 
     if args.pairs:
         problems = load_problems(args.inputs, args.lang)
-        print("| id | level | topic | chosen | signature | candidates |\n| --- | ---: | --- | --- | --- | --- |")
+        print("| id | level | topic | chosen | signature | confidence | candidates |\n| --- | ---: | --- | --- | --- | --- | --- |")
         for pair in args.pairs:
             pid, letter = pair.rsplit(":", 1)
             p = problems.get(pid)
             d = diagnose(p, letter) if p else None
             sig = d["signature"] if d else "(none: not numeric or unknown id)"
             cands = ", ".join(d["evidence"]["candidates"]) if d else ""
-            print(f"| {pid} | {p['level'] if p else '-'} | {get_topic(pid)} | {letter} | {sig} | {cands} |")
+            conf = d["confidence"] if d else ""
+            print(f"| {pid} | {p['level'] if p else '-'} | {get_topic(pid)} | {letter} | {sig} | {conf} | {cands} |")
         return
 
     problems = load_problems(args.inputs, args.lang)
@@ -180,6 +268,9 @@ def main():
     else:
         out.append("No results/eval-*.csv found: only the simulated distribution above.\n")
 
+    out.append(small_values_section(items))
+    out.append(null_model_section(items, args.seed))
+
     dropped = Counter(k for _, _, r in items if r is not None for k in r["evidence"]["dropped_by_leak_filter"])
     if dropped:
         out.append("### Candidates dropped by the leak filter\n\nA matching signature whose text would have named the correct "
@@ -198,11 +289,12 @@ def main():
         rng = random.Random(args.seed)
         picked = rng.sample(signed, min(args.sample, len(signed)))
         with open(args.sample_out, "w", encoding="utf-8") as f:
-            f.write("id\tlevel\ttopic\tlabel\tchosen\tsignature\tchosen_value\tcorrect_value\tcandidates\ttext_en\n")
+            f.write("id\tlevel\ttopic\tlabel\tchosen\tsignature\tconfidence\tchosen_value\tcorrect_value\tcandidates\ttext_en\n")
             for p, letter, r in picked:
                 e = r["evidence"]
                 f.write("\t".join([p["id"], str(p["level"]), get_topic(p["id"]), p["label"], letter, r["signature"],
-                                   e["chosen_value"], e["correct_value"], ",".join(e["candidates"]), r["text_en"]]) + "\n")
+                                   r["confidence"], e["chosen_value"], e["correct_value"], ",".join(e["candidates"]),
+                                   r["text_en"]]) + "\n")
         print(f"{len(picked)} signed distractors for the manual judgement in {args.sample_out} (git-ignored)",
               file=sys.stderr)
 

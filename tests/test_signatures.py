@@ -311,7 +311,33 @@ class NeverLeaksTest(unittest.TestCase):
             self.assertIn(key, d["evidence"])
         self.assertEqual(d["evidence"]["chosen_value"], "20")
         self.assertEqual(d["evidence"]["ratio"], "2")
-        self.assertEqual(set(d), {"signature", "text_ca", "text_en", "evidence"})
+        self.assertEqual(set(d), {"signature", "confidence", "text_ca", "text_en", "evidence"})
+
+
+class ConfidenceTest(unittest.TestCase):
+    """"low" = likely a coincidence: correct value below 10, two signatures fit, or nothing fits."""
+
+    def test_high_when_the_value_is_large_and_one_signature_fits(self):
+        d = diagnose(problem({"A": "12", "B": "24", "C": "30", "D": "36", "E": "48"}, "B"), "E")   # 48 = 2 x 24
+        self.assertEqual((d["signature"], d["confidence"]), ("double", "high"))
+
+    def test_low_below_ten(self):
+        d = diagnose(problem({"A": "3", "B": "6", "C": "7", "D": "8", "E": "9"}, "A"), "B")        # 6 = 2 x 3
+        self.assertEqual((d["signature"], d["confidence"]), ("double", "low"))
+        d = diagnose(problem({"A": "3", "B": "6", "C": "7", "D": "8", "E": "9"}, "E"), "D")        # 8 = 9 - 1
+        self.assertEqual((d["signature"], d["confidence"]), ("minus_one", "low"))
+
+    def test_low_when_two_signatures_fit(self):
+        text = "Each of 90 boxes..."
+        d = diagnose(problem({"A": "5", "B": "10", "C": "50", "D": "100", "E": "200"}, "B", text), "D")
+        self.assertEqual(d["evidence"]["candidates"], ["times_10", "missing_subtract"])
+        self.assertEqual(d["confidence"], "low")
+        d = diagnose(problem({"A": "5", "B": "10", "C": "50", "D": "100", "E": "200"}, "B"), "D")  # no 90 in the text
+        self.assertEqual((d["signature"], d["confidence"]), ("times_10", "high"))
+
+    def test_none_is_low(self):
+        d = diagnose(problem({"A": "17", "B": "23", "C": "31", "D": "41", "E": "53"}, "C"), "E")
+        self.assertEqual((d["signature"], d["confidence"]), ("none", "low"))
 
 
 if __name__ == "__main__":
