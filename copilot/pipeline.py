@@ -7,7 +7,7 @@ import socket
 import time
 import urllib.error
 
-from . import bias, ladder, solvers, votes
+from . import bias, ladder, prior, solvers, votes
 from .board_clock import Clock
 from .config import CONFIG
 from .llm import URL, answer_letter, letter_scores
@@ -28,6 +28,10 @@ USE_LETTER_MODEL = CONFIG.get("LETTER_MODEL", "0") != "0"
 # (copilot/ladder.py) instead of the fallback letter; every other problem still gets FALLBACK_ANSWER.
 # Measured on 281 English validation problems: 27.4% against 23.1% for always D, at no cost.
 USE_MIDDLE_VALUE = CONFIG.get("MIDDLE_VALUE", "1") != "0"
+# OPTION_PRIOR=1: the learned option prior (copilot/prior.py, data_curated/option_prior.json) answers before the
+# middle-value rule where its stratum has a learned rule. Off by default: 80/281 against 77 on validation,
+# bootstrap 95% [-4, +11] (docs/reason-experiments.md, experiment 5).
+USE_OPTION_PRIOR = CONFIG.get("OPTION_PRIOR", "0") != "0"
 # Experiments on the options (copilot/votes.py), off by default. VOTE_SHIFTS=5 asks for a letter once per
 # cyclic shift of the options and takes a strict majority; VALUE_MODEL=1 asks for the option's value with
 # a grammar limited to the five strings. Both run only when the problem has options, after the solvers
@@ -52,7 +56,8 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
     image_b64 and llm_url send the problem image to a vision server.
 
     Order: a family solver when one applies (the model only copies numbers, Python
-    computes, the value must match exactly one option), then the middle-value rule when
+    computes, the value must match exactly one option), then the learned option prior when
+    OPTION_PRIOR=1 and its stratum has a rule, then the middle-value rule when
     MIDDLE_VALUE=1 and the options are numbers, else the letter model below.
 
     With a letter-bias calibration (data_curated/letter_prior.json) the model is
@@ -99,6 +104,9 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
                 result.update(answer=letter, rule="value", seconds=round(time.perf_counter() - start, 2),
                               board_seconds=round(clock.board_seconds(), 2))
                 return result
+        if USE_OPTION_PRIOR and image_b64 is None and (chosen := prior.choose(problem)) is not None:
+            result.update(answer=chosen, rule="option_prior", seconds=round(time.perf_counter() - start, 2), board_seconds=round(clock.board_seconds(), 2))
+            return result
         if USE_MIDDLE_VALUE and image_b64 is None:
             middle = ladder.middle_letter(problem)
             if middle is not None:

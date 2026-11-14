@@ -5,7 +5,8 @@ validation set) by at least 10 problems, and also beats the most frequent letter
 whatever set it is scored on, within the rules: 60 s per problem on the UNO Q, RAM next to
 the embeddings and the app, standard library, deterministic, offline. Branch
 `team/reason-predict-0ff6f3`. One change is adopted (`MIDDLE_VALUE=1`, the default since the
-review of 14 Nov); the others stay behind flags that are **off**.
+review of 14 Nov); the others stay behind flags that are **off** (experiment 5, the learned option
+prior, is on branch `reason-prior`).
 
 **What the winning rule is, and is not.** The middle-value rule is a prior on how Kangaroo
 distractors are built: the wrong options are made from the right value (one step too many or
@@ -39,6 +40,8 @@ model runs here.
 | 3 | same | `VALUE_MODEL=1` | 281 | 66 = 23.5% | 23.1% | D 23.1% | 6.7 / 52.6 | 1.06 GB | +1: noise |
 | 4 | 0.8B, 5 cyclic shifts, strict majority | `VOTE_SHIFTS=5` | 50 | 17 = 34.0% | 34.0% | D 34.0% | 22.7 / 59.1 | 1.06 GB | 2 majorities, both wrong |
 | 4 | same | `VOTE_SHIFTS=5` | 281 | 63 = 22.4% | 23.1% | D 23.1% | 20.0 / 73.7, 6 over 60 s | 1.06 GB | -2, too slow |
+| 5 | learned option prior per stratum, threshold +10 on train | `OPTION_PRIOR=1` | 281 | 80 = 28.5% | 23.1% | D 23.1% | 0 / 0 | no model | +3 over the middle value, bootstrap [-4, +11]: off |
+| 5 | same, training set (the rules were chosen on it) | `OPTION_PRIOR=1` | 1466 | 425 = 29.0% | 25.0% | D 25.0% | 0 / 0 | no model | +20 over the middle value, cross-validation inside train: loss |
 
 The letter model restricted to the middle three values (offline, from the baseline's stored
 log probabilities, 99 strictly numeric problems): 24 right, against 29 for the middle value
@@ -175,6 +178,257 @@ previous request's prompt tokens, read again, plus one letter) would pass it; an
 vote never elects. Whoever turns these flags on gets a policy that respects the 60-second
 rule, and nothing else: they still do not beat always D.
 
+## Experiment 5: a learned option prior (`copilot/prior.py`, `laptop/learn_prior.py`)
+
+**Hypothesis.** The middle-value rule is one prior on the options; maybe other strata of problems
+have a better one. A level-2 problem with a picture, a problem whose options are words, one whose
+options are listed out of order, one whose OCR'd options carry a stray digit: each could have its own
+best rule (another rank of the values, a fixed letter, the option that says "none"). The prior reads
+the five option strings, the level and whether there is a picture, never the problem text, so like
+experiment 1 it costs nothing on the board. Flag `OPTION_PRIOR` (default 0), hook in
+`copilot/pipeline.py` right before the middle-value rule, so the order is solvers, prior, middle
+value, D.
+
+**Candidate rules** (`prior.apply_rule`): a fixed letter A to E (the most frequent letter of the
+stratum is one of them); a rank of the numeric values, `min`, `second_smallest`, `middle`,
+`second_largest`, `max`; `none_option`, the single option whose text says none, impossible, cannot
+(English or Catalan). Numeric values come from `ladder.numeric_options` (strict, five distinct
+numbers with a unit at most) or, where that fails, from a lenient parser that drops a stray leading
+digit that repeats the number's first digit ("1 10", "4 40cm", "6 600 g") and ignores junk after the
+number and its unit ("88 616", "300 g 400g 100g 2"): 102 training problems become "noisy numeric"
+this way, on top of the 663 strict ones. A rule that does not apply to a problem falls back to the
+current policy, so every rule is scored on the whole stratum and compared with the current policy
+(middle value where the options are five distinct numbers, else D) on the same problems.
+
+**Strata.** The main stratification is level 0-7 × picture/text × kind of options (numeric, noisy
+numeric, words, no options): 62 strata on the 1466 English training problems. The task's other
+strata are measured as pooled stratifications: level alone, kind alone, picture alone, language,
+and the option patterns (ascending or unsorted values, fractions, π or roots, "none" text, number of
+distinct options), each crossed with the kind. A stratum keeps its best rule only when the rule
+beats the current policy by **at least 10 problems** in that stratum (`--min-gain 10`); otherwise
+the stratum keeps the current policy. The table is `data_curated/option_prior.json` (counts and rule
+names only), written by `laptop/learn_prior.py`, which also prints everything below.
+
+### Training, main stratification (level / picture / options), 1466 English problems
+
+No stratum reaches +10: the largest gains are +8 (level 2 with picture, numeric: D 9 against the
+middle value 1 on 16 problems; level 2 with picture, noisy numeric; level 3 text numeric) and +7
+(level 7 text words: E). With the main stratification alone **nothing is learned** and the policy
+is the current one, 405/1466.
+
+| level | picture | options | n | labels A B C D E | current policy | best rule | hits | gain |
+| ---: | --- | --- | ---: | --- | ---: | --- | ---: | ---: |
+| 0 | picture | no options | 49 | 2 10 10 14 13 | 14 | `D` | 14 | +0 |
+| 0 | picture | noisy numeric | 10 | 0 1 2 4 3 | 4 | `second_largest` | 5 | +1 |
+| 0 | picture | numeric | 33 | 3 8 7 10 5 | 8 | `D` | 10 | +2 |
+| 0 | picture | words | 5 | 0 0 0 3 2 | 3 | `D` | 3 | +0 |
+| 0 | text | no options | 4 | 2 1 0 1 0 | 1 | `A` | 2 | +1 |
+| 0 | text | noisy numeric | 1 | 0 0 0 1 0 | 1 | `D` | 1 | +0 |
+| 0 | text | numeric | 17 | 1 6 6 4 0 | 6 | `second_largest` | 7 | +1 |
+| 0 | text | words | 3 | 0 1 0 1 1 | 1 | `B` | 1 | +0 |
+| 1 | picture | no options | 36 | 3 2 8 12 11 | 12 | `D` | 12 | +0 |
+| 1 | picture | noisy numeric | 10 | 0 0 0 7 3 | 7 | `D` | 7 | +0 |
+| 1 | picture | numeric | 17 | 0 4 5 4 4 | 7 | `middle` | 7 | +0 |
+| 1 | picture | words | 3 | 0 1 1 1 0 | 1 | `B` | 1 | +0 |
+| 1 | text | no options | 5 | 0 1 3 1 0 | 1 | `C` | 3 | +2 |
+| 1 | text | noisy numeric | 2 | 1 0 0 0 1 | 0 | `A` | 1 | +1 |
+| 1 | text | numeric | 16 | 2 4 1 7 2 | 3 | `D` | 7 | +4 |
+| 2 | picture | no options | 45 | 9 10 8 11 7 | 11 | `D` | 11 | +0 |
+| 2 | picture | noisy numeric | 13 | 0 6 4 0 3 | 0 | `B` | 6 | +6 |
+| 2 | picture | numeric | 16 | 0 3 1 9 3 | 1 | `D` | 9 | +8 |
+| 2 | picture | words | 3 | 2 1 0 0 0 | 0 | `A` | 2 | +2 |
+| 2 | text | no options | 12 | 2 2 5 2 1 | 2 | `C` | 5 | +3 |
+| 2 | text | noisy numeric | 2 | 1 1 0 0 0 | 0 | `A` | 1 | +1 |
+| 2 | text | numeric | 25 | 5 4 5 7 4 | 6 | `second_smallest` | 8 | +2 |
+| 2 | text | words | 1 | 0 0 1 0 0 | 0 | `C` | 1 | +1 |
+| 3 | picture | no options | 30 | 3 4 12 8 3 | 8 | `C` | 12 | +4 |
+| 3 | picture | noisy numeric | 12 | 1 3 1 4 3 | 4 | `second_largest` | 6 | +2 |
+| 3 | picture | numeric | 9 | 3 4 0 1 1 | 3 | `B` | 4 | +1 |
+| 3 | picture | words | 6 | 1 1 2 1 1 | 1 | `C` | 2 | +1 |
+| 3 | text | no options | 19 | 4 4 4 6 1 | 6 | `D` | 6 | +0 |
+| 3 | text | noisy numeric | 1 | 1 0 0 0 0 | 0 | `A` | 1 | +1 |
+| 3 | text | numeric | 33 | 4 3 10 7 9 | 8 | `second_smallest` | 14 | +6 |
+| 3 | text | words | 1 | 0 0 0 1 0 | 1 | `D` | 1 | +0 |
+| 4 | picture | no options | 71 | 14 14 17 16 10 | 16 | `C` | 17 | +1 |
+| 4 | picture | noisy numeric | 11 | 0 2 5 2 2 | 2 | `C` | 5 | +3 |
+| 4 | picture | numeric | 54 | 8 9 13 15 9 | 15 | `second_largest` | 19 | +4 |
+| 4 | picture | words | 13 | 3 1 4 1 4 | 1 | `C` | 4 | +3 |
+| 4 | text | no options | 30 | 3 6 7 11 3 | 11 | `D` | 11 | +0 |
+| 4 | text | numeric | 89 | 12 22 21 19 15 | 28 | `middle` | 28 | +0 |
+| 4 | text | words | 9 | 4 2 2 0 1 | 0 | `A` | 4 | +4 |
+| 5 | picture | no options | 42 | 7 4 5 14 12 | 14 | `D` | 14 | +0 |
+| 5 | picture | noisy numeric | 12 | 5 0 3 3 1 | 3 | `A` | 5 | +2 |
+| 5 | picture | numeric | 36 | 6 9 5 6 10 | 9 | `E` | 10 | +1 |
+| 5 | picture | words | 13 | 2 5 1 3 2 | 3 | `B` | 5 | +2 |
+| 5 | text | no options | 30 | 8 3 5 9 5 | 9 | `D` | 9 | +0 |
+| 5 | text | noisy numeric | 3 | 1 1 0 1 0 | 1 | `second_largest` | 2 | +1 |
+| 5 | text | numeric | 94 | 12 22 25 19 16 | 35 | `middle` | 35 | +0 |
+| 5 | text | words | 13 | 1 2 5 2 3 | 2 | `C` | 5 | +3 |
+| 6 | picture | no options | 55 | 16 9 12 10 8 | 10 | `A` | 16 | +6 |
+| 6 | picture | noisy numeric | 10 | 4 2 0 2 2 | 2 | `A` | 4 | +2 |
+| 6 | picture | numeric | 30 | 4 9 8 5 4 | 8 | `second_smallest` | 11 | +3 |
+| 6 | picture | words | 27 | 6 6 3 6 6 | 6 | `A` | 6 | +0 |
+| 6 | text | no options | 38 | 4 4 11 12 7 | 12 | `D` | 12 | +0 |
+| 6 | text | noisy numeric | 1 | 0 0 0 0 1 | 0 | `E` | 1 | +1 |
+| 6 | text | numeric | 87 | 14 18 23 22 10 | 30 | `middle` | 30 | +0 |
+| 6 | text | words | 8 | 1 2 2 1 2 | 1 | `B` | 2 | +1 |
+| 7 | picture | no options | 53 | 11 14 8 13 7 | 13 | `B` | 14 | +1 |
+| 7 | picture | noisy numeric | 10 | 1 1 4 1 3 | 1 | `C` | 4 | +3 |
+| 7 | picture | numeric | 24 | 4 6 7 4 3 | 8 | `middle` | 8 | +0 |
+| 7 | picture | words | 20 | 4 1 6 4 5 | 4 | `C` | 6 | +2 |
+| 7 | text | no options | 36 | 4 6 8 12 6 | 12 | `D` | 12 | +0 |
+| 7 | text | noisy numeric | 4 | 2 1 0 1 0 | 1 | `A` | 2 | +1 |
+| 7 | text | numeric | 83 | 10 14 22 24 13 | 26 | `middle` | 26 | +0 |
+| 7 | text | words | 21 | 4 5 1 2 9 | 2 | `E` | 9 | +7 |
+
+### Training, pooled stratifications
+
+Five pooled strata reach exactly +10, all of them two findings seen several times: level 2 →
+`second_smallest` (30 against 20 on 117 problems) and words → `E` (36 against 26 on 146 problems,
+also seen as words without fractions, words without "none" text, English words). With all the
+stratifications together, finest first, the learned policy scores 425/1466 = 29.0% on training
+(+20; paired bootstrap of the gain, 1000 resamples, seed 42: 95% [+3, +40]), which is the usual
+optimism of a rule chosen on the same data.
+
+| stratification | stratum | n | current policy | best rule | hits | gain | chosen |
+| --- | --- | ---: | ---: | --- | ---: | ---: | --- |
+| level/kind | level=0, kind=no_options | 53 | 15 | `D` | 15 | +0 |  |
+| level/kind | level=0, kind=noisy_numeric | 11 | 5 | `second_largest` | 6 | +1 |  |
+| level/kind | level=0, kind=numeric | 50 | 14 | `second_largest` | 16 | +2 |  |
+| level/kind | level=0, kind=words | 8 | 4 | `D` | 4 | +0 |  |
+| level/kind | level=1, kind=no_options | 41 | 13 | `D` | 13 | +0 |  |
+| level/kind | level=1, kind=noisy_numeric | 12 | 7 | `D` | 7 | +0 |  |
+| level/kind | level=1, kind=numeric | 33 | 10 | `D` | 11 | +1 |  |
+| level/kind | level=1, kind=words | 3 | 1 | `B` | 1 | +0 |  |
+| level/kind | level=2, kind=no_options | 57 | 13 | `C` | 13 | +0 |  |
+| level/kind | level=2, kind=noisy_numeric | 15 | 0 | `B` | 7 | +7 |  |
+| level/kind | level=2, kind=numeric | 41 | 7 | `D` | 16 | +9 |  |
+| level/kind | level=2, kind=words | 4 | 0 | `A` | 2 | +2 |  |
+| level/kind | level=3, kind=no_options | 49 | 14 | `C` | 16 | +2 |  |
+| level/kind | level=3, kind=noisy_numeric | 13 | 4 | `second_largest` | 7 | +3 |  |
+| level/kind | level=3, kind=numeric | 42 | 11 | `second_smallest` | 18 | +7 |  |
+| level/kind | level=3, kind=words | 7 | 2 | `C` | 2 | +0 |  |
+| level/kind | level=4, kind=no_options | 101 | 27 | `D` | 27 | +0 |  |
+| level/kind | level=4, kind=noisy_numeric | 11 | 2 | `C` | 5 | +3 |  |
+| level/kind | level=4, kind=numeric | 143 | 43 | `second_largest` | 44 | +1 |  |
+| level/kind | level=4, kind=words | 22 | 1 | `A` | 7 | +6 |  |
+| level/kind | level=5, kind=no_options | 72 | 23 | `D` | 23 | +0 |  |
+| level/kind | level=5, kind=noisy_numeric | 15 | 4 | `A` | 6 | +2 |  |
+| level/kind | level=5, kind=numeric | 130 | 44 | `middle` | 44 | +0 |  |
+| level/kind | level=5, kind=words | 26 | 5 | `B` | 7 | +2 |  |
+| level/kind | level=6, kind=no_options | 93 | 22 | `C` | 23 | +1 |  |
+| level/kind | level=6, kind=noisy_numeric | 11 | 2 | `A` | 4 | +2 |  |
+| level/kind | level=6, kind=numeric | 117 | 38 | `middle` | 38 | +0 |  |
+| level/kind | level=6, kind=words | 35 | 7 | `B` | 8 | +1 |  |
+| level/kind | level=7, kind=no_options | 89 | 25 | `D` | 25 | +0 |  |
+| level/kind | level=7, kind=noisy_numeric | 14 | 2 | `min` | 6 | +4 |  |
+| level/kind | level=7, kind=numeric | 107 | 34 | `middle` | 34 | +0 |  |
+| level/kind | level=7, kind=words | 41 | 6 | `E` | 14 | +8 |  |
+| picture/kind | picture=picture, kind=no_options | 381 | 98 | `D` | 98 | +0 |  |
+| picture/kind | picture=picture, kind=noisy_numeric | 88 | 23 | `second_largest` | 26 | +3 |  |
+| picture/kind | picture=picture, kind=numeric | 219 | 59 | `second_smallest` | 59 | +0 |  |
+| picture/kind | picture=picture, kind=words | 90 | 19 | `E` | 20 | +1 |  |
+| picture/kind | picture=text, kind=no_options | 174 | 54 | `D` | 54 | +0 |  |
+| picture/kind | picture=text, kind=noisy_numeric | 14 | 3 | `A` | 6 | +3 |  |
+| picture/kind | picture=text, kind=numeric | 444 | 142 | `middle` | 142 | +0 |  |
+| picture/kind | picture=text, kind=words | 56 | 7 | `E` | 16 | +9 |  |
+| level | level=0 | 122 | 38 | `second_largest` | 41 | +3 |  |
+| level | level=1 | 89 | 31 | `D` | 32 | +1 |  |
+| level | level=2 | 117 | 20 | `second_smallest` | 30 | +10 | yes |
+| level | level=3 | 111 | 31 | `second_smallest` | 36 | +5 |  |
+| level | level=4 | 277 | 73 | `middle` | 75 | +2 |  |
+| level | level=5 | 243 | 76 | `none_option` | 76 | +0 |  |
+| level | level=6 | 256 | 69 | `middle` | 70 | +1 |  |
+| level | level=7 | 251 | 67 | `middle` | 67 | +0 |  |
+| kind | kind=no_options | 555 | 152 | `D` | 152 | +0 |  |
+| kind | kind=noisy_numeric | 102 | 26 | `second_largest` | 30 | +4 |  |
+| kind | kind=numeric | 663 | 201 | `middle` | 201 | +0 |  |
+| kind | kind=words | 146 | 26 | `E` | 36 | +10 | yes |
+| picture | picture=picture | 778 | 199 | `none_option` | 198 | -1 |  |
+| picture | picture=text | 688 | 206 | `none_option` | 206 | +0 |  |
+| kind/order | kind=noisy_numeric, order=ascending | 49 | 18 | `D` | 18 | +0 |  |
+| kind/order | kind=noisy_numeric, order=unsorted | 53 | 8 | `second_smallest` | 13 | +5 |  |
+| kind/order | kind=numeric, order=ascending | 354 | 99 | `D` | 100 | +1 |  |
+| kind/order | kind=numeric, order=unsorted | 309 | 102 | `middle` | 102 | +0 |  |
+| kind/fraction | kind=no_options, fraction=False | 555 | 152 | `D` | 152 | +0 |  |
+| kind/fraction | kind=noisy_numeric, fraction=False | 97 | 25 | `second_largest` | 29 | +4 |  |
+| kind/fraction | kind=noisy_numeric, fraction=True | 5 | 1 | `A` | 3 | +2 |  |
+| kind/fraction | kind=numeric, fraction=False | 646 | 193 | `middle` | 193 | +0 |  |
+| kind/fraction | kind=numeric, fraction=True | 17 | 8 | `C` | 8 | +0 |  |
+| kind/fraction | kind=words, fraction=False | 146 | 26 | `E` | 36 | +10 | yes |
+| kind/pi_root | kind=no_options, pi_root=False | 555 | 152 | `D` | 152 | +0 |  |
+| kind/pi_root | kind=noisy_numeric, pi_root=False | 102 | 26 | `second_largest` | 30 | +4 |  |
+| kind/pi_root | kind=numeric, pi_root=False | 663 | 201 | `middle` | 201 | +0 |  |
+| kind/pi_root | kind=words, pi_root=False | 115 | 20 | `E` | 29 | +9 |  |
+| kind/pi_root | kind=words, pi_root=True | 31 | 6 | `A` | 7 | +1 |  |
+| kind/none_text | kind=no_options, none_text=False | 555 | 152 | `D` | 152 | +0 |  |
+| kind/none_text | kind=noisy_numeric, none_text=False | 102 | 26 | `second_largest` | 30 | +4 |  |
+| kind/none_text | kind=numeric, none_text=False | 663 | 201 | `middle` | 201 | +0 |  |
+| kind/none_text | kind=words, none_text=False | 145 | 25 | `E` | 36 | +11 | yes |
+| kind/none_text | kind=words, none_text=True | 1 | 1 | `D` | 1 | +0 |  |
+| kind/distinct | kind=no_options, distinct=0 | 555 | 152 | `D` | 152 | +0 |  |
+| kind/distinct | kind=noisy_numeric, distinct=5 | 102 | 26 | `second_largest` | 30 | +4 |  |
+| kind/distinct | kind=numeric, distinct=5 | 663 | 201 | `middle` | 201 | +0 |  |
+| kind/distinct | kind=words, distinct=3 | 2 | 0 | `C` | 2 | +2 |  |
+| kind/distinct | kind=words, distinct=4 | 3 | 0 | `A` | 1 | +1 |  |
+| kind/distinct | kind=words, distinct=5 | 141 | 26 | `E` | 35 | +9 |  |
+| language/kind | language=eng, kind=no_options | 555 | 152 | `D` | 152 | +0 |  |
+| language/kind | language=eng, kind=noisy_numeric | 102 | 26 | `second_largest` | 30 | +4 |  |
+| language/kind | language=eng, kind=numeric | 663 | 201 | `middle` | 201 | +0 |  |
+| language/kind | language=eng, kind=words | 146 | 26 | `E` | 36 | +10 | yes |
+
+### Cross-validation inside training (before the look at validation)
+
+Five folds, three shuffles (seeds 42, 43, 44): the rules are learned on four fifths with the same
++10 threshold and scored on the fifth; the table gives the out-of-fold gain over the current policy
+summed over the five folds. Nothing generalises: at the threshold of 10 every stratification is at
+zero or negative, and the full hierarchy loses about 10 problems. (At a threshold of 5, outside the
+protocol, level × kind shows +15 / +17 / +5 and everything else loses; not pursued.)
+
+| stratification | strata | chosen rules | out-of-fold gain, seeds 42 / 43 / 44 | mean |
+| --- | ---: | ---: | --- | ---: |
+| level, picture, kind | 62 | 0 | +0 / +0 / +0 | +0.0 |
+| level, kind | 32 | 0 | -3 / +0 / -1 | -1.3 |
+| picture, kind | 8 | 0 | -1 / -1 / +0 | -0.7 |
+| level | 8 | 1 | +0 / -3 / -2 | -1.7 |
+| kind | 4 | 1 | -2 / -2 / +0 | -1.3 |
+| picture | 2 | 0 | +0 / +0 / +0 | +0.0 |
+| kind, order | 4 | 0 | -9 / -9 / +0 | -6.0 |
+| kind, fraction | 6 | 1 | -2 / -2 / +0 | -1.3 |
+| kind, π or root | 5 | 0 | -4 / -4 / -1 | -3.0 |
+| kind, none text | 5 | 1 | -1 / -1 / +0 | -0.7 |
+| kind, distinct options | 6 | 0 | -3 / -2 / -1 | -2.0 |
+| language, kind | 4 | 1 | -2 / -2 / +0 | -1.3 |
+| all of the above, finest first | 146 | 5 | -13 / -15 / -1 | -9.7 |
+
+### Validation, one look
+
+The policy of the full protocol (all the stratifications, finest first, threshold 10, the five
+rules above) on the 281 English validation problems, `python3 laptop/learn_prior.py --strata
+"level,picture,kind;level,kind;picture,kind;level;kind;picture;kind,order;kind,fraction;kind,pi_root;kind,none_text;kind,distinct;language,kind"
+--validate`:
+
+| set | n | learned prior | current policy (middle value, else D) | gain | paired bootstrap of the gain, 1000 resamples, seed 42 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| validation | 281 | **80 = 28.5%** | 77 = 27.4% | +3 | 95% [-4, +11], **27.4% of resamples at or under zero** |
+| training | 1466 | 425 = 29.0% | 405 = 27.6% | +20 | 95% [+3, +40], 1.2% at or under zero (chosen on these problems) |
+
+Where the learned rules fired on validation: words → E on 24 problems, 6 right against 5 for D;
+level 2 → second smallest on 11 problems, 3 right against 1 for the current policy. The real
+pipeline agrees: `OPTION_PRIOR=1 python3 eval.py --limit 0 --languages eng` gives 80/281 = 28.5%
+with the family solvers on (35 answers by the prior, 112 by the middle value, board estimate mean
+0.8 s, worst 41.2 s, the solver extraction as before). Three problems
+of gain with an interval that covers zero comfortably, after a cross-validation that predicted a
+loss: not a result to ship.
+
+**Verdict.** `OPTION_PRIOR=0`. The prior stays in the repository as a negative result: with
+honest thresholds, the strata of M3Kang do not have option priors that beat the middle value, and
+the gains that look real on training (+8 here, +10 there) are the maximum of eleven rules over small
+groups. The one direction with some support is the lenient parser (102 noisy numeric problems where
+the current policy answers D), but no rank rule beat D on them by 10, and out of fold the kind
+stratification lost. Everything is reproducible with the script; a bigger training set (the
+Catalan copies of the same problems are not new problems) could change the picture.
+
 ## Decision
 
 `MIDDLE_VALUE=1` is the default in `config.env` (review of 14 Nov): it is the only change
@@ -186,7 +440,9 @@ non-numeric options, with OCR noise or with repeated values still gets D. It is 
 the distractors, not reasoning, and the bootstrap says the hidden-test gain can be anything
 from -2 to +26 problems. `LETTER_MODEL=0`, `VALUE_MODEL=0` and `VOTE_SHIFTS=0` stay: the
 0.8B's choice carries no information whether it writes a letter, a value, or five letters,
-and the 2B is too slow for the board and no better. `tests/test_reason_policy.py` checks
+and the 2B is too slow for the board and no better. `OPTION_PRIOR=0` stays too: no stratum has
+a better option prior than the middle value by a margin that survives cross-validation
+(experiment 5). `tests/test_reason_policy.py` checks
 that the Teach modules import none of this and that `predict.py` answers a letter in every
 case (no options, words, noise, duplicates, server down).
 
@@ -198,6 +454,9 @@ MIDDLE_VALUE=1 python3 eval.py --input data/train.jsonl --limit 0 --languages en
 VALUE_MODEL=1 python3 eval.py --limit 0 --languages eng --name R-value08-eng281
 VOTE_SHIFTS=5 python3 eval.py --limit 0 --languages eng --name R-vote5-08-eng281
 LLM_PORT=8091 LETTER_MODEL=1 SOLVERS=0 python3 eval.py --limit 50 --languages eng --name R-2bq4-letter-eng50
+python3 laptop/learn_prior.py --cv 5                                   # experiment 5: tables and cross-validation on train
+python3 laptop/learn_prior.py --strata "level,picture,kind;level,kind;picture,kind;level;kind;picture;kind,order;kind,fraction;kind,pi_root;kind,none_text;kind,distinct;language,kind" --validate
+OPTION_PRIOR=1 python3 eval.py --limit 0 --languages eng --name R-prior-eng281
 ```
 
 Each run adds a line to `results/ablations.csv` with its commit and writes the per-problem

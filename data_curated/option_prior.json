@@ -1,0 +1,4395 @@
+{
+ "description": "Learned option prior (docs/reason-experiments.md, experiment 5): per stratum, the rule that beat the current policy (middle value, else FALLBACK_ANSWER) by at least min_gain training problems; stratifications finest first. Counts and rule names only.",
+ "learned_on": {
+  "file": "train.jsonl",
+  "languages": [
+   "eng"
+  ],
+  "n": 1466
+ },
+ "min_gain": 10,
+ "fallback": "D",
+ "rules": [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "min",
+  "second_smallest",
+  "middle",
+  "second_largest",
+  "max",
+  "none_option"
+ ],
+ "train": {
+  "policy_hits": 425,
+  "default_hits": 405,
+  "bootstrap": {
+   "resamples": 1000,
+   "seed": 42,
+   "mean": 20.68,
+   "p2.5": 3,
+   "p97.5": 40,
+   "at_or_under_zero": 0.012
+  }
+ },
+ "validation": {
+  "file": "val.jsonl",
+  "n": 281,
+  "policy_hits": 80,
+  "default_hits": 77,
+  "bootstrap": {
+   "resamples": 1000,
+   "seed": 42,
+   "mean": 2.93,
+   "p2.5": -4,
+   "p97.5": 11,
+   "at_or_under_zero": 0.274
+  },
+  "fired": {
+   "kind=words": {
+    "n": 24,
+    "learned_hits": 6,
+    "default_hits": 5,
+    "rule": "E"
+   },
+   "level=2": {
+    "n": 11,
+    "learned_hits": 3,
+    "default_hits": 1,
+    "rule": "second_smallest"
+   }
+  }
+ },
+ "stratifications": [
+  {
+   "dims": [
+    "level",
+    "picture",
+    "kind"
+   ],
+   "strata": {
+    "level=0|picture=picture|kind=no_options": {
+     "n": 49,
+     "letters": {
+      "A": 2,
+      "B": 10,
+      "C": 10,
+      "D": 14,
+      "E": 13
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 14,
+     "best_rule": "D",
+     "best_hits": 14,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 10,
+      "C": 10,
+      "D": 14,
+      "E": 13,
+      "min": 14,
+      "second_smallest": 14,
+      "middle": 14,
+      "second_largest": 14,
+      "max": 14,
+      "none_option": 14
+     }
+    },
+    "level=0|picture=picture|kind=noisy_numeric": {
+     "n": 10,
+     "letters": {
+      "A": 0,
+      "B": 1,
+      "C": 2,
+      "D": 4,
+      "E": 3
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 4,
+     "best_rule": "second_largest",
+     "best_hits": 5,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 1,
+      "C": 2,
+      "D": 4,
+      "E": 3,
+      "min": 0,
+      "second_smallest": 1,
+      "middle": 2,
+      "second_largest": 5,
+      "max": 2,
+      "none_option": 4
+     }
+    },
+    "level=0|picture=picture|kind=numeric": {
+     "n": 33,
+     "letters": {
+      "A": 3,
+      "B": 8,
+      "C": 7,
+      "D": 10,
+      "E": 5
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 8,
+     "best_rule": "D",
+     "best_hits": 10,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 8,
+      "C": 7,
+      "D": 10,
+      "E": 5,
+      "min": 2,
+      "second_smallest": 8,
+      "middle": 8,
+      "second_largest": 9,
+      "max": 6,
+      "none_option": 8
+     }
+    },
+    "level=0|picture=picture|kind=words": {
+     "n": 5,
+     "letters": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 3,
+      "E": 2
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 3,
+     "best_rule": "D",
+     "best_hits": 3,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 3,
+      "E": 2,
+      "min": 3,
+      "second_smallest": 3,
+      "middle": 3,
+      "second_largest": 3,
+      "max": 3,
+      "none_option": 3
+     }
+    },
+    "level=0|picture=text|kind=no_options": {
+     "n": 4,
+     "letters": {
+      "A": 2,
+      "B": 1,
+      "C": 0,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 1,
+     "best_rule": "A",
+     "best_hits": 2,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 1,
+      "C": 0,
+      "D": 1,
+      "E": 0,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=0|picture=text|kind=noisy_numeric": {
+     "n": 1,
+     "letters": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 1,
+     "best_rule": "D",
+     "best_hits": 1,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 1,
+      "E": 0,
+      "min": 0,
+      "second_smallest": 0,
+      "middle": 0,
+      "second_largest": 1,
+      "max": 0,
+      "none_option": 1
+     }
+    },
+    "level=0|picture=text|kind=numeric": {
+     "n": 17,
+     "letters": {
+      "A": 1,
+      "B": 6,
+      "C": 6,
+      "D": 4,
+      "E": 0
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 6,
+     "best_rule": "second_largest",
+     "best_hits": 7,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 6,
+      "C": 6,
+      "D": 4,
+      "E": 0,
+      "min": 1,
+      "second_smallest": 3,
+      "middle": 6,
+      "second_largest": 7,
+      "max": 0,
+      "none_option": 6
+     }
+    },
+    "level=0|picture=text|kind=words": {
+     "n": 3,
+     "letters": {
+      "A": 0,
+      "B": 1,
+      "C": 0,
+      "D": 1,
+      "E": 1
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 1,
+     "best_rule": "B",
+     "best_hits": 1,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 1,
+      "C": 0,
+      "D": 1,
+      "E": 1,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=1|picture=picture|kind=no_options": {
+     "n": 36,
+     "letters": {
+      "A": 3,
+      "B": 2,
+      "C": 8,
+      "D": 12,
+      "E": 11
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 12,
+     "best_rule": "D",
+     "best_hits": 12,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 2,
+      "C": 8,
+      "D": 12,
+      "E": 11,
+      "min": 12,
+      "second_smallest": 12,
+      "middle": 12,
+      "second_largest": 12,
+      "max": 12,
+      "none_option": 12
+     }
+    },
+    "level=1|picture=picture|kind=noisy_numeric": {
+     "n": 10,
+     "letters": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 7,
+      "E": 3
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 7,
+     "best_rule": "D",
+     "best_hits": 7,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 7,
+      "E": 3,
+      "min": 0,
+      "second_smallest": 2,
+      "middle": 0,
+      "second_largest": 5,
+      "max": 3,
+      "none_option": 7
+     }
+    },
+    "level=1|picture=picture|kind=numeric": {
+     "n": 17,
+     "letters": {
+      "A": 0,
+      "B": 4,
+      "C": 5,
+      "D": 4,
+      "E": 4
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 7,
+     "best_rule": "middle",
+     "best_hits": 7,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 4,
+      "C": 5,
+      "D": 4,
+      "E": 4,
+      "min": 1,
+      "second_smallest": 5,
+      "middle": 7,
+      "second_largest": 1,
+      "max": 3,
+      "none_option": 7
+     }
+    },
+    "level=1|picture=picture|kind=words": {
+     "n": 3,
+     "letters": {
+      "A": 0,
+      "B": 1,
+      "C": 1,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 1,
+     "best_rule": "B",
+     "best_hits": 1,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 1,
+      "C": 1,
+      "D": 1,
+      "E": 0,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=1|picture=text|kind=no_options": {
+     "n": 5,
+     "letters": {
+      "A": 0,
+      "B": 1,
+      "C": 3,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 1,
+     "best_rule": "C",
+     "best_hits": 3,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 1,
+      "C": 3,
+      "D": 1,
+      "E": 0,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=1|picture=text|kind=noisy_numeric": {
+     "n": 2,
+     "letters": {
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "E": 1
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 0,
+     "best_rule": "A",
+     "best_hits": 1,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "E": 1,
+      "min": 1,
+      "second_smallest": 0,
+      "middle": 0,
+      "second_largest": 0,
+      "max": 1,
+      "none_option": 0
+     }
+    },
+    "level=1|picture=text|kind=numeric": {
+     "n": 16,
+     "letters": {
+      "A": 2,
+      "B": 4,
+      "C": 1,
+      "D": 7,
+      "E": 2
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 3,
+     "best_rule": "D",
+     "best_hits": 7,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 4,
+      "C": 1,
+      "D": 7,
+      "E": 2,
+      "min": 1,
+      "second_smallest": 4,
+      "middle": 3,
+      "second_largest": 6,
+      "max": 2,
+      "none_option": 3
+     }
+    },
+    "level=2|picture=picture|kind=no_options": {
+     "n": 45,
+     "letters": {
+      "A": 9,
+      "B": 10,
+      "C": 8,
+      "D": 11,
+      "E": 7
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 11,
+     "best_rule": "D",
+     "best_hits": 11,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 9,
+      "B": 10,
+      "C": 8,
+      "D": 11,
+      "E": 7,
+      "min": 11,
+      "second_smallest": 11,
+      "middle": 11,
+      "second_largest": 11,
+      "max": 11,
+      "none_option": 11
+     }
+    },
+    "level=2|picture=picture|kind=noisy_numeric": {
+     "n": 13,
+     "letters": {
+      "A": 0,
+      "B": 6,
+      "C": 4,
+      "D": 0,
+      "E": 3
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 0,
+     "best_rule": "B",
+     "best_hits": 6,
+     "gain": 6,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 6,
+      "C": 4,
+      "D": 0,
+      "E": 3,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 3,
+      "second_largest": 4,
+      "max": 4,
+      "none_option": 0
+     }
+    },
+    "level=2|picture=picture|kind=numeric": {
+     "n": 16,
+     "letters": {
+      "A": 0,
+      "B": 3,
+      "C": 1,
+      "D": 9,
+      "E": 3
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 1,
+     "best_rule": "D",
+     "best_hits": 9,
+     "gain": 8,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 3,
+      "C": 1,
+      "D": 9,
+      "E": 3,
+      "min": 2,
+      "second_smallest": 7,
+      "middle": 1,
+      "second_largest": 5,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=2|picture=picture|kind=words": {
+     "n": 3,
+     "letters": {
+      "A": 2,
+      "B": 1,
+      "C": 0,
+      "D": 0,
+      "E": 0
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 0,
+     "best_rule": "A",
+     "best_hits": 2,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 1,
+      "C": 0,
+      "D": 0,
+      "E": 0,
+      "min": 0,
+      "second_smallest": 0,
+      "middle": 0,
+      "second_largest": 0,
+      "max": 0,
+      "none_option": 0
+     }
+    },
+    "level=2|picture=text|kind=no_options": {
+     "n": 12,
+     "letters": {
+      "A": 2,
+      "B": 2,
+      "C": 5,
+      "D": 2,
+      "E": 1
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 2,
+     "best_rule": "C",
+     "best_hits": 5,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 2,
+      "C": 5,
+      "D": 2,
+      "E": 1,
+      "min": 2,
+      "second_smallest": 2,
+      "middle": 2,
+      "second_largest": 2,
+      "max": 2,
+      "none_option": 2
+     }
+    },
+    "level=2|picture=text|kind=noisy_numeric": {
+     "n": 2,
+     "letters": {
+      "A": 1,
+      "B": 1,
+      "C": 0,
+      "D": 0,
+      "E": 0
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 0,
+     "best_rule": "A",
+     "best_hits": 1,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 1,
+      "C": 0,
+      "D": 0,
+      "E": 0,
+      "min": 0,
+      "second_smallest": 1,
+      "middle": 0,
+      "second_largest": 0,
+      "max": 1,
+      "none_option": 0
+     }
+    },
+    "level=2|picture=text|kind=numeric": {
+     "n": 25,
+     "letters": {
+      "A": 5,
+      "B": 4,
+      "C": 5,
+      "D": 7,
+      "E": 4
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 6,
+     "best_rule": "second_smallest",
+     "best_hits": 8,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 5,
+      "B": 4,
+      "C": 5,
+      "D": 7,
+      "E": 4,
+      "min": 4,
+      "second_smallest": 8,
+      "middle": 6,
+      "second_largest": 6,
+      "max": 1,
+      "none_option": 6
+     }
+    },
+    "level=2|picture=text|kind=words": {
+     "n": 1,
+     "letters": {
+      "A": 0,
+      "B": 0,
+      "C": 1,
+      "D": 0,
+      "E": 0
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 0,
+     "best_rule": "C",
+     "best_hits": 1,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 0,
+      "C": 1,
+      "D": 0,
+      "E": 0,
+      "min": 0,
+      "second_smallest": 0,
+      "middle": 0,
+      "second_largest": 0,
+      "max": 0,
+      "none_option": 0
+     }
+    },
+    "level=3|picture=picture|kind=no_options": {
+     "n": 30,
+     "letters": {
+      "A": 3,
+      "B": 4,
+      "C": 12,
+      "D": 8,
+      "E": 3
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 8,
+     "best_rule": "C",
+     "best_hits": 12,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 4,
+      "C": 12,
+      "D": 8,
+      "E": 3,
+      "min": 8,
+      "second_smallest": 8,
+      "middle": 8,
+      "second_largest": 8,
+      "max": 8,
+      "none_option": 8
+     }
+    },
+    "level=3|picture=picture|kind=noisy_numeric": {
+     "n": 12,
+     "letters": {
+      "A": 1,
+      "B": 3,
+      "C": 1,
+      "D": 4,
+      "E": 3
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 4,
+     "best_rule": "second_largest",
+     "best_hits": 6,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 3,
+      "C": 1,
+      "D": 4,
+      "E": 3,
+      "min": 0,
+      "second_smallest": 2,
+      "middle": 3,
+      "second_largest": 6,
+      "max": 1,
+      "none_option": 4
+     }
+    },
+    "level=3|picture=picture|kind=numeric": {
+     "n": 9,
+     "letters": {
+      "A": 3,
+      "B": 4,
+      "C": 0,
+      "D": 1,
+      "E": 1
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 3,
+     "best_rule": "B",
+     "best_hits": 4,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 4,
+      "C": 0,
+      "D": 1,
+      "E": 1,
+      "min": 1,
+      "second_smallest": 4,
+      "middle": 3,
+      "second_largest": 1,
+      "max": 0,
+      "none_option": 3
+     }
+    },
+    "level=3|picture=picture|kind=words": {
+     "n": 6,
+     "letters": {
+      "A": 1,
+      "B": 1,
+      "C": 2,
+      "D": 1,
+      "E": 1
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 1,
+     "best_rule": "C",
+     "best_hits": 2,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 1,
+      "C": 2,
+      "D": 1,
+      "E": 1,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=3|picture=text|kind=no_options": {
+     "n": 19,
+     "letters": {
+      "A": 4,
+      "B": 4,
+      "C": 4,
+      "D": 6,
+      "E": 1
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 6,
+     "best_rule": "D",
+     "best_hits": 6,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 4,
+      "C": 4,
+      "D": 6,
+      "E": 1,
+      "min": 6,
+      "second_smallest": 6,
+      "middle": 6,
+      "second_largest": 6,
+      "max": 6,
+      "none_option": 6
+     }
+    },
+    "level=3|picture=text|kind=noisy_numeric": {
+     "n": 1,
+     "letters": {
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "E": 0
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 0,
+     "best_rule": "A",
+     "best_hits": 1,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "E": 0,
+      "min": 0,
+      "second_smallest": 0,
+      "middle": 0,
+      "second_largest": 1,
+      "max": 0,
+      "none_option": 0
+     }
+    },
+    "level=3|picture=text|kind=numeric": {
+     "n": 33,
+     "letters": {
+      "A": 4,
+      "B": 3,
+      "C": 10,
+      "D": 7,
+      "E": 9
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 8,
+     "best_rule": "second_smallest",
+     "best_hits": 14,
+     "gain": 6,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 3,
+      "C": 10,
+      "D": 7,
+      "E": 9,
+      "min": 2,
+      "second_smallest": 14,
+      "middle": 8,
+      "second_largest": 9,
+      "max": 0,
+      "none_option": 8
+     }
+    },
+    "level=3|picture=text|kind=words": {
+     "n": 1,
+     "letters": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 1,
+     "best_rule": "D",
+     "best_hits": 1,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 1,
+      "E": 0,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=4|picture=picture|kind=no_options": {
+     "n": 71,
+     "letters": {
+      "A": 14,
+      "B": 14,
+      "C": 17,
+      "D": 16,
+      "E": 10
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 16,
+     "best_rule": "C",
+     "best_hits": 17,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 14,
+      "B": 14,
+      "C": 17,
+      "D": 16,
+      "E": 10,
+      "min": 16,
+      "second_smallest": 16,
+      "middle": 16,
+      "second_largest": 16,
+      "max": 16,
+      "none_option": 16
+     }
+    },
+    "level=4|picture=picture|kind=noisy_numeric": {
+     "n": 11,
+     "letters": {
+      "A": 0,
+      "B": 2,
+      "C": 5,
+      "D": 2,
+      "E": 2
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 2,
+     "best_rule": "C",
+     "best_hits": 5,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 2,
+      "C": 5,
+      "D": 2,
+      "E": 2,
+      "min": 0,
+      "second_smallest": 4,
+      "middle": 4,
+      "second_largest": 1,
+      "max": 2,
+      "none_option": 2
+     }
+    },
+    "level=4|picture=picture|kind=numeric": {
+     "n": 54,
+     "letters": {
+      "A": 8,
+      "B": 9,
+      "C": 13,
+      "D": 15,
+      "E": 9
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 15,
+     "best_rule": "second_largest",
+     "best_hits": 19,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 8,
+      "B": 9,
+      "C": 13,
+      "D": 15,
+      "E": 9,
+      "min": 4,
+      "second_smallest": 8,
+      "middle": 15,
+      "second_largest": 19,
+      "max": 8,
+      "none_option": 15
+     }
+    },
+    "level=4|picture=picture|kind=words": {
+     "n": 13,
+     "letters": {
+      "A": 3,
+      "B": 1,
+      "C": 4,
+      "D": 1,
+      "E": 4
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 1,
+     "best_rule": "C",
+     "best_hits": 4,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 1,
+      "C": 4,
+      "D": 1,
+      "E": 4,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=4|picture=text|kind=no_options": {
+     "n": 30,
+     "letters": {
+      "A": 3,
+      "B": 6,
+      "C": 7,
+      "D": 11,
+      "E": 3
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 11,
+     "best_rule": "D",
+     "best_hits": 11,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 6,
+      "C": 7,
+      "D": 11,
+      "E": 3,
+      "min": 11,
+      "second_smallest": 11,
+      "middle": 11,
+      "second_largest": 11,
+      "max": 11,
+      "none_option": 11
+     }
+    },
+    "level=4|picture=text|kind=numeric": {
+     "n": 89,
+     "letters": {
+      "A": 12,
+      "B": 22,
+      "C": 21,
+      "D": 19,
+      "E": 15
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 28,
+     "best_rule": "middle",
+     "best_hits": 28,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 12,
+      "B": 22,
+      "C": 21,
+      "D": 19,
+      "E": 15,
+      "min": 9,
+      "second_smallest": 14,
+      "middle": 28,
+      "second_largest": 25,
+      "max": 13,
+      "none_option": 28
+     }
+    },
+    "level=4|picture=text|kind=words": {
+     "n": 9,
+     "letters": {
+      "A": 4,
+      "B": 2,
+      "C": 2,
+      "D": 0,
+      "E": 1
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 0,
+     "best_rule": "A",
+     "best_hits": 4,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 2,
+      "C": 2,
+      "D": 0,
+      "E": 1,
+      "min": 0,
+      "second_smallest": 0,
+      "middle": 0,
+      "second_largest": 0,
+      "max": 0,
+      "none_option": 0
+     }
+    },
+    "level=5|picture=picture|kind=no_options": {
+     "n": 42,
+     "letters": {
+      "A": 7,
+      "B": 4,
+      "C": 5,
+      "D": 14,
+      "E": 12
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 14,
+     "best_rule": "D",
+     "best_hits": 14,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 7,
+      "B": 4,
+      "C": 5,
+      "D": 14,
+      "E": 12,
+      "min": 14,
+      "second_smallest": 14,
+      "middle": 14,
+      "second_largest": 14,
+      "max": 14,
+      "none_option": 14
+     }
+    },
+    "level=5|picture=picture|kind=noisy_numeric": {
+     "n": 12,
+     "letters": {
+      "A": 5,
+      "B": 0,
+      "C": 3,
+      "D": 3,
+      "E": 1
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 3,
+     "best_rule": "A",
+     "best_hits": 5,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 5,
+      "B": 0,
+      "C": 3,
+      "D": 3,
+      "E": 1,
+      "min": 3,
+      "second_smallest": 2,
+      "middle": 3,
+      "second_largest": 3,
+      "max": 1,
+      "none_option": 3
+     }
+    },
+    "level=5|picture=picture|kind=numeric": {
+     "n": 36,
+     "letters": {
+      "A": 6,
+      "B": 9,
+      "C": 5,
+      "D": 6,
+      "E": 10
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 9,
+     "best_rule": "E",
+     "best_hits": 10,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 6,
+      "B": 9,
+      "C": 5,
+      "D": 6,
+      "E": 10,
+      "min": 3,
+      "second_smallest": 10,
+      "middle": 9,
+      "second_largest": 6,
+      "max": 8,
+      "none_option": 9
+     }
+    },
+    "level=5|picture=picture|kind=words": {
+     "n": 13,
+     "letters": {
+      "A": 2,
+      "B": 5,
+      "C": 1,
+      "D": 3,
+      "E": 2
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 3,
+     "best_rule": "B",
+     "best_hits": 5,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 5,
+      "C": 1,
+      "D": 3,
+      "E": 2,
+      "min": 3,
+      "second_smallest": 3,
+      "middle": 3,
+      "second_largest": 3,
+      "max": 3,
+      "none_option": 3
+     }
+    },
+    "level=5|picture=text|kind=no_options": {
+     "n": 30,
+     "letters": {
+      "A": 8,
+      "B": 3,
+      "C": 5,
+      "D": 9,
+      "E": 5
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 9,
+     "best_rule": "D",
+     "best_hits": 9,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 8,
+      "B": 3,
+      "C": 5,
+      "D": 9,
+      "E": 5,
+      "min": 9,
+      "second_smallest": 9,
+      "middle": 9,
+      "second_largest": 9,
+      "max": 9,
+      "none_option": 9
+     }
+    },
+    "level=5|picture=text|kind=noisy_numeric": {
+     "n": 3,
+     "letters": {
+      "A": 1,
+      "B": 1,
+      "C": 0,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 1,
+     "best_rule": "second_largest",
+     "best_hits": 2,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 1,
+      "C": 0,
+      "D": 1,
+      "E": 0,
+      "min": 0,
+      "second_smallest": 1,
+      "middle": 0,
+      "second_largest": 2,
+      "max": 0,
+      "none_option": 1
+     }
+    },
+    "level=5|picture=text|kind=numeric": {
+     "n": 94,
+     "letters": {
+      "A": 12,
+      "B": 22,
+      "C": 25,
+      "D": 19,
+      "E": 16
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 35,
+     "best_rule": "middle",
+     "best_hits": 35,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 12,
+      "B": 22,
+      "C": 25,
+      "D": 19,
+      "E": 16,
+      "min": 5,
+      "second_smallest": 18,
+      "middle": 35,
+      "second_largest": 25,
+      "max": 11,
+      "none_option": 35
+     }
+    },
+    "level=5|picture=text|kind=words": {
+     "n": 13,
+     "letters": {
+      "A": 1,
+      "B": 2,
+      "C": 5,
+      "D": 2,
+      "E": 3
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 2,
+     "best_rule": "C",
+     "best_hits": 5,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 2,
+      "C": 5,
+      "D": 2,
+      "E": 3,
+      "min": 2,
+      "second_smallest": 2,
+      "middle": 2,
+      "second_largest": 2,
+      "max": 2,
+      "none_option": 2
+     }
+    },
+    "level=6|picture=picture|kind=no_options": {
+     "n": 55,
+     "letters": {
+      "A": 16,
+      "B": 9,
+      "C": 12,
+      "D": 10,
+      "E": 8
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 10,
+     "best_rule": "A",
+     "best_hits": 16,
+     "gain": 6,
+     "chosen": null,
+     "rules": {
+      "A": 16,
+      "B": 9,
+      "C": 12,
+      "D": 10,
+      "E": 8,
+      "min": 10,
+      "second_smallest": 10,
+      "middle": 10,
+      "second_largest": 10,
+      "max": 10,
+      "none_option": 10
+     }
+    },
+    "level=6|picture=picture|kind=noisy_numeric": {
+     "n": 10,
+     "letters": {
+      "A": 4,
+      "B": 2,
+      "C": 0,
+      "D": 2,
+      "E": 2
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 2,
+     "best_rule": "A",
+     "best_hits": 4,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 2,
+      "C": 0,
+      "D": 2,
+      "E": 2,
+      "min": 2,
+      "second_smallest": 3,
+      "middle": 2,
+      "second_largest": 1,
+      "max": 2,
+      "none_option": 2
+     }
+    },
+    "level=6|picture=picture|kind=numeric": {
+     "n": 30,
+     "letters": {
+      "A": 4,
+      "B": 9,
+      "C": 8,
+      "D": 5,
+      "E": 4
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 8,
+     "best_rule": "second_smallest",
+     "best_hits": 11,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 9,
+      "C": 8,
+      "D": 5,
+      "E": 4,
+      "min": 3,
+      "second_smallest": 11,
+      "middle": 8,
+      "second_largest": 5,
+      "max": 3,
+      "none_option": 8
+     }
+    },
+    "level=6|picture=picture|kind=words": {
+     "n": 27,
+     "letters": {
+      "A": 6,
+      "B": 6,
+      "C": 3,
+      "D": 6,
+      "E": 6
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 6,
+     "best_rule": "A",
+     "best_hits": 6,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 6,
+      "B": 6,
+      "C": 3,
+      "D": 6,
+      "E": 6,
+      "min": 6,
+      "second_smallest": 6,
+      "middle": 6,
+      "second_largest": 6,
+      "max": 6,
+      "none_option": 5
+     }
+    },
+    "level=6|picture=text|kind=no_options": {
+     "n": 38,
+     "letters": {
+      "A": 4,
+      "B": 4,
+      "C": 11,
+      "D": 12,
+      "E": 7
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 12,
+     "best_rule": "D",
+     "best_hits": 12,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 4,
+      "C": 11,
+      "D": 12,
+      "E": 7,
+      "min": 12,
+      "second_smallest": 12,
+      "middle": 12,
+      "second_largest": 12,
+      "max": 12,
+      "none_option": 12
+     }
+    },
+    "level=6|picture=text|kind=noisy_numeric": {
+     "n": 1,
+     "letters": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "E": 1
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 0,
+     "best_rule": "E",
+     "best_hits": 1,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "E": 1,
+      "min": 0,
+      "second_smallest": 0,
+      "middle": 1,
+      "second_largest": 0,
+      "max": 0,
+      "none_option": 0
+     }
+    },
+    "level=6|picture=text|kind=numeric": {
+     "n": 87,
+     "letters": {
+      "A": 14,
+      "B": 18,
+      "C": 23,
+      "D": 22,
+      "E": 10
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 30,
+     "best_rule": "middle",
+     "best_hits": 30,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 14,
+      "B": 18,
+      "C": 23,
+      "D": 22,
+      "E": 10,
+      "min": 8,
+      "second_smallest": 14,
+      "middle": 30,
+      "second_largest": 27,
+      "max": 8,
+      "none_option": 30
+     }
+    },
+    "level=6|picture=text|kind=words": {
+     "n": 8,
+     "letters": {
+      "A": 1,
+      "B": 2,
+      "C": 2,
+      "D": 1,
+      "E": 2
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 1,
+     "best_rule": "B",
+     "best_hits": 2,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 2,
+      "C": 2,
+      "D": 1,
+      "E": 2,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=7|picture=picture|kind=no_options": {
+     "n": 53,
+     "letters": {
+      "A": 11,
+      "B": 14,
+      "C": 8,
+      "D": 13,
+      "E": 7
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 13,
+     "best_rule": "B",
+     "best_hits": 14,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 11,
+      "B": 14,
+      "C": 8,
+      "D": 13,
+      "E": 7,
+      "min": 13,
+      "second_smallest": 13,
+      "middle": 13,
+      "second_largest": 13,
+      "max": 13,
+      "none_option": 13
+     }
+    },
+    "level=7|picture=picture|kind=noisy_numeric": {
+     "n": 10,
+     "letters": {
+      "A": 1,
+      "B": 1,
+      "C": 4,
+      "D": 1,
+      "E": 3
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 1,
+     "best_rule": "C",
+     "best_hits": 4,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 1,
+      "C": 4,
+      "D": 1,
+      "E": 3,
+      "min": 4,
+      "second_smallest": 2,
+      "middle": 2,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=7|picture=picture|kind=numeric": {
+     "n": 24,
+     "letters": {
+      "A": 4,
+      "B": 6,
+      "C": 7,
+      "D": 4,
+      "E": 3
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 8,
+     "best_rule": "middle",
+     "best_hits": 8,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 6,
+      "C": 7,
+      "D": 4,
+      "E": 3,
+      "min": 3,
+      "second_smallest": 6,
+      "middle": 8,
+      "second_largest": 6,
+      "max": 1,
+      "none_option": 8
+     }
+    },
+    "level=7|picture=picture|kind=words": {
+     "n": 20,
+     "letters": {
+      "A": 4,
+      "B": 1,
+      "C": 6,
+      "D": 4,
+      "E": 5
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 4,
+     "best_rule": "C",
+     "best_hits": 6,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 1,
+      "C": 6,
+      "D": 4,
+      "E": 5,
+      "min": 4,
+      "second_smallest": 4,
+      "middle": 4,
+      "second_largest": 4,
+      "max": 4,
+      "none_option": 4
+     }
+    },
+    "level=7|picture=text|kind=no_options": {
+     "n": 36,
+     "letters": {
+      "A": 4,
+      "B": 6,
+      "C": 8,
+      "D": 12,
+      "E": 6
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 12,
+     "best_rule": "D",
+     "best_hits": 12,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 6,
+      "C": 8,
+      "D": 12,
+      "E": 6,
+      "min": 12,
+      "second_smallest": 12,
+      "middle": 12,
+      "second_largest": 12,
+      "max": 12,
+      "none_option": 12
+     }
+    },
+    "level=7|picture=text|kind=noisy_numeric": {
+     "n": 4,
+     "letters": {
+      "A": 2,
+      "B": 1,
+      "C": 0,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 1,
+     "best_rule": "A",
+     "best_hits": 2,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 1,
+      "C": 0,
+      "D": 1,
+      "E": 0,
+      "min": 2,
+      "second_smallest": 1,
+      "middle": 0,
+      "second_largest": 0,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=7|picture=text|kind=numeric": {
+     "n": 83,
+     "letters": {
+      "A": 10,
+      "B": 14,
+      "C": 22,
+      "D": 24,
+      "E": 13
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 26,
+     "best_rule": "middle",
+     "best_hits": 26,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 10,
+      "B": 14,
+      "C": 22,
+      "D": 24,
+      "E": 13,
+      "min": 7,
+      "second_smallest": 16,
+      "middle": 26,
+      "second_largest": 24,
+      "max": 10,
+      "none_option": 26
+     }
+    },
+    "level=7|picture=text|kind=words": {
+     "n": 21,
+     "letters": {
+      "A": 4,
+      "B": 5,
+      "C": 1,
+      "D": 2,
+      "E": 9
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 2,
+     "best_rule": "E",
+     "best_hits": 9,
+     "gain": 7,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 5,
+      "C": 1,
+      "D": 2,
+      "E": 9,
+      "min": 2,
+      "second_smallest": 2,
+      "middle": 2,
+      "second_largest": 2,
+      "max": 2,
+      "none_option": 2
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "level",
+    "kind"
+   ],
+   "strata": {
+    "level=0|kind=no_options": {
+     "n": 53,
+     "letters": {
+      "A": 4,
+      "B": 11,
+      "C": 10,
+      "D": 15,
+      "E": 13
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 15,
+     "best_rule": "D",
+     "best_hits": 15,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 11,
+      "C": 10,
+      "D": 15,
+      "E": 13,
+      "min": 15,
+      "second_smallest": 15,
+      "middle": 15,
+      "second_largest": 15,
+      "max": 15,
+      "none_option": 15
+     }
+    },
+    "level=0|kind=noisy_numeric": {
+     "n": 11,
+     "letters": {
+      "A": 0,
+      "B": 1,
+      "C": 2,
+      "D": 5,
+      "E": 3
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 5,
+     "best_rule": "second_largest",
+     "best_hits": 6,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 1,
+      "C": 2,
+      "D": 5,
+      "E": 3,
+      "min": 0,
+      "second_smallest": 1,
+      "middle": 2,
+      "second_largest": 6,
+      "max": 2,
+      "none_option": 5
+     }
+    },
+    "level=0|kind=numeric": {
+     "n": 50,
+     "letters": {
+      "A": 4,
+      "B": 14,
+      "C": 13,
+      "D": 14,
+      "E": 5
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 14,
+     "best_rule": "second_largest",
+     "best_hits": 16,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 14,
+      "C": 13,
+      "D": 14,
+      "E": 5,
+      "min": 3,
+      "second_smallest": 11,
+      "middle": 14,
+      "second_largest": 16,
+      "max": 6,
+      "none_option": 14
+     }
+    },
+    "level=0|kind=words": {
+     "n": 8,
+     "letters": {
+      "A": 0,
+      "B": 1,
+      "C": 0,
+      "D": 4,
+      "E": 3
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 4,
+     "best_rule": "D",
+     "best_hits": 4,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 1,
+      "C": 0,
+      "D": 4,
+      "E": 3,
+      "min": 4,
+      "second_smallest": 4,
+      "middle": 4,
+      "second_largest": 4,
+      "max": 4,
+      "none_option": 4
+     }
+    },
+    "level=1|kind=no_options": {
+     "n": 41,
+     "letters": {
+      "A": 3,
+      "B": 3,
+      "C": 11,
+      "D": 13,
+      "E": 11
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 13,
+     "best_rule": "D",
+     "best_hits": 13,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 3,
+      "C": 11,
+      "D": 13,
+      "E": 11,
+      "min": 13,
+      "second_smallest": 13,
+      "middle": 13,
+      "second_largest": 13,
+      "max": 13,
+      "none_option": 13
+     }
+    },
+    "level=1|kind=noisy_numeric": {
+     "n": 12,
+     "letters": {
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 7,
+      "E": 4
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 7,
+     "best_rule": "D",
+     "best_hits": 7,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 7,
+      "E": 4,
+      "min": 1,
+      "second_smallest": 2,
+      "middle": 0,
+      "second_largest": 5,
+      "max": 4,
+      "none_option": 7
+     }
+    },
+    "level=1|kind=numeric": {
+     "n": 33,
+     "letters": {
+      "A": 2,
+      "B": 8,
+      "C": 6,
+      "D": 11,
+      "E": 6
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 10,
+     "best_rule": "D",
+     "best_hits": 11,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 8,
+      "C": 6,
+      "D": 11,
+      "E": 6,
+      "min": 2,
+      "second_smallest": 9,
+      "middle": 10,
+      "second_largest": 7,
+      "max": 5,
+      "none_option": 10
+     }
+    },
+    "level=1|kind=words": {
+     "n": 3,
+     "letters": {
+      "A": 0,
+      "B": 1,
+      "C": 1,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 1,
+     "best_rule": "B",
+     "best_hits": 1,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 1,
+      "C": 1,
+      "D": 1,
+      "E": 0,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=2|kind=no_options": {
+     "n": 57,
+     "letters": {
+      "A": 11,
+      "B": 12,
+      "C": 13,
+      "D": 13,
+      "E": 8
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 13,
+     "best_rule": "C",
+     "best_hits": 13,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 11,
+      "B": 12,
+      "C": 13,
+      "D": 13,
+      "E": 8,
+      "min": 13,
+      "second_smallest": 13,
+      "middle": 13,
+      "second_largest": 13,
+      "max": 13,
+      "none_option": 13
+     }
+    },
+    "level=2|kind=noisy_numeric": {
+     "n": 15,
+     "letters": {
+      "A": 1,
+      "B": 7,
+      "C": 4,
+      "D": 0,
+      "E": 3
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 0,
+     "best_rule": "B",
+     "best_hits": 7,
+     "gain": 7,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 7,
+      "C": 4,
+      "D": 0,
+      "E": 3,
+      "min": 1,
+      "second_smallest": 2,
+      "middle": 3,
+      "second_largest": 4,
+      "max": 5,
+      "none_option": 0
+     }
+    },
+    "level=2|kind=numeric": {
+     "n": 41,
+     "letters": {
+      "A": 5,
+      "B": 7,
+      "C": 6,
+      "D": 16,
+      "E": 7
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 7,
+     "best_rule": "D",
+     "best_hits": 16,
+     "gain": 9,
+     "chosen": null,
+     "rules": {
+      "A": 5,
+      "B": 7,
+      "C": 6,
+      "D": 16,
+      "E": 7,
+      "min": 6,
+      "second_smallest": 15,
+      "middle": 7,
+      "second_largest": 11,
+      "max": 2,
+      "none_option": 7
+     }
+    },
+    "level=2|kind=words": {
+     "n": 4,
+     "letters": {
+      "A": 2,
+      "B": 1,
+      "C": 1,
+      "D": 0,
+      "E": 0
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 0,
+     "best_rule": "A",
+     "best_hits": 2,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 1,
+      "C": 1,
+      "D": 0,
+      "E": 0,
+      "min": 0,
+      "second_smallest": 0,
+      "middle": 0,
+      "second_largest": 0,
+      "max": 0,
+      "none_option": 0
+     }
+    },
+    "level=3|kind=no_options": {
+     "n": 49,
+     "letters": {
+      "A": 7,
+      "B": 8,
+      "C": 16,
+      "D": 14,
+      "E": 4
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 14,
+     "best_rule": "C",
+     "best_hits": 16,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 7,
+      "B": 8,
+      "C": 16,
+      "D": 14,
+      "E": 4,
+      "min": 14,
+      "second_smallest": 14,
+      "middle": 14,
+      "second_largest": 14,
+      "max": 14,
+      "none_option": 14
+     }
+    },
+    "level=3|kind=noisy_numeric": {
+     "n": 13,
+     "letters": {
+      "A": 2,
+      "B": 3,
+      "C": 1,
+      "D": 4,
+      "E": 3
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 4,
+     "best_rule": "second_largest",
+     "best_hits": 7,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 2,
+      "B": 3,
+      "C": 1,
+      "D": 4,
+      "E": 3,
+      "min": 0,
+      "second_smallest": 2,
+      "middle": 3,
+      "second_largest": 7,
+      "max": 1,
+      "none_option": 4
+     }
+    },
+    "level=3|kind=numeric": {
+     "n": 42,
+     "letters": {
+      "A": 7,
+      "B": 7,
+      "C": 10,
+      "D": 8,
+      "E": 10
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 11,
+     "best_rule": "second_smallest",
+     "best_hits": 18,
+     "gain": 7,
+     "chosen": null,
+     "rules": {
+      "A": 7,
+      "B": 7,
+      "C": 10,
+      "D": 8,
+      "E": 10,
+      "min": 3,
+      "second_smallest": 18,
+      "middle": 11,
+      "second_largest": 10,
+      "max": 0,
+      "none_option": 11
+     }
+    },
+    "level=3|kind=words": {
+     "n": 7,
+     "letters": {
+      "A": 1,
+      "B": 1,
+      "C": 2,
+      "D": 2,
+      "E": 1
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 2,
+     "best_rule": "C",
+     "best_hits": 2,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 1,
+      "C": 2,
+      "D": 2,
+      "E": 1,
+      "min": 2,
+      "second_smallest": 2,
+      "middle": 2,
+      "second_largest": 2,
+      "max": 2,
+      "none_option": 2
+     }
+    },
+    "level=4|kind=no_options": {
+     "n": 101,
+     "letters": {
+      "A": 17,
+      "B": 20,
+      "C": 24,
+      "D": 27,
+      "E": 13
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 27,
+     "best_rule": "D",
+     "best_hits": 27,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 17,
+      "B": 20,
+      "C": 24,
+      "D": 27,
+      "E": 13,
+      "min": 27,
+      "second_smallest": 27,
+      "middle": 27,
+      "second_largest": 27,
+      "max": 27,
+      "none_option": 27
+     }
+    },
+    "level=4|kind=noisy_numeric": {
+     "n": 11,
+     "letters": {
+      "A": 0,
+      "B": 2,
+      "C": 5,
+      "D": 2,
+      "E": 2
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 2,
+     "best_rule": "C",
+     "best_hits": 5,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 2,
+      "C": 5,
+      "D": 2,
+      "E": 2,
+      "min": 0,
+      "second_smallest": 4,
+      "middle": 4,
+      "second_largest": 1,
+      "max": 2,
+      "none_option": 2
+     }
+    },
+    "level=4|kind=numeric": {
+     "n": 143,
+     "letters": {
+      "A": 20,
+      "B": 31,
+      "C": 34,
+      "D": 34,
+      "E": 24
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 43,
+     "best_rule": "second_largest",
+     "best_hits": 44,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 20,
+      "B": 31,
+      "C": 34,
+      "D": 34,
+      "E": 24,
+      "min": 13,
+      "second_smallest": 22,
+      "middle": 43,
+      "second_largest": 44,
+      "max": 21,
+      "none_option": 43
+     }
+    },
+    "level=4|kind=words": {
+     "n": 22,
+     "letters": {
+      "A": 7,
+      "B": 3,
+      "C": 6,
+      "D": 1,
+      "E": 5
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 1,
+     "best_rule": "A",
+     "best_hits": 7,
+     "gain": 6,
+     "chosen": null,
+     "rules": {
+      "A": 7,
+      "B": 3,
+      "C": 6,
+      "D": 1,
+      "E": 5,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 1
+     }
+    },
+    "level=5|kind=no_options": {
+     "n": 72,
+     "letters": {
+      "A": 15,
+      "B": 7,
+      "C": 10,
+      "D": 23,
+      "E": 17
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 23,
+     "best_rule": "D",
+     "best_hits": 23,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 15,
+      "B": 7,
+      "C": 10,
+      "D": 23,
+      "E": 17,
+      "min": 23,
+      "second_smallest": 23,
+      "middle": 23,
+      "second_largest": 23,
+      "max": 23,
+      "none_option": 23
+     }
+    },
+    "level=5|kind=noisy_numeric": {
+     "n": 15,
+     "letters": {
+      "A": 6,
+      "B": 1,
+      "C": 3,
+      "D": 4,
+      "E": 1
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 4,
+     "best_rule": "A",
+     "best_hits": 6,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 6,
+      "B": 1,
+      "C": 3,
+      "D": 4,
+      "E": 1,
+      "min": 3,
+      "second_smallest": 3,
+      "middle": 3,
+      "second_largest": 5,
+      "max": 1,
+      "none_option": 4
+     }
+    },
+    "level=5|kind=numeric": {
+     "n": 130,
+     "letters": {
+      "A": 18,
+      "B": 31,
+      "C": 30,
+      "D": 25,
+      "E": 26
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 44,
+     "best_rule": "middle",
+     "best_hits": 44,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 18,
+      "B": 31,
+      "C": 30,
+      "D": 25,
+      "E": 26,
+      "min": 8,
+      "second_smallest": 28,
+      "middle": 44,
+      "second_largest": 31,
+      "max": 19,
+      "none_option": 44
+     }
+    },
+    "level=5|kind=words": {
+     "n": 26,
+     "letters": {
+      "A": 3,
+      "B": 7,
+      "C": 6,
+      "D": 5,
+      "E": 5
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 5,
+     "best_rule": "B",
+     "best_hits": 7,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 7,
+      "C": 6,
+      "D": 5,
+      "E": 5,
+      "min": 5,
+      "second_smallest": 5,
+      "middle": 5,
+      "second_largest": 5,
+      "max": 5,
+      "none_option": 5
+     }
+    },
+    "level=6|kind=no_options": {
+     "n": 93,
+     "letters": {
+      "A": 20,
+      "B": 13,
+      "C": 23,
+      "D": 22,
+      "E": 15
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 22,
+     "best_rule": "C",
+     "best_hits": 23,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 20,
+      "B": 13,
+      "C": 23,
+      "D": 22,
+      "E": 15,
+      "min": 22,
+      "second_smallest": 22,
+      "middle": 22,
+      "second_largest": 22,
+      "max": 22,
+      "none_option": 22
+     }
+    },
+    "level=6|kind=noisy_numeric": {
+     "n": 11,
+     "letters": {
+      "A": 4,
+      "B": 2,
+      "C": 0,
+      "D": 2,
+      "E": 3
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 2,
+     "best_rule": "A",
+     "best_hits": 4,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 4,
+      "B": 2,
+      "C": 0,
+      "D": 2,
+      "E": 3,
+      "min": 2,
+      "second_smallest": 3,
+      "middle": 3,
+      "second_largest": 1,
+      "max": 2,
+      "none_option": 2
+     }
+    },
+    "level=6|kind=numeric": {
+     "n": 117,
+     "letters": {
+      "A": 18,
+      "B": 27,
+      "C": 31,
+      "D": 27,
+      "E": 14
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 38,
+     "best_rule": "middle",
+     "best_hits": 38,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 18,
+      "B": 27,
+      "C": 31,
+      "D": 27,
+      "E": 14,
+      "min": 11,
+      "second_smallest": 25,
+      "middle": 38,
+      "second_largest": 32,
+      "max": 11,
+      "none_option": 38
+     }
+    },
+    "level=6|kind=words": {
+     "n": 35,
+     "letters": {
+      "A": 7,
+      "B": 8,
+      "C": 5,
+      "D": 7,
+      "E": 8
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 7,
+     "best_rule": "B",
+     "best_hits": 8,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 7,
+      "B": 8,
+      "C": 5,
+      "D": 7,
+      "E": 8,
+      "min": 7,
+      "second_smallest": 7,
+      "middle": 7,
+      "second_largest": 7,
+      "max": 7,
+      "none_option": 6
+     }
+    },
+    "level=7|kind=no_options": {
+     "n": 89,
+     "letters": {
+      "A": 15,
+      "B": 20,
+      "C": 16,
+      "D": 25,
+      "E": 13
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 25,
+     "best_rule": "D",
+     "best_hits": 25,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 15,
+      "B": 20,
+      "C": 16,
+      "D": 25,
+      "E": 13,
+      "min": 25,
+      "second_smallest": 25,
+      "middle": 25,
+      "second_largest": 25,
+      "max": 25,
+      "none_option": 25
+     }
+    },
+    "level=7|kind=noisy_numeric": {
+     "n": 14,
+     "letters": {
+      "A": 3,
+      "B": 2,
+      "C": 4,
+      "D": 2,
+      "E": 3
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 2,
+     "best_rule": "min",
+     "best_hits": 6,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 2,
+      "C": 4,
+      "D": 2,
+      "E": 3,
+      "min": 6,
+      "second_smallest": 3,
+      "middle": 2,
+      "second_largest": 1,
+      "max": 2,
+      "none_option": 2
+     }
+    },
+    "level=7|kind=numeric": {
+     "n": 107,
+     "letters": {
+      "A": 14,
+      "B": 20,
+      "C": 29,
+      "D": 28,
+      "E": 16
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 34,
+     "best_rule": "middle",
+     "best_hits": 34,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 14,
+      "B": 20,
+      "C": 29,
+      "D": 28,
+      "E": 16,
+      "min": 10,
+      "second_smallest": 22,
+      "middle": 34,
+      "second_largest": 30,
+      "max": 11,
+      "none_option": 34
+     }
+    },
+    "level=7|kind=words": {
+     "n": 41,
+     "letters": {
+      "A": 8,
+      "B": 6,
+      "C": 7,
+      "D": 6,
+      "E": 14
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 6,
+     "best_rule": "E",
+     "best_hits": 14,
+     "gain": 8,
+     "chosen": null,
+     "rules": {
+      "A": 8,
+      "B": 6,
+      "C": 7,
+      "D": 6,
+      "E": 14,
+      "min": 6,
+      "second_smallest": 6,
+      "middle": 6,
+      "second_largest": 6,
+      "max": 6,
+      "none_option": 6
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "picture",
+    "kind"
+   ],
+   "strata": {
+    "picture=picture|kind=no_options": {
+     "n": 381,
+     "letters": {
+      "A": 65,
+      "B": 67,
+      "C": 80,
+      "D": 98,
+      "E": 71
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 98,
+     "best_rule": "D",
+     "best_hits": 98,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 65,
+      "B": 67,
+      "C": 80,
+      "D": 98,
+      "E": 71,
+      "min": 98,
+      "second_smallest": 98,
+      "middle": 98,
+      "second_largest": 98,
+      "max": 98,
+      "none_option": 98
+     }
+    },
+    "picture=picture|kind=noisy_numeric": {
+     "n": 88,
+     "letters": {
+      "A": 11,
+      "B": 15,
+      "C": 19,
+      "D": 23,
+      "E": 20
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 23,
+     "best_rule": "second_largest",
+     "best_hits": 26,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 11,
+      "B": 15,
+      "C": 19,
+      "D": 23,
+      "E": 20,
+      "min": 10,
+      "second_smallest": 17,
+      "middle": 19,
+      "second_largest": 26,
+      "max": 16,
+      "none_option": 23
+     }
+    },
+    "picture=picture|kind=numeric": {
+     "n": 219,
+     "letters": {
+      "A": 28,
+      "B": 52,
+      "C": 46,
+      "D": 54,
+      "E": 39
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 59,
+     "best_rule": "second_smallest",
+     "best_hits": 59,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 28,
+      "B": 52,
+      "C": 46,
+      "D": 54,
+      "E": 39,
+      "min": 19,
+      "second_smallest": 59,
+      "middle": 59,
+      "second_largest": 52,
+      "max": 30,
+      "none_option": 59
+     }
+    },
+    "picture=picture|kind=words": {
+     "n": 90,
+     "letters": {
+      "A": 18,
+      "B": 16,
+      "C": 17,
+      "D": 19,
+      "E": 20
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 19,
+     "best_rule": "E",
+     "best_hits": 20,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 18,
+      "B": 16,
+      "C": 17,
+      "D": 19,
+      "E": 20,
+      "min": 19,
+      "second_smallest": 19,
+      "middle": 19,
+      "second_largest": 19,
+      "max": 19,
+      "none_option": 18
+     }
+    },
+    "picture=text|kind=no_options": {
+     "n": 174,
+     "letters": {
+      "A": 27,
+      "B": 27,
+      "C": 43,
+      "D": 54,
+      "E": 23
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 54,
+     "best_rule": "D",
+     "best_hits": 54,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 27,
+      "B": 27,
+      "C": 43,
+      "D": 54,
+      "E": 23,
+      "min": 54,
+      "second_smallest": 54,
+      "middle": 54,
+      "second_largest": 54,
+      "max": 54,
+      "none_option": 54
+     }
+    },
+    "picture=text|kind=noisy_numeric": {
+     "n": 14,
+     "letters": {
+      "A": 6,
+      "B": 3,
+      "C": 0,
+      "D": 3,
+      "E": 2
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 3,
+     "best_rule": "A",
+     "best_hits": 6,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 6,
+      "B": 3,
+      "C": 0,
+      "D": 3,
+      "E": 2,
+      "min": 3,
+      "second_smallest": 3,
+      "middle": 1,
+      "second_largest": 4,
+      "max": 3,
+      "none_option": 3
+     }
+    },
+    "picture=text|kind=numeric": {
+     "n": 444,
+     "letters": {
+      "A": 60,
+      "B": 93,
+      "C": 113,
+      "D": 109,
+      "E": 69
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 142,
+     "best_rule": "middle",
+     "best_hits": 142,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 60,
+      "B": 93,
+      "C": 113,
+      "D": 109,
+      "E": 69,
+      "min": 37,
+      "second_smallest": 91,
+      "middle": 142,
+      "second_largest": 129,
+      "max": 45,
+      "none_option": 142
+     }
+    },
+    "picture=text|kind=words": {
+     "n": 56,
+     "letters": {
+      "A": 10,
+      "B": 12,
+      "C": 11,
+      "D": 7,
+      "E": 16
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 7,
+     "best_rule": "E",
+     "best_hits": 16,
+     "gain": 9,
+     "chosen": null,
+     "rules": {
+      "A": 10,
+      "B": 12,
+      "C": 11,
+      "D": 7,
+      "E": 16,
+      "min": 7,
+      "second_smallest": 7,
+      "middle": 7,
+      "second_largest": 7,
+      "max": 7,
+      "none_option": 7
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "level"
+   ],
+   "strata": {
+    "level=0": {
+     "n": 122,
+     "letters": {
+      "A": 8,
+      "B": 27,
+      "C": 25,
+      "D": 38,
+      "E": 24
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 38,
+     "best_rule": "second_largest",
+     "best_hits": 41,
+     "gain": 3,
+     "chosen": null,
+     "rules": {
+      "A": 8,
+      "B": 27,
+      "C": 25,
+      "D": 38,
+      "E": 24,
+      "min": 22,
+      "second_smallest": 31,
+      "middle": 35,
+      "second_largest": 41,
+      "max": 27,
+      "none_option": 38
+     }
+    },
+    "level=1": {
+     "n": 89,
+     "letters": {
+      "A": 6,
+      "B": 12,
+      "C": 18,
+      "D": 32,
+      "E": 21
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 31,
+     "best_rule": "D",
+     "best_hits": 32,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 6,
+      "B": 12,
+      "C": 18,
+      "D": 32,
+      "E": 21,
+      "min": 17,
+      "second_smallest": 25,
+      "middle": 24,
+      "second_largest": 26,
+      "max": 23,
+      "none_option": 31
+     }
+    },
+    "level=2": {
+     "n": 117,
+     "letters": {
+      "A": 19,
+      "B": 27,
+      "C": 24,
+      "D": 29,
+      "E": 18
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 20,
+     "best_rule": "second_smallest",
+     "best_hits": 30,
+     "gain": 10,
+     "chosen": "second_smallest",
+     "rules": {
+      "A": 19,
+      "B": 27,
+      "C": 24,
+      "D": 29,
+      "E": 18,
+      "min": 20,
+      "second_smallest": 30,
+      "middle": 23,
+      "second_largest": 28,
+      "max": 20,
+      "none_option": 20
+     }
+    },
+    "level=3": {
+     "n": 111,
+     "letters": {
+      "A": 17,
+      "B": 19,
+      "C": 29,
+      "D": 28,
+      "E": 18
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 31,
+     "best_rule": "second_smallest",
+     "best_hits": 36,
+     "gain": 5,
+     "chosen": null,
+     "rules": {
+      "A": 17,
+      "B": 19,
+      "C": 29,
+      "D": 28,
+      "E": 18,
+      "min": 19,
+      "second_smallest": 36,
+      "middle": 30,
+      "second_largest": 33,
+      "max": 17,
+      "none_option": 31
+     }
+    },
+    "level=4": {
+     "n": 277,
+     "letters": {
+      "A": 44,
+      "B": 56,
+      "C": 69,
+      "D": 64,
+      "E": 44
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 73,
+     "best_rule": "middle",
+     "best_hits": 75,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 44,
+      "B": 56,
+      "C": 69,
+      "D": 64,
+      "E": 44,
+      "min": 41,
+      "second_smallest": 54,
+      "middle": 75,
+      "second_largest": 73,
+      "max": 51,
+      "none_option": 73
+     }
+    },
+    "level=5": {
+     "n": 243,
+     "letters": {
+      "A": 42,
+      "B": 46,
+      "C": 49,
+      "D": 57,
+      "E": 49
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 76,
+     "best_rule": "none_option",
+     "best_hits": 76,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 42,
+      "B": 46,
+      "C": 49,
+      "D": 57,
+      "E": 49,
+      "min": 39,
+      "second_smallest": 59,
+      "middle": 75,
+      "second_largest": 64,
+      "max": 48,
+      "none_option": 76
+     }
+    },
+    "level=6": {
+     "n": 256,
+     "letters": {
+      "A": 49,
+      "B": 50,
+      "C": 59,
+      "D": 58,
+      "E": 40
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 69,
+     "best_rule": "middle",
+     "best_hits": 70,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 49,
+      "B": 50,
+      "C": 59,
+      "D": 58,
+      "E": 40,
+      "min": 42,
+      "second_smallest": 57,
+      "middle": 70,
+      "second_largest": 62,
+      "max": 42,
+      "none_option": 68
+     }
+    },
+    "level=7": {
+     "n": 251,
+     "letters": {
+      "A": 40,
+      "B": 48,
+      "C": 56,
+      "D": 61,
+      "E": 46
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 67,
+     "best_rule": "middle",
+     "best_hits": 67,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 40,
+      "B": 48,
+      "C": 56,
+      "D": 61,
+      "E": 46,
+      "min": 47,
+      "second_smallest": 56,
+      "middle": 67,
+      "second_largest": 62,
+      "max": 44,
+      "none_option": 67
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "kind"
+   ],
+   "strata": {
+    "kind=no_options": {
+     "n": 555,
+     "letters": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 152,
+     "best_rule": "D",
+     "best_hits": 152,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94,
+      "min": 152,
+      "second_smallest": 152,
+      "middle": 152,
+      "second_largest": 152,
+      "max": 152,
+      "none_option": 152
+     }
+    },
+    "kind=noisy_numeric": {
+     "n": 102,
+     "letters": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 26,
+     "best_rule": "second_largest",
+     "best_hits": 30,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22,
+      "min": 13,
+      "second_smallest": 20,
+      "middle": 20,
+      "second_largest": 30,
+      "max": 19,
+      "none_option": 26
+     }
+    },
+    "kind=numeric": {
+     "n": 663,
+     "letters": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 201,
+     "best_rule": "middle",
+     "best_hits": 201,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108,
+      "min": 56,
+      "second_smallest": 150,
+      "middle": 201,
+      "second_largest": 181,
+      "max": 75,
+      "none_option": 201
+     }
+    },
+    "kind=words": {
+     "n": 146,
+     "letters": {
+      "A": 28,
+      "B": 28,
+      "C": 28,
+      "D": 26,
+      "E": 36
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 26,
+     "best_rule": "E",
+     "best_hits": 36,
+     "gain": 10,
+     "chosen": "E",
+     "rules": {
+      "A": 28,
+      "B": 28,
+      "C": 28,
+      "D": 26,
+      "E": 36,
+      "min": 26,
+      "second_smallest": 26,
+      "middle": 26,
+      "second_largest": 26,
+      "max": 26,
+      "none_option": 25
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "picture"
+   ],
+   "strata": {
+    "picture=picture": {
+     "n": 778,
+     "letters": {
+      "A": 122,
+      "B": 150,
+      "C": 162,
+      "D": 194,
+      "E": 150
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 199,
+     "best_rule": "none_option",
+     "best_hits": 198,
+     "gain": -1,
+     "chosen": null,
+     "rules": {
+      "A": 122,
+      "B": 150,
+      "C": 162,
+      "D": 194,
+      "E": 150,
+      "min": 146,
+      "second_smallest": 193,
+      "middle": 195,
+      "second_largest": 195,
+      "max": 163,
+      "none_option": 198
+     }
+    },
+    "picture=text": {
+     "n": 688,
+     "letters": {
+      "A": 103,
+      "B": 135,
+      "C": 167,
+      "D": 173,
+      "E": 110
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 206,
+     "best_rule": "none_option",
+     "best_hits": 206,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 103,
+      "B": 135,
+      "C": 167,
+      "D": 173,
+      "E": 110,
+      "min": 101,
+      "second_smallest": 155,
+      "middle": 204,
+      "second_largest": 194,
+      "max": 109,
+      "none_option": 206
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "kind",
+    "order"
+   ],
+   "strata": {
+    "kind=noisy_numeric|order=ascending": {
+     "n": 49,
+     "letters": {
+      "A": 5,
+      "B": 7,
+      "C": 7,
+      "D": 18,
+      "E": 12
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 18,
+     "best_rule": "D",
+     "best_hits": 18,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 5,
+      "B": 7,
+      "C": 7,
+      "D": 18,
+      "E": 12,
+      "min": 5,
+      "second_smallest": 7,
+      "middle": 7,
+      "second_largest": 18,
+      "max": 12,
+      "none_option": 18
+     }
+    },
+    "kind=noisy_numeric|order=unsorted": {
+     "n": 53,
+     "letters": {
+      "A": 12,
+      "B": 11,
+      "C": 12,
+      "D": 8,
+      "E": 10
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 8,
+     "best_rule": "second_smallest",
+     "best_hits": 13,
+     "gain": 5,
+     "chosen": null,
+     "rules": {
+      "A": 12,
+      "B": 11,
+      "C": 12,
+      "D": 8,
+      "E": 10,
+      "min": 8,
+      "second_smallest": 13,
+      "middle": 13,
+      "second_largest": 12,
+      "max": 7,
+      "none_option": 8
+     }
+    },
+    "kind=numeric|order=ascending": {
+     "n": 354,
+     "letters": {
+      "A": 29,
+      "B": 84,
+      "C": 99,
+      "D": 100,
+      "E": 42
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 99,
+     "best_rule": "D",
+     "best_hits": 100,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 29,
+      "B": 84,
+      "C": 99,
+      "D": 100,
+      "E": 42,
+      "min": 29,
+      "second_smallest": 84,
+      "middle": 99,
+      "second_largest": 100,
+      "max": 42,
+      "none_option": 99
+     }
+    },
+    "kind=numeric|order=unsorted": {
+     "n": 309,
+     "letters": {
+      "A": 59,
+      "B": 61,
+      "C": 60,
+      "D": 63,
+      "E": 66
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 102,
+     "best_rule": "middle",
+     "best_hits": 102,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 59,
+      "B": 61,
+      "C": 60,
+      "D": 63,
+      "E": 66,
+      "min": 27,
+      "second_smallest": 66,
+      "middle": 102,
+      "second_largest": 81,
+      "max": 33,
+      "none_option": 102
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "kind",
+    "fraction"
+   ],
+   "strata": {
+    "kind=no_options|fraction=False": {
+     "n": 555,
+     "letters": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 152,
+     "best_rule": "D",
+     "best_hits": 152,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94,
+      "min": 152,
+      "second_smallest": 152,
+      "middle": 152,
+      "second_largest": 152,
+      "max": 152,
+      "none_option": 152
+     }
+    },
+    "kind=noisy_numeric|fraction=False": {
+     "n": 97,
+     "letters": {
+      "A": 14,
+      "B": 18,
+      "C": 18,
+      "D": 25,
+      "E": 22
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 25,
+     "best_rule": "second_largest",
+     "best_hits": 29,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 14,
+      "B": 18,
+      "C": 18,
+      "D": 25,
+      "E": 22,
+      "min": 11,
+      "second_smallest": 19,
+      "middle": 19,
+      "second_largest": 29,
+      "max": 19,
+      "none_option": 25
+     }
+    },
+    "kind=noisy_numeric|fraction=True": {
+     "n": 5,
+     "letters": {
+      "A": 3,
+      "B": 0,
+      "C": 1,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 1,
+     "best_rule": "A",
+     "best_hits": 3,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 0,
+      "C": 1,
+      "D": 1,
+      "E": 0,
+      "min": 2,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 0,
+      "none_option": 1
+     }
+    },
+    "kind=numeric|fraction=False": {
+     "n": 646,
+     "letters": {
+      "A": 85,
+      "B": 143,
+      "C": 151,
+      "D": 162,
+      "E": 105
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 193,
+     "best_rule": "middle",
+     "best_hits": 193,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 85,
+      "B": 143,
+      "C": 151,
+      "D": 162,
+      "E": 105,
+      "min": 56,
+      "second_smallest": 146,
+      "middle": 193,
+      "second_largest": 178,
+      "max": 73,
+      "none_option": 193
+     }
+    },
+    "kind=numeric|fraction=True": {
+     "n": 17,
+     "letters": {
+      "A": 3,
+      "B": 2,
+      "C": 8,
+      "D": 1,
+      "E": 3
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 8,
+     "best_rule": "C",
+     "best_hits": 8,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 3,
+      "B": 2,
+      "C": 8,
+      "D": 1,
+      "E": 3,
+      "min": 0,
+      "second_smallest": 4,
+      "middle": 8,
+      "second_largest": 3,
+      "max": 2,
+      "none_option": 8
+     }
+    },
+    "kind=words|fraction=False": {
+     "n": 146,
+     "letters": {
+      "A": 28,
+      "B": 28,
+      "C": 28,
+      "D": 26,
+      "E": 36
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 26,
+     "best_rule": "E",
+     "best_hits": 36,
+     "gain": 10,
+     "chosen": "E",
+     "rules": {
+      "A": 28,
+      "B": 28,
+      "C": 28,
+      "D": 26,
+      "E": 36,
+      "min": 26,
+      "second_smallest": 26,
+      "middle": 26,
+      "second_largest": 26,
+      "max": 26,
+      "none_option": 25
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "kind",
+    "pi_root"
+   ],
+   "strata": {
+    "kind=no_options|pi_root=False": {
+     "n": 555,
+     "letters": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 152,
+     "best_rule": "D",
+     "best_hits": 152,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94,
+      "min": 152,
+      "second_smallest": 152,
+      "middle": 152,
+      "second_largest": 152,
+      "max": 152,
+      "none_option": 152
+     }
+    },
+    "kind=noisy_numeric|pi_root=False": {
+     "n": 102,
+     "letters": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 26,
+     "best_rule": "second_largest",
+     "best_hits": 30,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22,
+      "min": 13,
+      "second_smallest": 20,
+      "middle": 20,
+      "second_largest": 30,
+      "max": 19,
+      "none_option": 26
+     }
+    },
+    "kind=numeric|pi_root=False": {
+     "n": 663,
+     "letters": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 201,
+     "best_rule": "middle",
+     "best_hits": 201,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108,
+      "min": 56,
+      "second_smallest": 150,
+      "middle": 201,
+      "second_largest": 181,
+      "max": 75,
+      "none_option": 201
+     }
+    },
+    "kind=words|pi_root=False": {
+     "n": 115,
+     "letters": {
+      "A": 21,
+      "B": 24,
+      "C": 21,
+      "D": 20,
+      "E": 29
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 20,
+     "best_rule": "E",
+     "best_hits": 29,
+     "gain": 9,
+     "chosen": null,
+     "rules": {
+      "A": 21,
+      "B": 24,
+      "C": 21,
+      "D": 20,
+      "E": 29,
+      "min": 20,
+      "second_smallest": 20,
+      "middle": 20,
+      "second_largest": 20,
+      "max": 20,
+      "none_option": 19
+     }
+    },
+    "kind=words|pi_root=True": {
+     "n": 31,
+     "letters": {
+      "A": 7,
+      "B": 4,
+      "C": 7,
+      "D": 6,
+      "E": 7
+     },
+     "most_frequent_letter": "A",
+     "default_hits": 6,
+     "best_rule": "A",
+     "best_hits": 7,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 7,
+      "B": 4,
+      "C": 7,
+      "D": 6,
+      "E": 7,
+      "min": 6,
+      "second_smallest": 6,
+      "middle": 6,
+      "second_largest": 6,
+      "max": 6,
+      "none_option": 6
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "kind",
+    "none_text"
+   ],
+   "strata": {
+    "kind=no_options|none_text=False": {
+     "n": 555,
+     "letters": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 152,
+     "best_rule": "D",
+     "best_hits": 152,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94,
+      "min": 152,
+      "second_smallest": 152,
+      "middle": 152,
+      "second_largest": 152,
+      "max": 152,
+      "none_option": 152
+     }
+    },
+    "kind=noisy_numeric|none_text=False": {
+     "n": 102,
+     "letters": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 26,
+     "best_rule": "second_largest",
+     "best_hits": 30,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22,
+      "min": 13,
+      "second_smallest": 20,
+      "middle": 20,
+      "second_largest": 30,
+      "max": 19,
+      "none_option": 26
+     }
+    },
+    "kind=numeric|none_text=False": {
+     "n": 663,
+     "letters": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 201,
+     "best_rule": "middle",
+     "best_hits": 201,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108,
+      "min": 56,
+      "second_smallest": 150,
+      "middle": 201,
+      "second_largest": 181,
+      "max": 75,
+      "none_option": 201
+     }
+    },
+    "kind=words|none_text=False": {
+     "n": 145,
+     "letters": {
+      "A": 28,
+      "B": 28,
+      "C": 28,
+      "D": 25,
+      "E": 36
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 25,
+     "best_rule": "E",
+     "best_hits": 36,
+     "gain": 11,
+     "chosen": "E",
+     "rules": {
+      "A": 28,
+      "B": 28,
+      "C": 28,
+      "D": 25,
+      "E": 36,
+      "min": 25,
+      "second_smallest": 25,
+      "middle": 25,
+      "second_largest": 25,
+      "max": 25,
+      "none_option": 25
+     }
+    },
+    "kind=words|none_text=True": {
+     "n": 1,
+     "letters": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 1,
+      "E": 0
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 1,
+     "best_rule": "D",
+     "best_hits": 1,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 1,
+      "E": 0,
+      "min": 1,
+      "second_smallest": 1,
+      "middle": 1,
+      "second_largest": 1,
+      "max": 1,
+      "none_option": 0
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "kind",
+    "distinct"
+   ],
+   "strata": {
+    "kind=no_options|distinct=0": {
+     "n": 555,
+     "letters": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 152,
+     "best_rule": "D",
+     "best_hits": 152,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94,
+      "min": 152,
+      "second_smallest": 152,
+      "middle": 152,
+      "second_largest": 152,
+      "max": 152,
+      "none_option": 152
+     }
+    },
+    "kind=noisy_numeric|distinct=5": {
+     "n": 102,
+     "letters": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 26,
+     "best_rule": "second_largest",
+     "best_hits": 30,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22,
+      "min": 13,
+      "second_smallest": 20,
+      "middle": 20,
+      "second_largest": 30,
+      "max": 19,
+      "none_option": 26
+     }
+    },
+    "kind=numeric|distinct=5": {
+     "n": 663,
+     "letters": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 201,
+     "best_rule": "middle",
+     "best_hits": 201,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108,
+      "min": 56,
+      "second_smallest": 150,
+      "middle": 201,
+      "second_largest": 181,
+      "max": 75,
+      "none_option": 201
+     }
+    },
+    "kind=words|distinct=3": {
+     "n": 2,
+     "letters": {
+      "A": 0,
+      "B": 0,
+      "C": 2,
+      "D": 0,
+      "E": 0
+     },
+     "most_frequent_letter": "C",
+     "default_hits": 0,
+     "best_rule": "C",
+     "best_hits": 2,
+     "gain": 2,
+     "chosen": null,
+     "rules": {
+      "A": 0,
+      "B": 0,
+      "C": 2,
+      "D": 0,
+      "E": 0,
+      "min": 0,
+      "second_smallest": 0,
+      "middle": 0,
+      "second_largest": 0,
+      "max": 0,
+      "none_option": 0
+     }
+    },
+    "kind=words|distinct=4": {
+     "n": 3,
+     "letters": {
+      "A": 1,
+      "B": 1,
+      "C": 0,
+      "D": 0,
+      "E": 1
+     },
+     "most_frequent_letter": "B",
+     "default_hits": 0,
+     "best_rule": "A",
+     "best_hits": 1,
+     "gain": 1,
+     "chosen": null,
+     "rules": {
+      "A": 1,
+      "B": 1,
+      "C": 0,
+      "D": 0,
+      "E": 1,
+      "min": 0,
+      "second_smallest": 0,
+      "middle": 0,
+      "second_largest": 0,
+      "max": 0,
+      "none_option": 0
+     }
+    },
+    "kind=words|distinct=5": {
+     "n": 141,
+     "letters": {
+      "A": 27,
+      "B": 27,
+      "C": 26,
+      "D": 26,
+      "E": 35
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 26,
+     "best_rule": "E",
+     "best_hits": 35,
+     "gain": 9,
+     "chosen": null,
+     "rules": {
+      "A": 27,
+      "B": 27,
+      "C": 26,
+      "D": 26,
+      "E": 35,
+      "min": 26,
+      "second_smallest": 26,
+      "middle": 26,
+      "second_largest": 26,
+      "max": 26,
+      "none_option": 25
+     }
+    }
+   }
+  },
+  {
+   "dims": [
+    "language",
+    "kind"
+   ],
+   "strata": {
+    "language=eng|kind=no_options": {
+     "n": 555,
+     "letters": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 152,
+     "best_rule": "D",
+     "best_hits": 152,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 92,
+      "B": 94,
+      "C": 123,
+      "D": 152,
+      "E": 94,
+      "min": 152,
+      "second_smallest": 152,
+      "middle": 152,
+      "second_largest": 152,
+      "max": 152,
+      "none_option": 152
+     }
+    },
+    "language=eng|kind=noisy_numeric": {
+     "n": 102,
+     "letters": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 26,
+     "best_rule": "second_largest",
+     "best_hits": 30,
+     "gain": 4,
+     "chosen": null,
+     "rules": {
+      "A": 17,
+      "B": 18,
+      "C": 19,
+      "D": 26,
+      "E": 22,
+      "min": 13,
+      "second_smallest": 20,
+      "middle": 20,
+      "second_largest": 30,
+      "max": 19,
+      "none_option": 26
+     }
+    },
+    "language=eng|kind=numeric": {
+     "n": 663,
+     "letters": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108
+     },
+     "most_frequent_letter": "D",
+     "default_hits": 201,
+     "best_rule": "middle",
+     "best_hits": 201,
+     "gain": 0,
+     "chosen": null,
+     "rules": {
+      "A": 88,
+      "B": 145,
+      "C": 159,
+      "D": 163,
+      "E": 108,
+      "min": 56,
+      "second_smallest": 150,
+      "middle": 201,
+      "second_largest": 181,
+      "max": 75,
+      "none_option": 201
+     }
+    },
+    "language=eng|kind=words": {
+     "n": 146,
+     "letters": {
+      "A": 28,
+      "B": 28,
+      "C": 28,
+      "D": 26,
+      "E": 36
+     },
+     "most_frequent_letter": "E",
+     "default_hits": 26,
+     "best_rule": "E",
+     "best_hits": 36,
+     "gain": 10,
+     "chosen": "E",
+     "rules": {
+      "A": 28,
+      "B": 28,
+      "C": 28,
+      "D": 26,
+      "E": 36,
+      "min": 26,
+      "second_smallest": 26,
+      "middle": 26,
+      "second_largest": 26,
+      "max": 26,
+      "none_option": 25
+     }
+    }
+   }
+  }
+ ]
+}

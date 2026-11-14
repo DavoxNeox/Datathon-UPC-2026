@@ -9,6 +9,7 @@ scripts in `laptop/` and read on the board by `copilot/topics.py` and friends.
 | `topics.json` | `laptop/build_topics.py` (keywords), then `laptop/cluster_topics.py` (keywords + k-means on the index embeddings) | `{"topics": {id: topic_key}, "visual": {topic_key: bool}}` for all 1,747 ids |
 | `topics_manual.json` | by hand (B) | 50 ids labelled by reading the text and the image: the gold set for the topic assignment |
 | `families.json` | `laptop/build_families.py` | `{id: family_key}` for text-only problems that match a solver family, plus `names_en` |
+| `option_prior.json` | `laptop/learn_prior.py` | per stratum (level, picture, kind of options) the counts of each candidate rule and the rule chosen, for `copilot/prior.py` (`OPTION_PRIOR`, off); the validation look and its bootstrap |
 
 Rebuild after changing the rules:
 
@@ -16,6 +17,7 @@ Rebuild after changing the rules:
 python3 laptop/build_topics.py                      # keywords only, prints the topic table
 python3 laptop/cluster_topics.py --k 8 --manual data_curated/topics_manual.json --out data_curated/topics.json
 python3 laptop/build_families.py                    # prints the family frequency table
+python3 laptop/learn_prior.py --cv 5                # prints the option-prior tables and the cross-validation
 ```
 
 Both need `data/train.jsonl`, `data/val.jsonl` and `data/index.db` (not committed).
