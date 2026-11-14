@@ -111,9 +111,10 @@ the option whose value is the middle one, else D. The rule is a prior about how 
 distractors are built (the correct value usually sits between distractors above and below),
 not reasoning; it never enters the hint ladder. On the board, whole validation set:
 **150/562 = 26.7%** against 23.1% for always D (English 77/281 = 27.4%, Catalan 73/281);
-the rule fired on 223 problems; mean 0.38 s, worst 38.7 s, none over 60 s. On the laptop:
-val 77/281 (bootstrap 95% of the gain over always D: -2 to +26 problems), train 405/1466
-against 366 for always D. A hidden test may hand part of that back.
+the rule fired on 243 problems (120 English, 123 Catalan) and was right on 150 of them; 223 answers
+differ from D (the middle value is sometimes D itself); mean 0.38 s, worst 38.7 s, none over 60 s.
+On the laptop: val 77/281 (bootstrap 95% of the gain over always D: -2 to +26 problems),
+train 405/1466 against 367 for always D. A hidden test may hand part of that back.
 
 ### The official run on the board, before the rule
 
