@@ -24,6 +24,27 @@ LANGS = ("cat", "eng")
 TOPIC_NAMES = {t["key"]: t for t in topics.TOPICS}
 # Rung 0 counters survive a restart of the app here (data/ is git-ignored, no problem text inside)
 RUNG0_FILE = os.path.join(ROOT, "data", "rung0.json")
+# Answer options read again from the scans on the laptop (laptop/reocr_options.py), for the problems
+# whose first OCR left none or noisy ones. Shown on the page as text instead of pieces cut from the
+# scan; the problem itself (what the predictor, the hints and the trainer see) keeps the bank's options.
+OPTIONS_OCR_FILE = os.path.join(ROOT, "data", "options_ocr.jsonl")
+_options_ocr = None
+
+
+def _options_overlay():
+    """{"id|lang": {"A": ..}} from OPTIONS_OCR_FILE, read once; empty when the file is missing."""
+    global _options_ocr
+    if _options_ocr is None or _options_ocr.get("_path") != OPTIONS_OCR_FILE:
+        table = {"_path": OPTIONS_OCR_FILE}
+        if os.path.exists(OPTIONS_OCR_FILE):
+            with open(OPTIONS_OCR_FILE, encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        row = json.loads(line)
+                        if row.get("key") and row.get("options"):
+                            table[row["key"]] = {k: str(v) for k, v in row["options"].items()}
+        _options_ocr = table
+    return _options_ocr
 
 
 def _empty_counts():
@@ -150,6 +171,9 @@ class Session:
         if not p:
             return None
         shown = {k: v for k, v in p.items() if k != "label"}
+        overlay = _options_overlay()
+        if overlay.get(f"{p['id']}|{p.get('language', 'cat')}"):
+            shown["options"] = overlay[f"{p['id']}|{p.get('language', 'cat')}"]
         shown["has_image"] = hints._image_path(p["id"], p.get("language", "cat")) is not None
         topic = p.get("topic") or topics.get_topic(p["id"])
         shown["topic"] = topic
@@ -159,7 +183,8 @@ class Session:
         other = hints.problem_for(p["id"], "eng" if p.get("language") == "cat" else "cat")
         if other and other.get("language") != p.get("language"):
             shown["text_" + other["language"]] = other["text"]
-            shown["options_" + other["language"]] = {k: v for k, v in (other.get("options") or {}).items()}
+            other_options = overlay.get(f"{p['id']}|{other['language']}") or other.get("options") or {}
+            shown["options_" + other["language"]] = {k: v for k, v in other_options.items()}
         return shown
 
     def _shown_language(self):
