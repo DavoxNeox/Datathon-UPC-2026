@@ -10,7 +10,7 @@ const I18N = {
   cat: {title: "Copilot de mates", student: "Nom o àlies", teacher: "Vista del professor", help: "Ajuda", hint: "Pista",
         solution: "Solució", next: "Següent problema", mastery: "El teu progrés", close: "Tanca",
         level: "Nivell", topic: "Tema", thinking: "Un moment…", kinds: {neighbour: "Un problema semblant",
-        strategy: "Una estratègia", trace: "Un pas de la solució", llm: "Pista del model", solution: "Solució"},
+        strategy: "Una estratègia", trace: "Un pas de la solució", llm: "Pista del model", solution: "Solució", lesson: "Lliçó"},
         manip: {rotate: "Gira i volteja", paths: "Comptador de camins", dice: "El dau"},
         time: "temps", laptop: "portàtil", board: "placa (estimat)", action: "acció", load: "temps de càrrega",
         over: "supera els 60 s", image: "Imatge del problema", answered: "Ja has respost. Si vols, mira la solució.",
@@ -27,7 +27,7 @@ const I18N = {
   eng: {title: "Maths copilot", student: "Name or nickname", teacher: "Teacher view", help: "Help", hint: "Hint",
         solution: "Solution", next: "Next problem", mastery: "Your progress", close: "Close",
         level: "Level", topic: "Topic", thinking: "One moment…", kinds: {neighbour: "A similar problem",
-        strategy: "A strategy", trace: "A step of the solution", llm: "Model hint", solution: "Solution"},
+        strategy: "A strategy", trace: "A step of the solution", llm: "Model hint", solution: "Solution", lesson: "Lesson"},
         manip: {rotate: "Rotate and flip", paths: "Path counter", dice: "The die"},
         time: "time", laptop: "laptop", board: "board (estimated)", action: "action", load: "load time",
         over: "over 60 s", image: "Problem picture", answered: "Already answered. Have a look at the solution if you like.",
@@ -43,6 +43,8 @@ const I18N = {
         courses: ["Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]},
 };
 const THEME_GLYPH = {auto: "◐", light: "☀", dark: "☾"};
+// an open book, inline so nothing is fetched; it takes the colour of its parent
+const BOOK = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M1.5 3A.5.5 0 0 1 2 2.5h4A2.5 2.5 0 0 1 8 3.6 2.5 2.5 0 0 1 10 2.5h4a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-4c-.9 0-1.6.5-2 1.1-.4-.6-1.1-1.1-2-1.1H2a.5.5 0 0 1-.5-.5zm6 1.6c0-.6-.7-1.1-1.5-1.1H2.5v8H6c.6 0 1.1.1 1.5.4zm1 7.3c.4-.3.9-.4 1.5-.4h3.5v-8H10c-.8 0-1.5.5-1.5 1.1z"/></svg>';
 let lang = "cat", state = null, lastProblem = null, imageKey = null, loadReported = false;
 let textOpen = matchMedia("(max-width: 640px)").matches;   // the statement text when the picture already shows it: closed on a laptop, open on a phone (the picture is too wide to read there); the student's choice stays
 const t = () => I18N[lang];
@@ -151,16 +153,26 @@ function renderAnswer(s) {
   const left = s.hints_left ?? Infinity, max = s.hints_max ?? 3;
   $("hint").disabled = !!a || s.busy || left <= 0;
   $("hint").title = left <= 0 ? t().no_hints : "";
-  // the dots are the hints left on this problem: they go out one by one (solution and rung 0 do not count)
+  // the dots are the hints left on this problem: they go out from the left as hints are used (solution and
+  // rung 0 do not count). The last use is not a hint but a short lesson on the topic: a small book, not a dot.
   const dots = $("rungs");
-  if (dots.children.length !== max) dots.innerHTML = Array.from({length: max}, () => "<span></span>").join("");
-  [...dots.children].forEach((dot, i) => dot.classList.toggle("on", i < Math.min(left, max)));
+  if (dots.children.length !== max || dots.dataset.lang !== lang) {
+    dots.dataset.lang = lang;
+    dots.innerHTML = Array.from({length: max}, (_, i) => i === max - 1 && max > 1 ?
+      `<span class="book" title="${esc(t().kinds.lesson)}" aria-label="${esc(t().kinds.lesson)}">${BOOK}</span>` : "<span></span>").join("");
+  }
+  [...dots.children].forEach((dot, i) => dot.classList.toggle("on", i >= max - Math.min(left, max)));
   $("solution").disabled = s.busy || s.hints.some(h => h.kind === "solution");
   $("status").textContent = s.busy ? t().thinking : (a && !s.hints.some(h => h.kind === "solution") ? t().answered : "");
 }
 
 function renderHints(s) {
   $("hints").innerHTML = s.hints.map(h => {
+    if (h.kind === "lesson") {
+      // the fourth use of the button: a short lesson on the topic, its own card, never timed
+      return `<article class="lesson"><div class="kind">${BOOK} ${esc(t().kinds.lesson)}</div>` +
+        `<h3>${esc(txt(h, "title"))}</h3><p>${esc(txt(h, "text"))}</p></article>`;
+    }
     let body = `<div>${esc(txt(h, "text"))}</div>`;
     if (h.kind === "neighbour" && h.problem) {
       const np = h.problem, opts = np.options || {}, long = (np.text || "").length > 160;

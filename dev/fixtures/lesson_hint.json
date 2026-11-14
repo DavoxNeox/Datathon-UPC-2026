@@ -1,0 +1,10 @@
+{
+  "_comment": "Fixture for the page while D's server does not serve kind=lesson yet: one entry of /api/state's hints, shown after the fourth use of the hint button (HINT_MAX_USES=4). Own text, not from M3Kang. Load it in the browser console with dev/fixtures/README.md.",
+  "kind": "lesson",
+  "rung": 4,
+  "topic": "boards",
+  "title_ca": "Comptar en una graella: files, columnes i el que es toca",
+  "title_en": "Counting on a grid: rows, columns and the overlap",
+  "text_ca": "Una graella és un rectangle de caselles ordenades en files i columnes. Per saber quantes caselles té, multiplica el nombre de files pel nombre de columnes: no cal comptar-les una per una. Quan pintes files i columnes senceres, hi ha caselles que es pinten dues vegades, les que són a la vegada en una fila pintada i en una columna pintada. Per no comptar-les dos cops, suma les caselles de les files i les de les columnes i resta les que es toquen. Aquesta idea, sumar i després restar el que s'ha repetit, apareix en molts problemes de recompte.",
+  "text_en": "A grid is a rectangle of cells arranged in rows and columns. To know how many cells it has, multiply the number of rows by the number of columns: there is no need to count them one by one. When you paint whole rows and whole columns, some cells get painted twice, the ones that sit both in a painted row and in a painted column. To avoid counting them twice, add the cells of the rows and the cells of the columns, then subtract the ones they share. This idea, adding and then taking away what was repeated, shows up in many counting problems."
+}
