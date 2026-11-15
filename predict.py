@@ -76,7 +76,9 @@ def answer_one(problem, index, k):
 
 
 def rows_already_written(path):
-    """The ids with a row in an existing output, or None when there is no usable output yet."""
+    """The (id, language) pairs with a row in an existing output, or None when there is no usable output yet.
+
+    The same problem id appears once per language in the bank, so the id alone is not a key."""
     if not os.path.exists(path):
         return None
     try:
@@ -85,7 +87,7 @@ def rows_already_written(path):
             header = next(reader, None)
             if header != ["id", "language", "answer", "seconds", "status"]:
                 return None
-            return {row[0] for row in reader if row}
+            return {(row[0], row[1] if len(row) > 1 else "") for row in reader if row}
     except (OSError, csv.Error):
         return None
 
@@ -117,10 +119,10 @@ def main():
             writer.writerow(["id", "language", "answer", "seconds", "status"])
         for n, (line_number, problem, parse_error) in enumerate(rows, 1):
             pid = row_id(problem, line_number)
-            if pid in done:
-                continue
-            done.add(pid)
             language = str(problem.get("language", "") or "") if problem else ""
+            if (pid, language) in done:
+                continue
+            done.add((pid, language))
             if parse_error:
                 answer, seconds, status, board = FALLBACK, 0.0, parse_error, 0.0
             else:

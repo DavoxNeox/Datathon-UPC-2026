@@ -140,3 +140,24 @@ class PredictResumes(unittest.TestCase):
         proc = self.run_predict(self.inp, self.out)
         self.assertEqual(proc.returncode, 0)
         self.assertEqual(self.read(), before)
+
+
+class SameIdTwoLanguages(unittest.TestCase):
+    """The bank holds every problem once per language with the same id: both rows are written, and a resume keeps both."""
+
+    def test_both_languages_get_a_row(self):
+        tmp = tempfile.mkdtemp()
+        inp, out = os.path.join(tmp, "exam.jsonl"), os.path.join(tmp, "p.csv")
+        with open(inp, "w") as f:
+            for lang in ("eng", "cat"):
+                f.write(json.dumps({"id": "same", "language": lang, "text": "Made-up.",
+                                    "options": {"A": "1", "B": "2", "C": "3", "D": "4", "E": "5"}}) + "\n")
+        env = dict(os.environ, RUNTIME="sim", LETTER_MODEL="0", SOLVERS="0", PYTHONPATH=ROOT)
+        subprocess.run([sys.executable, PREDICT, "--input", inp, "--output", out], capture_output=True, text=True, env=env, cwd=ROOT, timeout=300)
+        with open(out, newline="") as f:
+            rows = list(csv.DictReader(f))
+        self.assertEqual([(r["id"], r["language"]) for r in rows], [("same", "eng"), ("same", "cat")])
+        proc = subprocess.run([sys.executable, PREDICT, "--input", inp, "--output", out], capture_output=True, text=True, env=env, cwd=ROOT, timeout=300)
+        self.assertIn("resuming: 2 rows", proc.stderr)
+        with open(out, newline="") as f:
+            self.assertEqual(len(list(csv.DictReader(f))), 2)
