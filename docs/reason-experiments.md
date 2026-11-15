@@ -52,6 +52,7 @@ model runs here.
 | 6 | levels 2 to 5 only (picked after the fact) | `THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0` | 281 / 297 / 281 cat | 85 / 81 / 70 | | | 13.4 / 51.5 | 1.06 GB | +8 / +6 / **-3**: not adopted |
 | 6 | short instruction (`THINK_STYLE=short`), every level | `THINK_LEVELS=all THINK_TEXT_ONLY=0` | 297 / 281 / 281 cat | 84 / 79 / 80 against 75 / 77 / 73 | | | 21 / 52 | 1.06 GB | +9 / +2 / +7, pooled P = 0.063: left off |
 | 7 | board, real seconds, levels 2 to 5, steps style | `THINK_LEVELS=2,3,4,5` | 50 | 16 = 32.0% | 34.0% | D 34.0% | real 10.0 / 47.9, est. 9.7 / 47.5 | 2.7 GB available | no timeout; see text |
+| 8 | 0.8B writes a Python program, the board runs it, value matched to an option (practice set, 50 × eng/cat) | `PAL=1` | 100 | 22 to 24 against 25 for think alone | 20.0% (balanced letters) | 20.0% | 31 / 48 | 1.06 GB | on its rows 6/15 to 9/18 right, but abstentions starve think: off |
 
 The letter model restricted to the middle three values (offline, from the baseline's stored
 log probabilities, 99 strictly numeric problems): 24 right, against 29 for the middle value
@@ -691,6 +692,103 @@ controller's call; the measured expectation is +1 to +3 points on 281 with no ti
 `learned_on`); its 76 / 76 / 90 here are on v2 problems it never saw in this form and should be
 re-learned on v2 by its owner before being compared.
 
+## Experiment 8: program-aided reasoning on the practice set (`copilot/pal.py`, flag `PAL`)
+
+**Hypothesis.** The 0.8B gets arithmetic wrong in prose but writes a short calculation in Python
+acceptably; if the board runs the program and its value has to equal one of the five options,
+the letter is right more often than with the brief text reasoning of Experiment 6.
+
+**What runs.** One chat request: the stable block (a system instruction and two worked examples
+invented for the module, both explicit brute force: a count over 1 to 50 and a search over pairs,
+each a few lines ending in `answer = ...`) in earlier messages, so the server's checkpoint at the
+start of the last user message keeps it cached between problems; the statement and the five
+options in the last user message. Temperature 0, seed 42, `max_tokens` from the board clock so
+that prompt, output and the program's 2 s fit `PAL_BUDGET_SECONDS=45` minus what the problem
+already cost. The first fenced block is parsed (`ast`), checked and run with `exec` in a thread:
+imports only of `math`, `itertools` (without its infinite iterators; `permutations`,
+`combinations`, `product` refuse more than 2 million tuples) and `fractions`, no attribute that
+starts with `_` or names a frame, no dunder name, no `try`/`with`/`class`/`global`, a short list
+of pure builtins, a tracer that stops the program after 2 s or 1 million lines or when a variable
+holds more than 2 million items, and size checks on `range`, `**`, `*`, `<<`, `+` and
+`math.factorial/comb/perm/prod` (a single long C call is the one thing a tracer cannot stop).
+Every exception is caught. The value of `answer` (or of the last single-value `print` when there
+is no `answer`; a list or set counts as its length only when the question says "how many" or
+"quants"/"quantes") is matched against the options that are one clean number (short unit, `3/4`,
+`25%` also as `0.25`): equal within 1e-6, else the nearest option within 1% if it is the only one;
+otherwise the stage abstains and the usual order answers (think with what is left of its 45 s,
+then the middle value, then D). With `PAL_TEXT_ONLY=1` (the default) problems with a figure skip
+the stage. `pipeline.solve` calls it just before think and returns `rule="pal"` when it decides.
+
+**Protocol.** `data/demo/train.jsonl`, the organisers' practice set: 50 problems × eng/cat = 100
+rows, 80 without a figure, correct letters balanced (20 per letter). Laptop, a private llama-server
+on port 8095 with the board's flags (`--parallel 1 --cache-ram 0 --ctx-checkpoints 2`), so no
+other session touched the cache. The shipped exam setting otherwise (`THINK_LEVELS=all
+THINK_TEXT_ONLY=0 THINK_STYLE=short`, middle value, D). Paired bootstrap over the 50 problem ids
+(both rows of an id resampled together), 10 000 draws, seed 42, against think alone. Board seconds
+are token estimates. Four runs, one change each:
+
+- **A**: the module as first written (one direct and one brute-force example, imports of `math`
+  only, PAL on figures too), and a pessimistic cache rule (the stable block counted as cached only
+  after a request of this stage on a problem it answered).
+- **A2**: A plus the recommendations of the controller after reading the 50 statements (most are
+  enumerations over a small space): both examples brute force, `itertools` and `fractions`, last
+  `print`, list length for "how many", no PAL on figure problems. Same cache rule as A.
+- **A3**: A2 with exact cache tracking: `copilot/client.py` records the leading messages of the last
+  completed chat request per server, and the block is counted as read again unless they are this
+  stage's. This is the code on the branch.
+- **B**: A3 with the statement of every Catalan row replaced, for PAL only, by the English text of
+  the same id (`PAL_TEXT_FIELD=text_eng` on a copy of the file; think still reads the Catalan).
+  Not available in the exam, where each problem comes in one language; it measures what the
+  Catalan costs.
+
+| run | correct / 100 | PAL decides (right) | PAL eng / cat rows | think after PAL abstains (right) | middle value (right) | think alone on PAL's rows | paired vs think alone, 95% | board s mean / max |
+| --- | ---: | ---: | --- | ---: | ---: | ---: | --- | --- |
+| think alone (exam setting, rerun) | **25** | | | 57 (15) | 40 (10) | | | 34.0 / 44.6 |
+| A | 20 | 15 (5) | 4/8, 1/7 | 8 (0) | 71 (15) | 3 | -5, [-14, +4], P(≤0) 0.89 | 27.9 / 47.6 |
+| A2 | 24 | 18 (9) | 7/11, 2/7 | 25 (6) | 54 (9) | 5 | -1, [-8, +6], 0.67 | 30.8 / 47.6 |
+| A3 (branch) | 22 | 15 (6) | 5/9, 1/6 | 26 (6) | 56 (10) | 5 | -3, [-10, +4], 0.84 | 31.1 / 47.6 |
+| B (English text for PAL) | 31 | 21 (13) | 5/9, 8/12 | 26 (6) | 51 (12) | 6 | +6, [-2, +15], 0.10 | 31.6 / 47.6 |
+
+Think alone reproduces the 25/100 of the exam-setting note in `config.env` exactly (57 decided, 15
+right). The worst row of every run, 47.6 s, is a problem PAL does not apply to (non-numeric
+options): think alone, over its 45 s by its own estimate, as before. No row passes 60 s; PAL's
+own rows have a worst case of 43.4 s, and the program ran at most 0.15 s on the laptop.
+
+**What the table says.**
+
+- **Where PAL answers, it is right more often than think.** A2: 9 of 18 against 5 for think alone on
+  the same rows; A3: 6 of 15 against 5; B: 13 of 21 against 6. In A, with figures, the 7 figure
+  rows PAL answered were all wrong (8 text rows: 5 right), hence `PAL_TEXT_ONLY=1`.
+- **Where it abstains, it costs think.** On the rows PAL leaves, think receives what is left of its
+  45 s after PAL's request (29 to 32 s spent on average), and on 42 to 47 of them it no longer fits its 80
+  tokens: they fall to the middle value. Those rows score 15 to 16 against 20 for think alone
+  in A2/A3. The gain on PAL's rows (+1 to +4) does not pay for this loss (-4 to -5).
+- **Catalan costs PAL most of its gain.** Same problems, same options: with the Catalan text PAL
+  decides 6 Catalan rows and gets 1 right (A3); with the English text it decides 12 and gets 8
+  (B). The English rows do not change between A3 and B (5/9), as they should. With English
+  statements throughout (B), PAL is right on 13 of its 21 decisions.
+- **The cache rule matters for the 60 s, not for accuracy.** With A2's rule two requests
+  were sized as cached while the server read the 264-token block again (+23 s unplanned: in
+  both, the row before was one PAL does not apply to, where think ran). With A3's tracking the prompt
+  estimate equals the server's `prompt_n` on all 15 answered rows. A3's lower score than A2 (22
+  against 24) comes from different `max_tokens` and cache states, i.e. different workings; on
+  100 rows it is noise.
+- **Why it abstains.** A3, 76 rows where the stage applies: 4 skipped by the budget, 16 programs
+  cut at `max_tokens` (cold cache plus a long statement), 4 errors or no `answer`, and 52 programs
+  that ran (6 of them through the last `print`): 35 values matched no option, 2 were not a
+  number, 15 matched. The model writes runnable code readily; it writes
+  the right computation for one problem in five.
+
+**Conclusion.** PAL does not beat brief reasoning on the practice set as the exam will see it:
+22 to 24 against 25, the interval includes zero on both sides, so `PAL=0` stays the default.
+The hypothesis is half confirmed: on the problems where the program's value lands on an option,
+the letter is right 40 to 62% of the time against about 30% for think on the same rows, and
+much more often with English statements (8/12 against 1/6 on the Catalan rows). Two things stand
+between that and a gain, and they are the next experiments, not settings to switch on now: (1)
+an abstention must not starve think, which needs a smaller PAL budget or a cheaper first step;
+(2) Catalan statements, which on the exam have no English twin. B's +6 ([-2, +15], P 0.10) is
+not available on the exam and is not significant on 50 problems either.
+
 ## Decision
 
 `MIDDLE_VALUE=1` is the default in `config.env` (review of 14 Nov): it is the only change
@@ -723,6 +821,12 @@ no total-time cap, `THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0` (`THINK_STYLE=short`
 it (they lose on validation). Levels 2 to 5 with the figure problems included: `THINK_TEXT_ONLY=0`,
 because the figure problems did not lose (+1, +2) and the text-only ones did not win.
 
+**Program-aided reasoning (Experiment 8).** `PAL=0` stays. On the organisers' practice set it scores
+22 to 24 of 100 against 25 for brief reasoning alone: right on 40 to 62% of the rows it answers,
+but its abstentions leave think too little of the 45 s, and Catalan statements cut its decisions
+and its accuracy. The module, its sandbox and the exact cache tracking in `copilot/client.py`
+stay on the branch for the next attempt (a smaller PAL budget, or English statements).
+
 ## Reproduce
 
 ```bash
@@ -740,6 +844,10 @@ THINK_LEVELS=all THINK_TEXT_ONLY=0 python3 eval.py --limit 0 --languages eng --n
 THINK_LEVELS=all THINK_TEXT_ONLY=0 python3 eval.py --input data/train.jsonl --ids results/train-strat300.ids --limit 0 --languages eng --name T-think-all-train297
 THINK_LEVELS=all THINK_TEXT_ONLY=0 python3 eval.py --limit 0 --languages cat --name T-think-all-cat281
 python3 eval.py --limit 0 --languages eng --name T-base-eng281   # and --ids / --languages cat likewise
+# Experiment 8, laptop, private server on 8095 with the board's flags (run B reads a copy of the file with text_eng added)
+LLM_PORT=8095 PAL=0 python3 eval.py --input data/demo/train.jsonl --limit 0 --name pal-baseline-think
+LLM_PORT=8095 PAL=1 python3 eval.py --input data/demo/train.jsonl --limit 0 --name pal-A3
+LLM_PORT=8095 PAL=1 PAL_TEXT_FIELD=text_eng python3 eval.py --input <copy with text_eng> --limit 0 --name pal-B-eng-text
 # Experiment 7, on the board, from a copy of the branch next to the controller's checkout
 THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0 python3 eval.py --limit 50 --languages eng --name B-final-l25-eng50
 ```
