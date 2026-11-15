@@ -99,10 +99,12 @@ class AppliesTest(unittest.TestCase):
         self.assertEqual(think.BUDGET, 45.0)
         self.assertIn(think.STYLE, think.INSTRUCTIONS)
 
-    def test_the_flag_is_off_by_default(self):
+    def test_the_exam_setting_is_every_level_with_figures(self):
+        # Team decision of 15 Nov 2026 after the organisers' practice set (config.env, the EXAM SETTING note):
+        # the stage runs on every level, figures included; THINK_LEVELS= (empty) restores the shipped policy.
         from copilot.config import CONFIG
-        self.assertEqual(think.levels_from_config(CONFIG.get("THINK_LEVELS", "")), set(),
-                         "THINK_LEVELS must stay empty in config.env until the board measurement says otherwise")
+        self.assertEqual(think.levels_from_config(CONFIG.get("THINK_LEVELS", "")), set(range(8)))
+        self.assertEqual(str(CONFIG.get("THINK_TEXT_ONLY", "1")), "0")
 
 
 class PipelineTest(unittest.TestCase):
@@ -161,7 +163,7 @@ class PipelineTest(unittest.TestCase):
     def test_a_figure_problem_is_skipped_unless_allowed(self):
         post = fake_server("Answer: A")
         with mock.patch.dict(PROBLEM, {"text_only": False}):
-            self.assertEqual(self.solve(post)["rule"], "middle_value")
+            self.assertEqual(self.solve(post, THINK_TEXT_ONLY=True)["rule"], "middle_value")
             self.assertEqual(self.solve(post, THINK_TEXT_ONLY=False)["rule"], "think")
 
 

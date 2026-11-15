@@ -142,15 +142,16 @@ class CommittedTableTest(unittest.TestCase):
         from copilot import pipeline
         self.assertFalse(pipeline.USE_OPTION_PRIOR)
         problem = {"id": "x", "level": 2, "text_only": True, "text": "How many?", "options": NUMERIC}
-        with mock.patch.object(pipeline, "USE_OPTION_PRIOR", True), mock.patch.object(pipeline, "USE_SOLVERS", False), \
+        no_think = mock.patch.object(pipeline, "THINK_LEVELS", set())   # the brief-reasoning stage runs first on main
+        with no_think, mock.patch.object(pipeline, "USE_OPTION_PRIOR", True), mock.patch.object(pipeline, "USE_SOLVERS", False), \
              mock.patch.object(prior, "PRIOR", TABLE):
             result = pipeline.solve(problem)
         self.assertEqual((result["answer"], result["rule"], result["status"], result["board_seconds"]), ("A", "option_prior", "ok", 0.0))
-        with mock.patch.object(pipeline, "USE_OPTION_PRIOR", True), mock.patch.object(pipeline, "USE_SOLVERS", False), \
+        with no_think, mock.patch.object(pipeline, "USE_OPTION_PRIOR", True), mock.patch.object(pipeline, "USE_SOLVERS", False), \
              mock.patch.object(prior, "PRIOR", TABLE):
             result = pipeline.solve({**problem, "level": 3})
         self.assertEqual((result["answer"], result["rule"]), ("E", "middle_value"))  # no rule: the middle value answers
-        with mock.patch.object(pipeline, "USE_OPTION_PRIOR", False), mock.patch.object(pipeline, "USE_SOLVERS", False), \
+        with no_think, mock.patch.object(pipeline, "USE_OPTION_PRIOR", False), mock.patch.object(pipeline, "USE_SOLVERS", False), \
              mock.patch.object(prior, "PRIOR", TABLE):
             result = pipeline.solve(problem)
         self.assertEqual((result["answer"], result["rule"]), ("E", "middle_value"))

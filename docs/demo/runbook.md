@@ -190,155 +190,117 @@ adb shell sudo poweroff
 
 ## 11. The exam (the Reasoning half of the grade)
 
-The organisers grade 50% of the project on a **test exam**: a file of problems in the M3Kang
-format, answered by `predict.py` and corrected from its CSV. The details of the file and of the
-procedure are not known yet; the blanks below are marked `[?]` and the questions to ask the
-organisation **today** are at the end of this section.
+What the organisers published on 15 Nov 2026 with their practice set (`Qualcomm_practica.zip`,
+50 new Kangaroo-style problems written for the datathon, not M3Kang, each in English and
+Catalan, levels 0 to 7, 40 text-only and 10 with a figure, every letter correct 10 times):
 
-The policy that goes to the exam is the shipped one (family solvers, then the middle-value
-rule, else D). Its figures, on the v2 options of 15 Nov 2026 (v1 of 14 Nov in brackets):
+- the final test is **20 different problems, one language each, levels 0 to 7, 4 with a
+  figure**, in the same parquet format as M3Kang (`id`, `level`, `language`, `text_only`,
+  `image`, `text`, `label`);
+- **they run it with our `predict.py` on the board after the 12:00 last call**: at most 60 s
+  per problem, no network, nobody from the team at the keyboard;
+- the file is prepared with our own script on a laptop, the command they give is ours.
 
-- validation, English: 70/281 = 24.9%, always D 64/281 = 22.8% (v1: 77 = 27.4%, always D 65);
-- validation, Catalan: 70/281 = 24.9% (v1: 73);
-- official run on the board, 562 problems: 140/562 = 24.9%, always D 130 (v1: 150 = 26.7%).
+### The policy that runs (team decision, 15 Nov)
 
-**PENDING:** an abstention of the rule when the five values are printed in order
-(`MIDDLE_VALUE_SKIP_ORDERED=1`) gave 80/281 in both languages and 159/562 on the board; it is
-switched on only if the reviewer confirms it.
+On the practice set the M3Kang priors are worth nothing: 84 of the 86 numeric option sets are
+printed in order, so the middle value is almost always C, and with balanced letters any fixed
+letter scores 20/100 (shipped policy 16/100, ordered-values abstention 20, learned prior 18,
+no family solver fires). The only policy above a fixed letter is the brief reasoning of the
+0.8B itself: **25/100** on the laptop (the stage decides on 57 rows and gets 15; the rest fall
+through to the middle value), about **35 s per problem on the board, worst seen 45 s**, so 20
+problems take about 12 minutes. `config.env` on `main` therefore ships `THINK_LEVELS=all`,
+`THINK_TEXT_ONLY=0`, `THINK_STYLE=short`, `THINK_BUDGET_SECONDS=45`. `predict.py` resumes
+(rows keyed by id and language), so a reboot in the middle costs one problem, not the file.
+The figures of the M3Kang validation are in `docs/results-A.md` ("Data v2"); the practice-set
+figures and the tuning runs in `docs/reason-experiments.md`.
 
-### Procedure on the board
+To run the shipped M3Kang policy instead (0.2 s per problem, 20/100 on the practice set):
+`THINK_LEVELS= python3 predict.py ...` (the variable empty). Never mix policies inside one
+CSV: if the policy changes, start again with `--fresh`.
 
-1. Copy the exam file to the board (laptop; `[?]` = the file name they give us):
+### Procedure, end to end (rehearsed on the practice set)
 
-```bash
-adb push [?]exam.jsonl /home/arduino/Datathon-UPC-2026/data/exam.jsonl
-```
-
-   If the exam comes with images, push the folder too; `predict.py` never reads them (the
-   pipeline is text-only), so a missing image changes nothing.
-
-2. Check the file: one JSON object per line, the same fields as `data/sample_problems.jsonl`
-   (`id`, `language`, `level`, `text`, `options`; `label` may be absent):
-
-```bash
-adb shell 'cd ~/Datathon-UPC-2026 && wc -l data/exam.jsonl && head -c 300 data/exam.jsonl && python3 -c "import json,sys; ids=[json.loads(l)[\"id\"] for l in open(\"data/exam.jsonl\") if l.strip()]; print(len(ids), \"rows\", len(set(ids)), \"distinct ids\")"'
-```
-
-3. Nothing else may use the model servers (close every rehearsal tab, no `eval.py` running,
-   the demo page idle):
-   the 54 s and 41 s outliers in `docs/results-A.md` §10 came from foreign requests queued on
-   the LLM. The shipped policy (`SOLVERS=1`, `MIDDLE_VALUE=1`, `LETTER_MODEL=0`) calls the
-   model only inside a family solver, so the run is mostly milliseconds per problem.
-
-4. Run it from the repository root on the board, in a shell that survives a dropped `adb`
-   (`nohup`), and watch the progress lines:
+1. On a laptop with the preparation environment (`laptop/requirements.txt`: pyarrow,
+   RapidOCR; on the team's Mac the working one is Python 3.12 in
+   `.claude/worktrees/data-4d5bfe/.venv`; `python3 -m venv .venv && pip install -r
+   laptop/requirements.txt` builds a fresh one, RapidOCR downloads its models on first use, so
+   build it before the last call), from the repository root, with their parquet:
 
 ```bash
-adb shell 'cd ~/Datathon-UPC-2026 && nohup python3 predict.py --input data/exam.jsonl --output results/exam-predictions.csv > results/exam-run.log 2>&1 &'
+python3 laptop/prepare_m3kang.py --parquet /path/to/final.parquet --languages eng,cat --val-fraction 0 --out data/final --save-images
+```
+
+   About 1 s per row (OCR of the options; the 100 practice rows took 54 s). Expected at the
+   end: `versions with 5 options 20/20 (100%)`. Fewer means an option set the OCR missed: the
+   row still gets a letter (the policy falls through), nothing breaks.
+
+2. Copy the file and the images to the board:
+
+```bash
+adb push data/final/train.jsonl /home/arduino/Datathon-UPC-2026/data/final/train.jsonl
 ```
 
 ```bash
-adb shell 'tail -f /home/arduino/Datathon-UPC-2026/results/exam-run.log'
+adb push data/final/images /home/arduino/Datathon-UPC-2026/data/final/
 ```
 
-   Each line prints `[n/N] id -> letter in X s, board est. Y s (status)`. The CSV falls in
-   `results/exam-predictions.csv` on the board, columns `id, language, answer, seconds, status`,
-   flushed after every problem (a crash keeps the rows done so far).
+3. Nothing else may use the model servers: the demo page idle on the start screen, no
+   `eval.py`, no rehearsal tab. The stage needs the whole LLM for itself.
 
-5. When it ends, check **one row per id**, every answer a letter A to E, no row over 60 s:
+4. Run it on the board from the repository root and watch the progress lines:
+
+```bash
+adb shell 'cd ~/Datathon-UPC-2026 && python3 predict.py --input data/final/train.jsonl --output results/final-predictions.csv 2>&1 | tee results/final-run.log'
+```
+
+   Each line prints `[n/N] id -> letter in X s, board est. Y s (status)`; the CSV is flushed
+   after every problem. 20 problems: about 12 minutes. If `adb` drops, the process dies with
+   it: rerun the same command, it resumes.
+
+5. Check one row per (id, language), every answer a letter, no row over 60 s:
 
 ```bash
 adb shell 'cd ~/Datathon-UPC-2026 && python3 -c "
 import csv,json
-ids=[json.loads(l)[\"id\"] for l in open(\"data/exam.jsonl\") if l.strip()]
-rows=list(csv.DictReader(open(\"results/exam-predictions.csv\")))
-print(len(ids),\"problems\",len(rows),\"rows\")
-got={r[\"id\"] for r in rows}; print(\"missing:\",[i for i in ids if i not in got][:10])
+keys=[(json.loads(l)[\"id\"],json.loads(l).get(\"language\",\"\")) for l in open(\"data/final/train.jsonl\") if l.strip()]
+rows=list(csv.DictReader(open(\"results/final-predictions.csv\")))
+print(len(keys),\"problems\",len(rows),\"rows\")
+got={(r[\"id\"],r[\"language\"]) for r in rows}; print(\"missing:\",[k for k in keys if k not in got][:10])
 print(\"not a letter:\",[r[\"id\"] for r in rows if r[\"answer\"] not in list(\"ABCDE\")][:10])
 print(\"over 60 s:\",[(r[\"id\"],r[\"seconds\"]) for r in rows if float(r[\"seconds\"])>60])
 print(\"slowest:\",sorted(((float(r[\"seconds\"]),r[\"id\"]) for r in rows))[-3:])
 print(\"status:\",{s:sum(1 for r in rows if r[\"status\"]==s) for s in {r[\"status\"] for r in rows}})"'
 ```
 
-6. Pull the CSV to the laptop and keep two copies (laptop and a USB stick):
+6. Pull the CSV to the laptop and keep two copies:
 
 ```bash
-adb pull /home/arduino/Datathon-UPC-2026/results/exam-predictions.csv ./exam-predictions.csv
+adb pull /home/arduino/Datathon-UPC-2026/results/final-predictions.csv ./final-predictions.csv
 ```
 
 ### If a problem approaches 60 s
 
-`predict.py` enforces `TIME_LIMIT_SECONDS=60` itself: a problem that runs out answers
-`FALLBACK_ANSWER` (D) with a status other than `ok`, so the row is never missing. Worst
-measured on the full validation set: 38.7 s (a problem routed to a family whose extraction
-then matched no option). If the log shows one problem past 45 s: do not stop the run; note the
-id; after the run, check in the CSV that its status says why. If several problems are slow in a
-row, something else is using the LLM: `adb shell 'journalctl -u math-llm -n 20'` shows the
-foreign requests, and the run is repeated once they stop. Only if the organisers allow a rerun.
+The stage budgets itself (`THINK_BUDGET_SECONDS=45` minus what the problem already cost, HTTP
+timeout 57 s) and `predict.py` enforces `TIME_LIMIT_SECONDS=60`: a problem that runs out
+answers with the fallback policy and a status other than plain `ok`, so the row is never
+missing. Worst seen on the board with the stage on: 45 s. If one problem passes 50 s, do not
+stop the run; if several do in a row, something else is using the LLM (`adb shell
+'journalctl -u math-llm -n 20'`).
 
 ### If the board restarts or a row is missing: rerun the same command
 
-`predict.py` **resumes** (main 7833e4d): when `--output` already exists it keeps the rows it
-holds and answers only the ids that are missing, in input order; a restart in the middle of
-the exam costs the problem in flight, not the file. So after a crash or a reboot, run step 4
-again, unchanged. `--fresh` throws the CSV away and starts over: never on exam day.
+`predict.py` **resumes**: when `--output` already exists it keeps the rows it holds and answers
+only the (id, language) pairs that are missing, in input order. After a crash or a reboot, run
+step 4 again, unchanged. `--fresh` throws the CSV away and starts over: only to change policy.
 
-### Which policy runs: checklist (decision after `docs/reviews/review-reason-think.md`)
+### Rehearsal with the practice set
 
-The exam policy is the current one: family solvers, the middle-value rule, else D
-(`THINK_LEVELS=` empty in `config.env`), about 2 minutes for 562 problems. The brief-reasoning
-stage (`copilot/think.py`) stays **off** unless, on the day, all of this holds:
-
-- [ ] `predict.py` resumes (it does, since 7833e4d; check `python3 predict.py --help` shows `--fresh`).
-- [ ] A run as long as the exam has finished on the board without a reboot (rehearse it the
-      day before with `data/val.jsonl`, 562 problems, under the chosen variant).
-- [ ] Someone from the team watches the run from start to end (the log of step 4 open).
-- [ ] The organisers set no total time cap that the variant would break (table below).
-- [ ] The run is ours: if the organisers run `predict.py` themselves, unattended, it stays off.
-
-Variant A, the default (nothing to set; this is what `config.env` on main does):
+The whole procedure above was run on 15 Nov with `data/demo/train.jsonl` (the 100 practice
+rows, prepared and pushed exactly as in steps 1 and 2): `predict.py` with the shipped policy
+took 0.5 s for the 100 rows; the brief-reasoning run on the board is in
+`results/ablations.csv` (`practica-board-think-short-all`). To repeat it:
 
 ```bash
-adb shell 'cd ~/Datathon-UPC-2026 && nohup python3 predict.py --input data/exam.jsonl --output results/exam-predictions.csv > results/exam-run.log 2>&1 &'
+adb shell 'cd ~/Datathon-UPC-2026 && python3 predict.py --input data/demo/train.jsonl --output results/practica-predictions.csv --fresh 2>&1 | tail -3'
 ```
-
-Variant B, brief reasoning on levels 2 to 5 including problems with a figure (expected about
-+2 points, bootstrap tail below zero 6%), only with every box above ticked:
-
-```bash
-adb shell 'cd ~/Datathon-UPC-2026 && THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0 nohup python3 predict.py --input data/exam.jsonl --output results/exam-predictions.csv > results/exam-run.log 2>&1 &'
-```
-
-A third variant, the stage on every level (21 s per problem, measured), was not chosen: the
-same expected gain for twice the exposure. Never mix variants inside one CSV (the resume keeps
-rows from the earlier run): if the variant changes, start from `--fresh` and from the top.
-
-| problems | A: solvers + middle value (0.4 s each) | B: brief reasoning, levels 2-5 (10.7 s each) | every level (21 s each, not chosen) |
-| ---: | ---: | ---: | ---: |
-| 100 | under 1 min | 18 min | 35 min |
-| 300 | 2 min | 54 min | 1 h 45 min |
-| 562 | 4 min (measured about 2 min on the board) | 1 h 40 min | 3 h 17 min |
-
-The per-problem figures are means on the board (`docs/results-A.md`, the review above); the
-worst single problem stays under 60 s in every variant (budgets `THINK_BUDGET_SECONDS=45`,
-`SOLVER_BUDGET_SECONDS=42`, HTTP timeout 57 s).
-
-### Questions for the organisation (ask today)
-
-1. **Size:** how many problems, and how many per language and level? (It sets the run time:
-   at 0.38 s mean, 500 problems take about 3 minutes; the worst single problem about 40 s.)
-2. **Format:** the same JSONL as `data/sample_problems.jsonl` (`id`, `language`, `level`,
-   `text`, `options` as a dict A to E)? Are images included, and may a problem need its image?
-   Which languages (Catalan, English, both, others)? Is `label` absent?
-3. **Time allowed:** per problem (the README says 60 s) and in total for the whole file? Does
-   the clock include loading the models, or only `predict.py`'s own run?
-4. **Where it runs:** on our board in front of them, or do we deliver the CSV? If on the board,
-   do they bring the file on a USB stick or over the network, and may we keep the services
-   already running?
-5. **Scoring:** does an empty or non-letter answer count as wrong (we always answer a letter),
-   is there a penalty for wrong answers (Kangaroo style) or plain accuracy, and are the two
-   languages of one problem scored as two items?
-6. **Reruns:** if the board crashes or a row is missing, may we rerun on the missing ids?
-7. **Policy freeze:** is the `config.env` of the submitted commit what is graded, or may the
-   run use a later commit?
-

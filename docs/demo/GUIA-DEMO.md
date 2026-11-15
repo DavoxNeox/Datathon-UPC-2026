@@ -118,19 +118,25 @@ La frase que lo resume: "el 0,8B no sabe resolver problemas Cangur, así que el 
 deja intentarlo: enseña, y la única ganancia de Reason que entregamos es un prior sobre cómo se
 construyen los distractores".
 
-## 7. La parte Reason, si piden verla
+## 7. La parte Reason y el examen
 
-En el portátil, por el túnel USB, o en la propia placa:
+Si el jurado quiere ver `predict.py`, en el portátil por el túnel USB:
 
 ```bash
-adb shell 'cd /home/arduino/Datathon-UPC-2026 && python3 predict.py --input data/sample_problems.jsonl --output /tmp/demo.csv --fresh && cat /tmp/demo.csv'
+adb shell 'cd /home/arduino/Datathon-UPC-2026 && THINK_LEVELS= python3 predict.py --input data/sample_problems.jsonl --output /tmp/demo.csv --fresh && cat /tmp/demo.csv'
 ```
 
-Cinco problemas en menos de un segundo, una fila por problema con letra, segundos y estado.
-Para el examen: el mismo comando con el fichero de la organización; si la placa se reinicia a
-mitad, se relanza igual y continúa donde estaba (`--fresh` solo para empezar de cero). La
-política del examen y la lista de condiciones para encender el razonamiento breve están en
-`runbook.md`, sección "El examen".
+Cinco problemas en menos de un segundo con la política de M3Kang (la variable vacía la fuerza),
+una fila por problema con letra, segundos y estado.
+
+El examen lo ejecuta la organización con nuestro `predict.py` en la placa tras el last call de
+las 12:00: 20 problemas, un idioma cada uno, 4 con figura, 60 s por problema. La política que
+sale en `main` es el razonamiento breve del modelo en todos los niveles (en el set de práctica
+25/100 frente a 20 de cualquier letra fija; unos 35 s por problema en la placa, 12 minutos los
+20). El procedimiento completo, preparado y ensayado con su set de práctica, está en
+`runbook.md`, sección 11: preparar el parquet en el portátil con el entorno de OCR, copiar a la
+placa, ejecutar, comprobar una fila por problema. Si la placa se reinicia a mitad, se relanza el
+mismo comando y continúa donde estaba.
 
 ## 8. Si algo falla (resumen; detalle en `contingency.md`)
 
