@@ -110,7 +110,7 @@ Memoriza estas cifras; están en `docs/reason-experiments.md` (set de práctica,
 | política del examen (programa Python escrito por el modelo, traducción previa al inglés, intérprete restringido, razonamiento breve de respaldo), portátil | 38/100 |
 | la misma política en la placa, tiempos reales, 20 filas | 8 de 20, frente a 5 del razonamiento breve en las mismas filas; muestra pequeña |
 | tiempo de esa corrida | 29 s de media, 49 s el peor, unos 10 minutos los 20 problemas |
-| historia, M3Kang (opciones v2): el modelo eligiendo la letra | 21,7 %, como el azar |
+| historia, M3Kang: el modelo eligiendo la letra | 21,7 % (opciones v1, no repetido), como el azar |
 | historia, M3Kang: política del valor central | 70/281 = 24,9 % en validación, 140/562 = 24,9 % en la placa (siempre D 130) |
 | velocidad de la placa | 11,4 tokens/s leyendo, 5,6 escribiendo |
 | cada paso de la demo dentro de la placa | menos de 0,5 s; una pista del modelo, 10 a 16 s |
