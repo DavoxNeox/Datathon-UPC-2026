@@ -2,7 +2,7 @@
 # Demo pre-flight: from the laptop, check the board end to end and leave it ready for the pitch.
 #
 #   dev/demo_preflight.sh            # check everything, rehearse both demo chains, forget the rehearsal aliases
-#   dev/demo_preflight.sh --clean    # same, and first wipe data/students.db on the board (app stop / rm / start)
+#   dev/demo_preflight.sh --clean    # same, and first wipe data/students.db and data/rung0.json on the board (app stop / rm / start)
 #   dev/demo_preflight.sh --no-chains   # skip the chain rehearsal (faster)
 #
 # Every line is "ok", "FAIL" or "note". A FAIL names the section of docs/demo/contingency.md to read.
@@ -38,9 +38,9 @@ done
 
 echo "== 3. The app"
 if [ "$CLEAN" = 1 ]; then
-  note "wiping data/students.db on the board"
+  note "wiping data/students.db and data/rung0.json (the rung-0 statistics) on the board"
   board "export TMPDIR=/tmp; arduino-app-cli app stop $APP" >/dev/null
-  board "rm -f $REPO/data/students.db"
+  board "rm -f $REPO/data/students.db $REPO/data/rung0.json"
 fi
 ps=$(board 'export TMPDIR=/tmp; arduino-app-cli app ps' | grep -c "$APP.*running")
 if [ "$ps" = 0 ]; then

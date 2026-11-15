@@ -54,7 +54,7 @@ del repo en el portátil:
 dev/demo_preflight.sh --clean
 ```
 
-`--clean` borra la base de alumnos de la placa (los alias de los ensayos aparecerían en la vista
+`--clean` borra la base de alumnos de la placa y el fichero de estadísticas del peldaño 0 (`data/rung0.json`, la tabla del pie de la vista del profesor) (los alias de los ensayos aparecerían en la vista
 del profesor). El chequeo hace, en este orden: USB, los tres servicios y los dos modelos, la app,
 las tres páginas por el túnel USB, la matriz LED (mira la placa: 2 segundos encendida entera y
 después un tick), las dos cadenas de la demo con sus pistas (eso además calienta el índice, que

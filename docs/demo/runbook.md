@@ -2,7 +2,7 @@
 
 **Shortcuts.** `dev/demo_preflight.sh` runs steps 1 to 6 below in one command from the laptop
 (USB, the three services, the app, both pages, the LED, the two chains, the rehearsal aliases;
-`--clean` first wipes `data/students.db` on the board, `--no-chains` skips the chain rehearsal);
+`--clean` first wipes `data/students.db` and `data/rung0.json` on the board, `--no-chains` skips the chain rehearsal);
 every line prints `ok`, `FAIL` or `note`, and a `FAIL` names the row of `contingency.md` to read.
 `docs/demo/GUIA-DEMO.md` is the one-person guide in Spanish (the 3-minute order, the clicks one
 by one on the current interface, the numbers, the Reasoning half, plan B in short). This runbook
@@ -87,7 +87,7 @@ Expected: JSON starting with `{"student": ..., "started": false`.
 
 ## 5. Clean state: forget every rehearsal alias (t = 5 min)
 
-Every pseudonym played in a rehearsal is still in the board's `data/students.db`, and the
+Every pseudonym played in a rehearsal is still in the board's `data/students.db` (and its rung-0 uses in `data/rung0.json`, the table at the foot of the teacher view), and the
 teacher view lists them all. Two ways to clean, pick one:
 
 - **From the page**, one alias at a time: if a problem is shown, open the menu (three-bar icon, top left) and press **Canvia d'alumne**
@@ -102,7 +102,7 @@ adb shell 'TMPDIR=/tmp arduino-app-cli app stop user:math-copilot'
 ```
 
 ```bash
-adb shell rm -f /home/arduino/Datathon-UPC-2026/data/students.db
+adb shell rm -f /home/arduino/Datathon-UPC-2026/data/students.db /home/arduino/Datathon-UPC-2026/data/rung0.json
 ```
 
 ```bash
