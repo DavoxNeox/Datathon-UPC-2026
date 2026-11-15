@@ -2,17 +2,17 @@
 
 Structure suggested by the organisers: problem (20 s), live demo (90 s), numbers (40 s),
 lessons (30 s). Catalan first (the jury is local), English below. Every number in the
-"numbers" block comes from `docs/results-A.md` or `docs/error-analysis.md` with its n. Time
+"numbers" block comes from `docs/results-A.md`, `docs/reason-experiments.md` or `docs/error-analysis.md` with its n. Time
 stamps are cumulative inside each block and assume **2.4 words per second** (12 words every
 5 s, a calm pace); the word counts below are of the spoken text only.
 
 | block | Catalan words | at 2.4 w/s | budget |
 | --- | ---: | ---: | ---: |
 | problem | 49 | 20 s | 20 s |
-| demo (narration; the clicks and the LED fill the rest) | 194 | 81 s | 90 s |
-| numbers (the placeholder counted as 12 words) | 96 | 40 s | 40 s |
+| demo (narration; the clicks and the LED fill the rest) | 196 | 82 s | 90 s |
+| numbers | 96 | 40 s | 40 s |
 | lessons | 72 | 30 s | 30 s |
-| **total** | **411** | **171 s** | **180 s** |
+| **total** | **413** | **172 s** | **180 s** |
 
 **Grading (rules changed on 14 Nov 2026):** 50% Reasoning, an objective test exam corrected
 from `predict.py`'s CSV (`runbook.md` §11), and 50% Teaching, judged by the jury in these
@@ -20,17 +20,18 @@ three minutes. The script presents both halves as what they are.
 
 ## What the jury must notice (five lines)
 
-1. **The model never reasons, and that is a virtue here:** measured at chance level (21.7% vs
-   23.1% always D on v1, 22.8% on v2), so nothing on stage waits for it, nothing it says can be wrong.
+1. **The small model does not reason in text, and that is a virtue on stage:** measured at chance
+   level (21.7% on M3Kang), so nothing on stage waits for it, nothing it says can be wrong; what
+   works is making it write a short program that the board runs, exact when it is right.
 2. **The student reasons:** three hints and a lesson, climbed on demand; the answer never
    appears before the student commits.
 3. **M3Kang is the teacher:** the neighbour hint, the correction and the level come from the
    dataset's own labels and structure, not from generated text.
 4. **Everything runs offline on the board:** one USB cable, and the page's own timing table
    shows real seconds per step (under a second).
-5. **The Reasoning half is deterministic and honest:** solvers plus the middle-value rule,
-   24.9% on validation (v1: 27.4%), a prior about distractors; the brief-reasoning experiment is reported
-   only when measured.
+5. **The Reasoning half is measured and honest:** the exam policy is a program the model writes
+   and the board runs (38/100 on the practice set on the laptop; 8 of 20 on the board against 5
+   for brief reasoning, a small sample), numbers and limits included.
 
 Four voices. The team decides who is who (see the report); the roles are:
 
@@ -57,7 +58,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | --- | --- |
 | 0 | Un problema del Cangur, una placa de quatre gigues i cap connexió a internet. |
 | 5 | El copilot no resol els problemes per l'alumne: l'ensenya a raonar amb pistes, dins la placa. |
-| 13 | Vam mesurar si el model podia raonar. No pot. A l'examen responen regles; a l'aula, M3Kang fa de professor. |
+| 13 | Vam mesurar si el model podia raonar. No pot. A l'examen, el model escriu un programa; a l'aula, M3Kang fa de professor. |
 | 20 | *(V1 aixeca la placa; V2 comença)* |
 
 ### 2. La demo (90 s), V2 parla, V3 clica, V1 sosté la placa
@@ -79,9 +80,8 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 | s | text | font |
 | --- | --- | --- |
-| 0 | Dues meitats. Raonament: el model sol encerta vint-i-un coma set per cent, menys que respondre sempre D. Per això a l'examen no el cridem. | results-A §1 (n = 281), §2 |
-| 10 | Responem amb solucionadors deterministes i la regla del valor central: setanta de dos-cents vuitanta-un en validació, vint-i-quatre coma nou; cent quaranta de cinc-cents seixanta-dos a la placa, contra cent trenta de sempre D. Un prior sobre els distractors, no raonament: amb la lectura millorada de les opcions, el seu guany sobre sempre D a la placa ha baixat de vint a deu. | results-A "Data v2" (15 Nov, OCR v2 options). Val eng 70/281 = 24.9% vs 64/281 = 22.8% always D (v1: 77 = 27.4% vs 65 = 23.1%). Val cat 70/281 = 24.9% (v1: 73). Board 140/562 = 24.9% vs 130 always D (v1: 150 = 26.7%), gain +10 (v1: +20). The v1 bootstrap of the gain, -2 to +26, was not recomputed on v2. |
-| 24 | [PENDENT: una frase amb el resultat de l'experiment de raonament breu, quan estigui mesurat.] | experiment in progress (branch reason-predict); say nothing if no number |
+| 0 | Dues meitats. Raonament: el model petit no raona en text; sol, a M3Kang, encerta vint-i-un coma set per cent, l'atzar. La regla del valor central arribava a vint-i-quatre coma nou. | results-A §1 (n = 281); history only: M3Kang middle value, v2 options, val 70/281 = 24.9%, board 140/562 |
+| 13 | Per a l'examen li fem escriure un programa Python curt, que la placa executa en un intèrpret restringit: exacte quan encerta. A la placa, vuit de vint, contra cinc del raonament breu; vint-i-nou segons de mitjana, mai més de seixanta. | reason-experiments "The exam setting on the board": 8/20 vs 5/20 on the same 20 rows (small sample), mean 29.1 s, worst 49.4 s, 9.7 min; laptop 38/100 on the 100 practice rows, any fixed letter 20/100, M3Kang policy 16/100, brief reasoning alone 27/100 on the board (33 s) |
 | 30 | Ensenyament: les pistes no gasten model, un embedding triga zero coma dotze segons, i cada temps que heu vist és real, de la placa. | results-A §10; the page's "Temps (per al professor)" table |
 | 40 | *(V4 parla)* | |
 
@@ -116,7 +116,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | --- | --- |
 | 0 | A Kangaroo problem, a four-gigabyte board and no internet connection. |
 | 5 | The copilot does not solve problems for the student: it teaches them to reason with hints, on the board. |
-| 13 | We measured whether the model could reason. It cannot. In the exam, rules answer; in class, M3Kang is the teacher. |
+| 13 | We measured whether the model could reason. It cannot. In the exam, it writes a program; in class, M3Kang is the teacher. |
 | 20 | *(V1 lifts the board; V2 starts)* |
 
 ### 2. The demo (90 s), V2 speaks, V3 clicks, V1 holds the board
@@ -138,11 +138,10 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 
 | s | text | source |
 | --- | --- | --- |
-| 0 | Two halves. Reasoning: the model alone gets twenty-one point seven percent, less than always answering D. So in the exam we never call it. | results-A §1 (n = 281), §2 |
-| 10 | We answer with deterministic solvers and the middle-value rule: seventy of two hundred and eighty-one on validation, twenty-four point nine; one hundred and forty of five hundred and sixty-two on the board, against one hundred and thirty for always D. A prior about distractors, not reasoning: with the better reading of the options, its gain over always D on the board fell from twenty to ten. | results-A "Data v2" (15 Nov, OCR v2 options). Val eng 70/281 = 24.9% vs 64/281 = 22.8% always D (v1: 77 = 27.4% vs 65 = 23.1%). Val cat 70/281 = 24.9% (v1: 73). Board 140/562 = 24.9% vs 130 always D (v1: 150 = 26.7%), gain +10 (v1: +20). The v1 bootstrap of the gain, -2 to +26, was not recomputed on v2. |
-| 26 | [PENDING: one sentence with the result of the brief-reasoning experiment, once measured.] | experiment in progress (branch reason-predict); say nothing if no number |
-| 31 | Teaching: the hints spend no model time, one embedding takes zero point one two seconds, and every time you saw is real, from the board. | results-A §10; the page's "Temps (per al professor)" table |
-| 41 | *(V4 speaks)* | |
+| 0 | Two halves. Reasoning: the small model does not reason in text; alone, on M3Kang, it gets twenty-one point seven percent, chance. The middle-value rule reached twenty-four point nine. | results-A §1 (n = 281); history only: M3Kang middle value, v2 options, val 70/281 = 24.9%, board 140/562 |
+| 13 | For the exam we make it write a short Python program, and the board runs it in a restricted interpreter: exact when it is right. On the board, eight of twenty, against five for brief reasoning; twenty-nine seconds on average, never over sixty. | reason-experiments "The exam setting on the board": 8/20 vs 5/20 on the same 20 rows (small sample), mean 29.1 s, worst 49.4 s, 9.7 min; laptop 38/100 on the 100 practice rows, any fixed letter 20/100, M3Kang policy 16/100, brief reasoning alone 27/100 on the board (33 s) |
+| 30 | Teaching: the hints spend no model time, one embedding takes zero point one two seconds, and every time you saw is real, from the board. | results-A §10; the page's "Temps (per al professor)" table |
+| 40 | *(V4 speaks)* | |
 
 > **Pending, to decide:** the "before and after" measurement with people is not done (protocol
 > in `docs/teach-measurement.md`, n = 15 answers per condition, 30 minutes on the board). If it

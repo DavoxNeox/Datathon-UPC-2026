@@ -6,26 +6,27 @@ offline, with M3Kang as the teacher.** Graded in two halves: a Reasoning exam co
 
 ## Reasoning half: deterministic, measured, honest
 
-`predict.py` never calls the language model for a letter (its letter was measured at chance:
-21.7% on 281 validation problems, on the v1 options, not repeated;
-always D is 22.8% on the v2 options, 23.1% on v1;
-and its confidence anti-correlated with being right).
-It answers with deterministic family solvers (grammar-constrained extraction, exactly-one-option
-check) and, otherwise, the **middle-value rule**: when the five options are numeric, the middle
-one, else D. Measured on the v2 options (15 Nov 2026; v1 of 14 Nov in brackets):
-- validation, English: **70/281 = 24.9%**, always D 64/281 = 22.8% (v1: 77 = 27.4% against 65 = 23.1%);
-- validation, Catalan: **70/281 = 24.9%**, always D 65/281 (v1: 73);
-- official run on the board, both languages: **140/562 = 24.9%**, always D 130/562 (v1: 150 = 26.7%);
-- timing from the 14 Nov run: mean 0.38 s, worst 38.7 s, none over 60 s.
+The small model does not reason in text: its letter was measured at chance (21.7% on 281 M3Kang
+validation problems), and its confidence anti-correlated with being right. What works is making it
+write a short Python program that the board runs. The **exam policy** (15 Nov 2026): the model
+translates the statement into English, writes a program, the board runs it in a restricted
+interpreter and the value has to equal one of the five options (exact when it is right); brief
+reasoning is the backup when the program gives no letter, then the middle value, else D.
+Measured on the organisers' practice set (50 problems in two languages, 100 rows, 20 rows per
+correct letter), one run per setting:
+- any fixed letter: **20/100**;
+- the M3Kang policy (middle value, else D): **16/100** (every numeric option set is printed in order, so the middle value is C);
+- brief reasoning of the model alone, on the board: **27/100**, 33 s per problem;
+- exam policy, on the laptop: **38/100** (the program decides 30 rows, 20 right);
+- exam policy, on the board with real seconds, 20 rows: **8/20** against 5/20 for brief reasoning on the same rows; mean 29 s, worst 49 s, about 10 minutes for the 20 exam problems.
 
-The gain is a prior about how Kangaroo distractors are built, not reasoning: it fell from +20
-to +10 problems on the board when the OCR of the options improved (v2 reads five options on 89%
-of the validation versions, v1 on 60%), so a hidden exam may hand more of it back (the v1
-bootstrap of the gain over always D on validation was -2 to +26 problems; not recomputed on v2).
-The rule never enters the hints. *[Brief-reasoning experiment: result pending; reported only once measured.]*
+Twenty rows is a small sample, and the exam is 20 problems: the expectation is a few points above
+a fixed letter, not a promise. For history, the M3Kang policy (the middle value, a prior about how
+Kangaroo distractors are built, not reasoning) scored 70/281 = 24.9% on validation and 140/562 on
+the board with the v2 options. The program stage never enters the hints.
 
-The 0.8B language model cannot solve Kangaroo problems (we measured it: chance level). So it
-never reasons. The copilot corrects with the M3Kang labels, picks the next problem at the
+The 0.8B language model cannot solve Kangaroo problems in text (we measured it: chance level). So on
+stage it never reasons. The copilot corrects with the M3Kang labels, picks the next problem at the
 student's level, and offers a ladder of hints built from the dataset itself: an easier
 neighbour problem found by embeddings, a strategy card, and the solution only on request.
 The LED matrix shows a tick or a cross and the mastery map; the teacher view shows every
@@ -35,9 +36,9 @@ student by topic and level.
 
 | | number | n |
 | --- | --- | --- |
-| Model's letter, English validation | **21.7%** (61 right, v1 options, not repeated) vs **22.8%** always D on v2 (23.1% on v1) | 281 problems |
+| Model's letter, M3Kang English validation | **21.7%** (61 right): chance level | 281 problems |
 | Most confident quarter of the model | **16.9%** right: confidence anti-correlated with truth | 70 of 281 |
-| Official run on the board, both languages | **140/562 = 24.9%** vs 130 always D (v2 options; v1: 150 = 26.7%); eng 70/281, cat 70/281 | 562 problems |
+| Practice set, any fixed letter / M3Kang policy / exam policy (laptop) | **20** / **16** / **38** right of 100; on the board, 20 rows: **8** vs 5 for brief reasoning, mean 29 s, worst 49 s | 100 rows, 20 on the board |
 | Template solvers, 4 families | fired on **4** of 911 training problems (3 right, 1 wrong): about +0.3 points | 911 problems |
 | The board, everything running | **2.6 GB free**, cold start **2 min**, embedding **0.12 s**, reading 11.4 tok/s, writing 5.6 tok/s | measured 14 Nov 2026 |
 
@@ -47,11 +48,11 @@ a board estimate of 0.0 s. The "before and after" with people follows the protoc
 
 ## What the jury should notice
 
-1. The model never reasons, and on this board that is a virtue: nothing waits for it, nothing it says can be wrong.
+1. The small model does not reason in text, and that is a virtue on stage: nothing waits for it, nothing it says can be wrong. What works is a short program it writes and the board runs.
 2. The student reasons: three hints and a lesson, climbed on demand; no answer before the student commits.
 3. M3Kang is the teacher: neighbour hint, correction and level come from the dataset's labels and structure.
 4. Everything is offline on the board, one USB cable; the page's timing table shows real seconds per step.
-5. The Reasoning half is deterministic and stated honestly, numbers and limits included.
+5. The Reasoning half is measured and stated honestly: a program the board executes, numbers and limits included.
 
 ## Architecture (text diagram)
 
@@ -81,12 +82,12 @@ a board estimate of 0.0 s. The "before and after" with people follows the protoc
 ## What did not work, and we say so
 
 - The model's letter carries no information (prefers D 38%, C 3% of the time); bias
-  correction made it worse (17.8%). Shipped policy: the middle value when the five options are
-  numeric, else D. That rule is a prior about how Kangaroo distractors are built (the correct
-  value usually sits between distractors above and below), not reasoning; it never enters the
-  hints, and a hidden test may hand part of the gain back (on the board it is +10 problems over always D with the v2 options, +20 with v1).
+  correction made it worse (17.8%). The middle-value rule that served M3Kang is a prior about
+  how Kangaroo distractors are built, not reasoning, and on the practice set (letters balanced,
+  options printed in order) it falls to 16/100, below any fixed letter. The exam policy is the
+  program stage with brief reasoning behind it; 8/20 against 5/20 on the board is a small sample.
 - Kangaroo problems are not templated: parametric solvers fire on about 1 problem in 20 of
-  their own family. The Reason track stays at the always-D floor.
+  their own family; the program stage is what lifted the practice set.
 - The model's one-sentence hint is off in Catalan until its judged quality passes 70%.
 
 ## Next
