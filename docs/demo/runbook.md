@@ -195,6 +195,17 @@ format, answered by `predict.py` and corrected from its CSV. The details of the 
 procedure are not known yet; the blanks below are marked `[?]` and the questions to ask the
 organisation **today** are at the end of this section.
 
+The policy that goes to the exam is the shipped one (family solvers, then the middle-value
+rule, else D). Its figures, on the v2 options of 15 Nov 2026 (v1 of 14 Nov in brackets):
+
+- validation, English: 70/281 = 24.9%, always D 64/281 = 22.8% (v1: 77 = 27.4%, always D 65);
+- validation, Catalan: 70/281 = 24.9% (v1: 73);
+- official run on the board, 562 problems: 140/562 = 24.9%, always D 130 (v1: 150 = 26.7%).
+
+**PENDING:** an abstention of the rule when the five values are printed in order
+(`MIDDLE_VALUE_SKIP_ORDERED=1`) gave 80/281 in both languages and 159/562 on the board; it is
+switched on only if the reviewer confirms it.
+
 ### Procedure on the board
 
 1. Copy the exam file to the board (laptop; `[?]` = the file name they give us):

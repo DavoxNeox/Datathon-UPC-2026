@@ -21,7 +21,7 @@ three minutes. The script presents both halves as what they are.
 ## What the jury must notice (five lines)
 
 1. **The model never reasons, and that is a virtue here:** measured at chance level (21.7% vs
-   23.1% always D), so nothing on stage waits for it, nothing it says can be wrong.
+   23.1% always D on v1, 22.8% on v2), so nothing on stage waits for it, nothing it says can be wrong.
 2. **The student reasons:** three hints and a lesson, climbed on demand; the answer never
    appears before the student commits.
 3. **M3Kang is the teacher:** the neighbour hint, the correction and the level come from the
@@ -29,7 +29,7 @@ three minutes. The script presents both halves as what they are.
 4. **Everything runs offline on the board:** one USB cable, and the page's own timing table
    shows real seconds per step (under a second).
 5. **The Reasoning half is deterministic and honest:** solvers plus the middle-value rule,
-   27.4% on validation, a prior about distractors; the brief-reasoning experiment is reported
+   24.9% on validation (v1: 27.4%), a prior about distractors; the brief-reasoning experiment is reported
    only when measured.
 
 Four voices. The team decides who is who (see the report); the roles are:
@@ -80,7 +80,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | s | text | font |
 | --- | --- | --- |
 | 0 | Dues meitats. Raonament: el model sol encerta vint-i-un coma set per cent, menys que respondre sempre D. Per això a l'examen no el cridem. | results-A §1 (n = 281), §2 |
-| 10 | Responem amb solucionadors deterministes i la regla del valor central: setanta-set de dos-cents vuitanta-un en validació, vint-i-set coma quatre; cent cinquanta de cinc-cents seixanta-dos a la placa. Un prior sobre els distractors, no raonament. | results-A §10, middle-value run (val 77/281 = 27.4% vs 65/281 always D; board 150/562 = 26.7%; bootstrap of the gain -2 to +26) |
+| 10 | Responem amb solucionadors deterministes i la regla del valor central: setanta de dos-cents vuitanta-un en validació, vint-i-quatre coma nou; cent quaranta de cinc-cents seixanta-dos a la placa, contra cent trenta de sempre D. Un prior sobre els distractors, no raonament: amb la lectura millorada de les opcions, el seu guany sobre sempre D a la placa ha baixat de vint a deu. | results-A "Data v2" (15 Nov, OCR v2 options). Val eng 70/281 = 24.9% vs 64/281 = 22.8% always D (v1: 77 = 27.4% vs 65 = 23.1%). Val cat 70/281 = 24.9% (v1: 73). Board 140/562 = 24.9% vs 130 always D (v1: 150 = 26.7%), gain +10 (v1: +20). The v1 bootstrap of the gain, -2 to +26, was not recomputed on v2. |
 | 24 | [PENDENT: una frase amb el resultat de l'experiment de raonament breu, quan estigui mesurat.] | experiment in progress (branch reason-predict); say nothing if no number |
 | 30 | Ensenyament: les pistes no gasten model, un embedding triga zero coma dotze segons, i cada temps que heu vist és real, de la placa. | results-A §10; the page's "Temps (per al professor)" table |
 | 40 | *(V4 parla)* | |
@@ -139,7 +139,7 @@ look like) are in `docs/demo/local/demo-notes.md`, never in git.
 | s | text | source |
 | --- | --- | --- |
 | 0 | Two halves. Reasoning: the model alone gets twenty-one point seven percent, less than always answering D. So in the exam we never call it. | results-A §1 (n = 281), §2 |
-| 10 | We answer with deterministic solvers and the middle-value rule: seventy-seven of two hundred and eighty-one on validation, twenty-seven point four; one hundred and fifty of five hundred and sixty-two on the board. A prior about distractors, not reasoning. | results-A §10, middle-value run (val 77/281 = 27.4% vs 65/281 always D; board 150/562 = 26.7%; bootstrap of the gain -2 to +26) |
+| 10 | We answer with deterministic solvers and the middle-value rule: seventy of two hundred and eighty-one on validation, twenty-four point nine; one hundred and forty of five hundred and sixty-two on the board, against one hundred and thirty for always D. A prior about distractors, not reasoning: with the better reading of the options, its gain over always D on the board fell from twenty to ten. | results-A "Data v2" (15 Nov, OCR v2 options). Val eng 70/281 = 24.9% vs 64/281 = 22.8% always D (v1: 77 = 27.4% vs 65 = 23.1%). Val cat 70/281 = 24.9% (v1: 73). Board 140/562 = 24.9% vs 130 always D (v1: 150 = 26.7%), gain +10 (v1: +20). The v1 bootstrap of the gain, -2 to +26, was not recomputed on v2. |
 | 26 | [PENDING: one sentence with the result of the brief-reasoning experiment, once measured.] | experiment in progress (branch reason-predict); say nothing if no number |
 | 31 | Teaching: the hints spend no model time, one embedding takes zero point one two seconds, and every time you saw is real, from the board. | results-A §10; the page's "Temps (per al professor)" table |
 | 41 | *(V4 speaks)* | |
