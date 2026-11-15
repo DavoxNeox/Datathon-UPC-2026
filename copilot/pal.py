@@ -82,12 +82,47 @@ INSTRUCTION = "\n\nWrite the Python program."
 _STATE = {"prefix_tokens": None}
 
 
-def stable_messages():
+# Variant C (Experiment 8): a statement that is not in English is first translated into English by the model, and
+# the program is written from the translation (with English text PAL decided 21 of 100 rows and got 13 right; with
+# the Catalan text, 15 and 6). The rule is one more stable pair at the end of the block, so the translation and the
+# program share the cached prefix and the second request reads only its own last message.
+TRANSLATE = CONFIG.get("PAL_TRANSLATE", "0") != "0"
+TRANSLATE_BUDGET = float(CONFIG.get("PAL_TRANSLATE_BUDGET_SECONDS", "50") or 50)
+TRANSLATE_RATIO = 1.4       # max_tokens of the translation, per token of the statement
+# PAL_SLOT (default -1 = none): the server slot this stage's requests go to, on a server with --parallel 2 or more
+# (with LLM_DEFAULT_SLOT sending everything else to another slot). With one slot, think evicts the block after
+# every abstention and a cold block (about 27 s on the board) leaves no room for a translation.
+SLOT = int(CONFIG.get("PAL_SLOT", "-1") or -1)
+ENGLISH = {"eng", "en", "english", ""}
+# PAL_LANGUAGES: comma-separated languages the stage runs on (empty = every language), e.g. "eng".
+LANGUAGES = {x.strip().lower() for x in (CONFIG.get("PAL_LANGUAGES", "") or "").split(",") if x.strip()}
+TRANSLATE_HEADER = ("Translate this math problem into English. Keep every number, unit, name and the sentence "
+                    "structure. Output only the translation.\n")
+# Invented for this module: a worked translation, so the 0.8B sees what to do (with the rule alone it answered in
+# Spanish or echoed the Catalan).
+TRANSLATE_EXAMPLE = ("En Pere té 12 caramels i en dóna 5 a la Laia. Quants caramels li queden?",
+                     "Pere has 12 sweets and gives 5 to Laia. How many sweets does he have left?")
+
+
+def stable_messages(translate=None):
     messages = [{"role": "system", "content": SYSTEM}]
     for question, code in EXAMPLES:
         messages.append({"role": "user", "content": question})
         messages.append({"role": "assistant", "content": code})
+    if TRANSLATE if translate is None else translate:
+        messages += [{"role": "user", "content": TRANSLATE_HEADER + TRANSLATE_EXAMPLE[0]},
+                     {"role": "assistant", "content": TRANSLATE_EXAMPLE[1]}]
     return messages
+
+
+def needs_translation(problem, translate=None):
+    return bool(TRANSLATE if translate is None else translate) and \
+        str(problem.get("language") or "").strip().lower() not in ENGLISH
+
+
+def budget_for(problem):
+    """Board seconds the stage may spend on this problem: more when it has to translate first."""
+    return TRANSLATE_BUDGET if needs_translation(problem) else BUDGET
 
 
 def problem_text(problem):
@@ -125,6 +160,8 @@ def applies(problem, text_only=None):
     with PAL_TEXT_ONLY=1, no figure."""
     options = problem.get("options") or {}
     if (TEXT_ONLY if text_only is None else text_only) and not problem.get("text_only", False):
+        return False
+    if LANGUAGES and str(problem.get("language") or "").strip().lower() not in LANGUAGES:
         return False
     return bool((problem.get("text") or "").strip()) and len(options) == 5 and len(option_values(options)) >= 3
 
@@ -514,9 +551,10 @@ def count_tokens(text, url=URL, timeout=5):
 
 def prefix_tokens(url=URL):
     """Tokens of the stable block (system and examples, with their template tokens), counted once."""
-    if _STATE["prefix_tokens"] is None:
-        stable = stable_messages()
+    stable = stable_messages()
+    if _STATE["prefix_tokens"] is None or _STATE.get("prefix_len") != len(stable):
         _STATE["prefix_tokens"] = sum(count_tokens(m["content"], url) for m in stable) + 5 * len(stable)
+        _STATE["prefix_len"] = len(stable)
     return _STATE["prefix_tokens"]
 
 
@@ -528,9 +566,17 @@ def output_budget(prompt_tokens, budget, max_tokens=MAX_TOKENS):
 
 
 def prefix_cached(url=URL):
-    """True when the last chat request this process sent to that server carried this stage's stable block."""
-    import urllib.parse
-    return client.LAST_CHAT.get(urllib.parse.urlsplit(url).netloc) == stable_messages()
+    """True when the last chat request this process sent to that server (and slot) carried this stage's stable block."""
+    slot = SLOT if SLOT >= 0 else client.DEFAULT_SLOT
+    return client.LAST_CHAT.get(client.cache_key(url, slot)) == stable_messages()
+
+
+def _payload(messages, n_predict):
+    payload = {"messages": messages, "max_tokens": n_predict, "temperature": 0, "seed": int(CONFIG["SEED"]),
+               "cache_prompt": True}
+    if SLOT >= 0:
+        payload["id_slot"] = SLOT
+    return payload
 
 
 def pal_letter(problem, timeout=60, url=URL, budget=None, cold=False, max_tokens=MAX_TOKENS, min_tokens=MIN_TOKENS):
@@ -544,8 +590,7 @@ def pal_letter(problem, timeout=60, url=URL, budget=None, cold=False, max_tokens
     if n_predict < min_tokens:
         info["skipped"] = "budget"
         return None, info, {}
-    response = post(url, {"messages": messages, "max_tokens": n_predict, "temperature": 0,
-                          "seed": int(CONFIG["SEED"]), "cache_prompt": True}, timeout=timeout)
+    response = post(url, _payload(messages, n_predict), timeout=timeout)
     choice = response["choices"][0]
     content = choice["message"].get("content") or ""
     info["finish"] = choice.get("finish_reason", "")
@@ -567,12 +612,111 @@ def pal_letter(problem, timeout=60, url=URL, budget=None, cold=False, max_tokens
     return letter, info, response.get("timings", {})
 
 
+_DIGITS = re.compile(r"\d+")
+_ENGLISH_WORDS = {"the", "is", "are", "how", "many", "what", "of", "and", "has", "have", "in", "a", "an", "to", "which",
+                  "with", "each", "if", "does", "number", "numbers", "can", "be", "there"}
+_ROMANCE_WORDS = {"el", "la", "els", "les", "de", "del", "que", "és", "es", "un", "una", "amb", "en", "per", "quants",
+                  "quantes", "quin", "quina", "los", "las", "y", "cada", "són", "hi", "al", "dels", "con", "qué"}
+
+
+def looks_english(text):
+    """More English function words than Catalan/Spanish ones (the 0.8B sometimes answers in Spanish or echoes)."""
+    words = re.findall(r"[a-zà-úïüç·']+", (text or "").lower())
+    return sum(w in _ENGLISH_WORDS for w in words) > sum(w in _ROMANCE_WORDS for w in words)
+
+
+_LEAD = re.compile(r"^\s*(?:\*\*)?(?:english\s+)?translation\s*(?:\*\*)?\s*:\s*", re.I)
+
+
+def numbers_kept(source, translation):
+    """True when every digit run of the source appears in the translation at least as often (2,5 and 2.5 agree)."""
+    from collections import Counter
+    need, have = Counter(_DIGITS.findall(source or "")), Counter(_DIGITS.findall(translation or ""))
+    return all(have[n] >= k for n, k in need.items())
+
+
+def translate(problem, timeout=60, url=URL, budget=None, cold=False, min_ratio=0.8):
+    """(English statement or None, info, timings). One request on the shared stable block; max_tokens is
+    TRANSLATE_RATIO x the statement's tokens, cut further so that the program can still follow within budget.
+    None when that leaves less than min_ratio x the statement, when the output is cut, or when a number of
+    the statement is missing from the translation (the program would compute with the wrong data)."""
+    # the problem's own number ("8. ...") is not data, and the model drops it from the translation
+    text = re.sub(r"^\s*\d{1,2}\s*[.)]\s+", "", (problem.get("text") or "").strip())
+    message = {"role": "user", "content": TRANSLATE_HEADER + text}
+    messages = stable_messages() + [message]
+    cold = cold or not prefix_cached(url)
+    n_text = count_tokens(text, url)
+    prompt = count_tokens(message["content"], url) + TEMPLATE_TOKENS + (prefix_tokens(url) if cold else 0)
+    cap = math.ceil(TRANSLATE_RATIO * n_text)
+    n_predict = cap
+    if budget is not None:
+        # what the program needs afterwards: reading the translation (cap, pessimistic), the options and the
+        # instruction (about 30), and PAL_MIN_TOKENS of code, plus the 2 s the program may run
+        after = board_clock.estimate_tokens(cap + 30 + TEMPLATE_TOKENS, MIN_TOKENS) + EXEC_SECONDS
+        left = budget - board_clock.estimate_tokens(prompt) - after
+        n_predict = max(0, min(cap, math.floor(left * board_clock.GEN_TPS)))
+    info = {"skipped": "", "cold": cold, "prompt_guess": prompt, "text_tokens": n_text, "n_predict": n_predict,
+            "finish": "", "text": "", "numbers_kept": None}
+    if n_predict < math.ceil(min_ratio * n_text):
+        info["skipped"] = "budget"
+        return None, info, {}
+    response = post(url, _payload(messages, n_predict), timeout=timeout)
+    choice = response["choices"][0]
+    english = _LEAD.sub("", (choice["message"].get("content") or "").strip()).strip().strip('"').strip()
+    info.update(finish=choice.get("finish_reason", ""), text=english[:800], numbers_kept=numbers_kept(text, english),
+                english=looks_english(english))
+    timings = response.get("timings", {})
+    if info["finish"] != "stop":
+        info["skipped"] = "cut"
+        return None, info, timings
+    if not english or not info["numbers_kept"]:
+        info["skipped"] = "numbers" if english else "empty"
+        return None, info, timings
+    if not info["english"]:
+        info["skipped"] = "not_english"
+        return None, info, timings
+    return english, info, timings
+
+
+def warm_up(url=URL, timeout=60):
+    """Read the stable block into PAL's own slot (one token of output). Only with a dedicated slot, where it then
+    stays cached for the whole run: about 27 s on the board, once, charged to the problem where it happens."""
+    response = post(url, _payload(stable_messages() + [{"role": "user", "content": "Ready?"}], 1), timeout=timeout)
+    return response.get("timings", {})
+
+
+def _add_timings(a, b):
+    return {key: int(a.get(key, 0) or 0) + int(b.get(key, 0) or 0) for key in ("prompt_n", "predicted_n")}
+
+
+def translated_letter(problem, timeout=60, url=URL, budget=None, cold=False):
+    """Variant C: translate, then pal_letter on the English statement with the budget that is left."""
+    start = time.perf_counter()
+    english, tinfo, ttimings = translate(problem, timeout=timeout, url=url, budget=budget, cold=cold)
+    if english is None:
+        return None, {"translate": tinfo, "skipped": "translate: " + tinfo["skipped"]}, ttimings
+    left = None if budget is None else budget - board_clock.estimate(ttimings)
+    letter, info, timings = pal_letter(dict(problem, text=english), timeout=max(timeout - (time.perf_counter() - start), 1.0),
+                                       url=url, budget=left, cold=False)
+    info["translate"] = tinfo
+    return letter, info, _add_timings(ttimings, timings)
+
+
 def stage(problem, timeout, url, budget, cold):
-    """pal_letter for the pipeline: a server error or a time-out abstains."""
+    """pal_letter for the pipeline (after a translation when PAL_TRANSLATE=1 and the problem is not in English):
+    a server error or a time-out abstains."""
     import socket
     import urllib.error
     try:
-        letter, info, timings = pal_letter(problem, timeout=timeout, url=url, budget=budget, cold=cold)
+        run = translated_letter if needs_translation(problem) else pal_letter
+        warm = {}
+        if SLOT >= 0 and not prefix_cached(url):
+            warm = warm_up(url, timeout)
+            budget = None if budget is None else budget - board_clock.estimate(warm)
+        letter, info, timings = run(problem, timeout=timeout, url=url, budget=budget, cold=False if warm else cold)
+        if warm:
+            info["warm_up"] = {"prompt_n": warm.get("prompt_n", 0)}
+            timings = _add_timings(warm, timings)
     except (socket.timeout, TimeoutError, urllib.error.URLError) as error:
         letter, info, timings = None, {"skipped": f"error: {getattr(error, 'reason', error)}"}, {}
     except Exception as error:  # a bug here (an odd reply, an odd value) must abstain, never cost the answer
