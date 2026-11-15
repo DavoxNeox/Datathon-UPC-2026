@@ -55,6 +55,11 @@ INSTRUCTIONS = {
     # short: the same, asking for plain text and a word limit, to cut the LaTeX and the cut-offs.
     "short": ("\n\nSolve it in English in plain text, no LaTeX, at most 60 words. "
               "End with a line \"Answer: X\" where X is the letter of the correct option."),
+    # match: the same, telling the model to pick the letter by comparing its result with the option values
+    # (it often computes the right value and then names the wrong letter).
+    "match": ("\n\nSolve it in English in plain text, no LaTeX, at most 60 words. "
+              "Then compare your result with the five options and answer with the letter of the option "
+              "whose value equals your result. End with a line \"Answer: X\"."),
 }
 STYLE = CONFIG.get("THINK_STYLE", "steps") or "steps"
 INSTRUCTION = INSTRUCTIONS.get(STYLE, INSTRUCTIONS["steps"])
