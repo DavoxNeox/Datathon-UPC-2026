@@ -738,6 +738,8 @@ or three rows out of 43, noise. The fallback stays the middle value, then D.
 rows); the per-level counts (10 to 16 rows each) run from 1 to 4 right and show no stratum to
 switch off; levels 0 and 1, which lost on M3Kang validation, get 4 and 3 here.
 
+**On the board (15 Nov 2026, `eval.py --limit 0` on the 100 practice rows, real seconds, main 7ddc174 flags):** **27/100** (15 Catalan, 12 English; by level 3/16, 3/16, 2/14, 2/12, 5/12, 6/10, 4/10, 2/10), mean 33.0 s per problem, worst 45.2 s, none over 60 s, 55 minutes for the 100 rows (so about 11 minutes for the 20-problem exam). Letters answered A 11, B 11, C 44, D 16, E 18: the C surplus is the middle-value fall-through. `results/ablations.csv` on the board, run `practica-board-think-short-all`.
+
 **Recommendation for the 20-problem exam, under 60 s each:** `THINK_LEVELS=all`,
 `THINK_TEXT_ONLY=0`, `THINK_STYLE=short`, `THINK_MAX_TOKENS=200`, `THINK_BUDGET_SECONDS=45`, the
 rest as shipped. Measured here 25/100 against 16 for the shipped policy and 20 for always D,
