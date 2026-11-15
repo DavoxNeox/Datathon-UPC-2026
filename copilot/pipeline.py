@@ -7,7 +7,7 @@ import socket
 import time
 import urllib.error
 
-from . import bias, ladder, prior, solvers, think, votes
+from . import bias, ladder, pal, prior, solvers, think, votes
 from .board_clock import Clock
 from .config import CONFIG
 from .llm import URL, answer_letter, letter_scores
@@ -57,6 +57,10 @@ THINK_TEXT_ONLY = CONFIG.get("THINK_TEXT_ONLY", "1") != "0"
 # THINK_NUMERIC=0 keeps the stage to problems whose options are not five distinct numbers (the middle-value
 # prior answers those); 1 runs it on every problem with five options.
 THINK_NUMERIC = CONFIG.get("THINK_NUMERIC", "1") != "0"
+# PAL=1: the model writes a short Python program, the board runs it, and its value must equal one option
+# (copilot/pal.py, Experiment 8). Runs just before think, within PAL_BUDGET_SECONDS; when it abstains, think
+# gets only what is left of THINK_BUDGET_SECONDS. Off by default.
+USE_PAL = CONFIG.get("PAL", "0") != "0"
 
 
 LETTERS = "ABCDE"
@@ -135,6 +139,17 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
                               seconds=round(time.perf_counter() - start, 2), board_seconds=round(clock.board_seconds(), 2))
                 return result
         remaining = time_limit - (time.perf_counter() - start) - MARGIN
+        if USE_PAL and image_b64 is None and pal.applies(problem):
+            letter, info, timings = pal.stage(problem, timeout=max(remaining, 1.0), url=llm_url,
+                                              budget=pal.BUDGET - clock.board_seconds(), cold=clock.prompt_tokens > 0)
+            clock.add_llm(timings)
+            result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
+            result["extra"]["pal"] = info
+            if letter is not None:
+                result.update(answer=letter, rule="pal", seconds=round(time.perf_counter() - start, 2),
+                              board_seconds=round(clock.board_seconds(), 2))
+                return result
+            remaining = time_limit - (time.perf_counter() - start) - MARGIN
         if THINK_LEVELS and image_b64 is None and think.applies(problem, THINK_LEVELS, THINK_TEXT_ONLY, THINK_NUMERIC):
             try:
                 letter, info, timings = think.think_letter(problem, timeout=max(remaining, 1.0), url=llm_url,
