@@ -691,6 +691,61 @@ controller's call; the measured expectation is +1 to +3 points on 281 with no ti
 `learned_on`); its 76 / 76 / 90 here are on v2 problems it never saw in this form and should be
 re-learned on v2 by its owner before being compared.
 
+## The practice set (15 Nov 2026): the exam's format, 100 rows, `data/demo/train.jsonl`
+
+The organisers' practice set: 50 problems written for the datathon (not M3Kang), in English and
+Catalan (100 rows), 80 rows of text and 20 with a figure, levels 0 to 7, five options on every
+row, **20 rows per correct letter**. The final exam is 20 other problems, one language each, 4
+with a figure, run by the organisers with our `predict.py` on the board (60 s per problem, no
+network, nobody watching). Everything below is measured on these 100 rows only, on the laptop
+(board seconds from token counts), one run per setting; the controller measures real seconds on
+the board. With balanced letters, always D is 20 and 90 of the 90 numeric option sets are
+printed in ascending order, so the middle value is option C on all of them: the shipped policy
+answers C 90 times and D 10, and scores **16/100**.
+
+| setting (`THINK_LEVELS=all THINK_TEXT_ONLY=0` unless stated) | right / 100 | think answered (right) | fell through (right, by the middle value) | board s mean / max |
+| --- | ---: | --- | --- | --- |
+| shipped policy (middle value, else D) | 16 | | | 0 / 0 |
+| always D | 20 | | | 0 / 0 |
+| `THINK_STYLE=short`, cap 200, budget 45 | **25** | 57 (15 = 26%) | 43 (10) | 33.7 / 44.6 |
+| short, cap 200, budget 57 (the most the limit allows) | 25 | 61 (15) | 39 (10) | 34.7 / 49.1 |
+| `THINK_STYLE=match` ("the letter whose value equals your result"), cap 200, budget 45 | 20 | 55 (9) | 45 (11) | 35.7 / 44.6 |
+| short, cap 300, budget 90 (not feasible on the board) | 22 | 67 (16) | 33 (6) | 42.0 / **69.9** |
+| short, cap 400, budget 120 (not feasible) | 22 | 67 (16) | 33 (6) | 49.7 / **87.8** |
+
+Paired bootstrap on the 100 rows: short cap 200 against the shipped policy +9 [+1, +17],
+P(<= 0) 0.021; against always D +5 [-7, +17], P 0.23. The match instruction is worse than short
+(+4 against shipped, 0 against D): told to compare its result with the options, the model
+names C more often (55 answers of C) and is right on 9 of 55. Cap 300 and 400 answer 10 more
+rows, 1 of them right, and lose 4 that the middle value had got by falling through; the 33 rows
+still cut at 400 tokens are the same 33 cut at 300, workings that re-read the options and start
+again ("Let me re-read the options..."), so no cap finishes them. On the board a 300-token
+working takes 54 s to write before the prompt is read: the cap stays at 200, and budget 57
+buys 4 more answered rows and no more right ones for 5 more seconds of worst case.
+
+**Figure rows (text_only false, 20 rows, labels D 10, E 4, A 4, C 2).** The model, which
+cannot see the figure, answered 18 of them and got 6 (30%); the shipped policy got 2; a fixed
+letter would get 4 on average and 10 only with D on this particular set, which is 20 rows of
+10 problems. No fixed letter is justified by that: the stage stays on for figure rows
+(`THINK_TEXT_ONLY=0`). Their prompts are shorter (22 s per row against 37).
+
+**When the working gives no letter (43 rows at cap 200).** Falling to the middle value gets 10,
+to D 8, to C 12 (the middle value is C on 40 of the 43), to A 7, to E 8: the differences are two
+or three rows out of 43, noise. The fallback stays the middle value, then D.
+
+**By language and level.** Catalan 12/50 and English 13/50 (8 and 7 right among the answered
+rows); the per-level counts (10 to 16 rows each) run from 1 to 4 right and show no stratum to
+switch off; levels 0 and 1, which lost on M3Kang validation, get 4 and 3 here.
+
+**Recommendation for the 20-problem exam, under 60 s each:** `THINK_LEVELS=all`,
+`THINK_TEXT_ONLY=0`, `THINK_STYLE=short`, `THINK_MAX_TOKENS=200`, `THINK_BUDGET_SECONDS=45`, the
+rest as shipped. Measured here 25/100 against 16 for the shipped policy and 20 for always D,
+with an estimated 34 s per problem on average and 45 s at most (real board time ran at 0.99 to
+1.10 of the estimate in Experiment 7, so about 50 s worst case; 20 problems, about 12 minutes).
+Nothing measured beats 25/100 clearly: the gain over always D is +5 with an interval of [-7,
++17], and the only clear gain is over the shipped policy, whose middle value is "always C" on
+this format. The flags are left as shipped in `config.env`; this is the controller's switch.
+
 ## Decision
 
 `MIDDLE_VALUE=1` is the default in `config.env` (review of 14 Nov): it is the only change
