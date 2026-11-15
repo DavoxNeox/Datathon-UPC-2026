@@ -141,7 +141,7 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
         remaining = time_limit - (time.perf_counter() - start) - MARGIN
         if USE_PAL and image_b64 is None and pal.applies(problem):
             letter, info, timings = pal.stage(problem, timeout=max(remaining, 1.0), url=llm_url,
-                                              budget=pal.BUDGET - clock.board_seconds(), cold=clock.prompt_tokens > 0)
+                                              budget=pal.budget_for(problem) - clock.board_seconds(), cold=clock.prompt_tokens > 0)
             clock.add_llm(timings)
             result["prompt_tokens"] += int(timings.get("prompt_n", 0) or 0)
             result["extra"]["pal"] = info

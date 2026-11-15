@@ -843,6 +843,59 @@ an abstention must not starve think, which needs a smaller PAL budget or a cheap
 (2) Catalan statements, which on the exam have no English twin. B's +6 ([-2, +15], P 0.10) is
 not available on the exam and is not significant on 50 problems either.
 
+### Experiment 8, appendix: translating first (variant C) and PAL on English problems only
+
+**Variant C** (`PAL_TRANSLATE=1`, branch `reason-pal-2`): a problem whose `language` is not English
+is first translated by the model, in a request on the same stable block (one more invented pair
+at its end: a worked Catalan-to-English translation under the instruction "keep every number,
+unit, name and the sentence structure; output only the translation"), so that the program
+request after it reads only its own last message. `max_tokens` is 1.4 × the statement's tokens,
+cut further so that the program can still follow; the two requests share
+`PAL_TRANSLATE_BUDGET_SECONDS=50` (board estimate). The translation is discarded, and the row goes
+to think if think still fits, when it is cut, empty, loses a number of the statement (the
+problem's own leading number excepted), or has more Catalan/Spanish function words than English
+ones. **PAL on English only** (`PAL_LANGUAGES=eng`): the A3 stage on English rows, think on the
+others. Same protocol as above (private server on port 8095, `--parallel 1`, the board's flags).
+
+| policy on the 100 rows | correct | PAL decides (right) | eng / cat rows | paired vs think alone, 95% | board s mean / max |
+| --- | ---: | ---: | --- | --- | --- |
+| think alone (exam setting) | 25 | | 13 / 12 | | 34.0 / 44.6 |
+| PAL B, English text for PAL (not possible in the exam) | 31 | 21 (13) | 11 / 20 | +6, [-2, +15], P(≤0) 0.10 | 31.6 / 47.6 |
+| C, real translation, `--parallel 1` server | 25 | **0** | 13 / 12 | 0 (the same 100 answers) | 34.0 / 44.6 |
+| PAL on English rows only | 23 | 9 (5) | 11 / 12 | -2, [-8, +3], P(≤0) 0.81 | 35.0 / 47.6 |
+
+**C never ran PAL.** With the translation pair the stable block is 300-odd tokens, about 27 s on
+the board when it is not cached. On a `--parallel 1` server think replaces the cached prompt every
+time it runs, so the block was never cached: 38 Catalan rows skipped the translation on budget,
+38 English rows skipped the program on budget, every one of them fell to think, and think
+answered exactly as it does alone. The 25 is think alone, not a measurement of the translation.
+For C to run at all the block has to stay cached. The branch has the pieces for that, measured on
+a few rows only, not on the 100, and off by default: `PAL_SLOT=1 LLM_DEFAULT_SLOT=0` on a
+server started with `--parallel 2` pins PAL to its own slot (every other request goes to slot 0),
+and `pal.warm_up` reads the block once into that slot (about 28 to 32 s on the board, charged to
+the first problem where the stage runs; that problem gets no PAL and no think). The board's
+server runs `--parallel 1`, so this would also mean changing `math-llm.service`.
+
+**What the translations looked like** (smoke runs on 8 Catalan rows without a figure, on the
+two-slot server; no problem text is reproduced here). With the instruction alone, before the
+worked example was added, the 0.8B answered one row in Spanish and on another echoed the Catalan
+statement under the instruction. With the worked example, inside the stage (budget 50 s): 2 of
+the 8 were skipped on budget (the first paid the warm-up; the other is the longest statement, 93
+tokens), 6 were translated, all within the token cap, and 1 of the 6 was judged not English.
+Translated without a budget, 7 of the 8 dropped the problem's own leading number ("8.", which is
+not data; the check now ignores it), and one also dropped a time range that the question needs. How
+much that costs PAL on the 50 Catalan rows was not measured: the runs were stopped at the
+controller's decision before the last call.
+
+**PAL on English rows only** loses 2 against think alone (11 against 13 on the English rows, the
+Catalan rows unchanged at 12): PAL answers 9 English rows and gets 5 right, but its abstentions
+again leave think too little of the 45 s.
+
+**Recommendation for the exam** (20 problems, one language each, 4 with a figure, 60 s each):
+`PAL=0`, brief reasoning alone on every level, as shipped. No PAL variant measured here beats it on
+the practice set; C cannot run on the board's single-slot server; and the one variant with a gain,
+B, needs an English text that a Catalan exam problem does not have.
+
 ## Decision
 
 `MIDDLE_VALUE=1` is the default in `config.env` (review of 14 Nov): it is the only change
@@ -879,7 +932,9 @@ because the figure problems did not lose (+1, +2) and the text-only ones did not
 22 to 24 of 100 against 25 for brief reasoning alone: right on 40 to 62% of the rows it answers,
 but its abstentions leave think too little of the 45 s, and Catalan statements cut its decisions
 and its accuracy. The module, its sandbox and the exact cache tracking in `copilot/client.py`
-stay on the branch for the next attempt (a smaller PAL budget, or English statements).
+stay on the branch for the next attempt (a smaller PAL budget, or English statements). Variant C (translate first) and
+PAL on English rows only did not change that (25, with PAL never reached on a single-slot server,
+and 23; appendix to Experiment 8).
 
 ## Reproduce
 
@@ -902,6 +957,8 @@ python3 eval.py --limit 0 --languages eng --name T-base-eng281   # and --ids / -
 LLM_PORT=8095 PAL=0 python3 eval.py --input data/demo/train.jsonl --limit 0 --name pal-baseline-think
 LLM_PORT=8095 PAL=1 python3 eval.py --input data/demo/train.jsonl --limit 0 --name pal-A3
 LLM_PORT=8095 PAL=1 PAL_TEXT_FIELD=text_eng python3 eval.py --input <copy with text_eng> --limit 0 --name pal-B-eng-text
+LLM_PORT=8095 PAL=1 PAL_TRANSLATE=1 python3 eval.py --input data/demo/train.jsonl --limit 0 --name pal-C-translate
+LLM_PORT=8095 PAL=1 PAL_LANGUAGES=eng python3 eval.py --input data/demo/train.jsonl --limit 0 --name pal-eng-only
 # Experiment 7, on the board, from a copy of the branch next to the controller's checkout
 THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0 python3 eval.py --limit 50 --languages eng --name B-final-l25-eng50
 ```

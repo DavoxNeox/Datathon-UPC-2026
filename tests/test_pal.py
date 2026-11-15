@@ -1,4 +1,5 @@
 """Program-aided reasoning (copilot/pal.py): the sandbox, the matching, the budget and the pipeline hook."""
+import math
 import time
 import unittest
 import urllib.error
@@ -255,3 +256,95 @@ class PipelineHookTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+CAT = {"id": "c1", "text": "La Marta té 3 bosses amb 4 pomes cadascuna i se'n menja 2. Quantes en queden?",
+       "options": OPTIONS, "level": 0, "text_only": True, "language": "cat"}
+ENGLISH = "Marta has 3 bags with 4 apples each and eats 2. How many are left?"
+
+
+def two_step_server(translation, program, finish="stop"):
+    """First chat request: the translation; second: the program. Both see the same stable block."""
+    def post(url, payload, timeout):
+        if url.endswith("/tokenize"):
+            return {"tokens": list(range(30))}
+        post.calls.append(payload)
+        client.remember(url, payload)
+        last = payload["messages"][-1]["content"]
+        content = translation if last.startswith(pal.TRANSLATE_HEADER) else program
+        return {"choices": [{"message": {"content": content}, "finish_reason": finish}],
+                "timings": {"prompt_n": 40, "predicted_n": 25}}
+    post.calls = []
+    return post
+
+
+class TranslateTest(unittest.TestCase):
+    def setUp(self):
+        pal._STATE.update(prefix_tokens=None)
+        client.LAST_CHAT.clear()
+        client.remember(pal.URL, {"messages": pal.stable_messages(True) + [{"role": "user", "content": "x"}]})  # warm
+
+    def patch(self, server):
+        return [mock.patch.object(pal, "post", server), mock.patch.object(pal, "TRANSLATE", True)]
+
+    def run_stage(self, problem, server, budget=50):
+        patches = self.patch(server)
+        for p in patches:
+            p.start()
+        try:
+            return pal.stage(problem, timeout=30, url=pal.URL, budget=budget, cold=False)
+        finally:
+            for p in patches:
+                p.stop()
+
+    def test_looks_english(self):
+        self.assertTrue(pal.looks_english(ENGLISH))
+        self.assertFalse(pal.looks_english(CAT["text"]))
+        self.assertFalse(pal.looks_english("Un reloj muestra las horas. ¿Cuántas veces al día muestra el número?"))
+
+    def test_numbers_kept(self):
+        self.assertTrue(pal.numbers_kept(CAT["text"], ENGLISH))
+        self.assertFalse(pal.numbers_kept(CAT["text"], "Marta has bags with 4 apples and eats 2."))
+        self.assertTrue(pal.numbers_kept("Fa 2,5 km i 1.000 passes", "It is 2.5 km and 1,000 steps"))
+        self.assertFalse(pal.numbers_kept("3 i 3", "3 and three"))
+
+    def test_catalan_is_translated_then_solved_on_the_shared_block(self):
+        server = two_step_server("Translation: " + ENGLISH, "```python\nanswer = 3 * 4 - 2\n```")
+        letter, info, timings = self.run_stage(CAT, server)
+        self.assertEqual(letter, "C")
+        self.assertEqual(len(server.calls), 2)
+        first, second = server.calls
+        self.assertTrue(first["messages"][-1]["content"].startswith(pal.TRANSLATE_HEADER))
+        self.assertEqual(first["messages"][:-1], second["messages"][:-1])  # same cached prefix for both requests
+        self.assertIn(ENGLISH, second["messages"][-1]["content"])             # the program is written from the English
+        self.assertTrue(info["translate"]["numbers_kept"])
+        self.assertFalse(info["cold"])
+        self.assertEqual(timings, {"prompt_n": 80, "predicted_n": 50})
+        self.assertLessEqual(first["max_tokens"], math.ceil(1.4 * 30))
+
+    def test_english_problem_is_not_translated(self):
+        server = two_step_server("unused", "```python\nanswer = 10\n```")
+        letter, info, _ = self.run_stage(PROBLEM, server)
+        self.assertEqual((letter, len(server.calls)), ("C", 1))
+        self.assertNotIn("translate", info)
+        self.assertFalse(server.calls[0]["messages"][-1]["content"].startswith(pal.TRANSLATE_HEADER))
+
+    def test_lost_number_cut_output_or_no_budget_abstain_before_the_program(self):
+        for translation, finish, budget, why in [("Marta has bags with 4 apples and eats 2.", "stop", 50, "numbers"),
+                                                 (ENGLISH, "length", 50, "cut"), (ENGLISH, "stop", 8, "budget"),
+                                                 (CAT["text"], "stop", 50, "not_english")]:
+            server = two_step_server(translation, "```python\nanswer = 10\n```", finish=finish)
+            letter, info, _ = self.run_stage(CAT, server, budget=budget)
+            self.assertIsNone(letter, why)
+            self.assertEqual(info["skipped"], "translate: " + why)
+            self.assertLessEqual(len(server.calls), 1)
+
+    def test_budget_for_and_languages(self):
+        with mock.patch.object(pal, "TRANSLATE", True):
+            self.assertEqual(pal.budget_for(CAT), pal.TRANSLATE_BUDGET)
+            self.assertEqual(pal.budget_for(PROBLEM), pal.BUDGET)
+        with mock.patch.object(pal, "TRANSLATE", False):
+            self.assertEqual(pal.budget_for(CAT), pal.BUDGET)
+        with mock.patch.object(pal, "LANGUAGES", {"eng"}):
+            self.assertTrue(pal.applies(PROBLEM))
+            self.assertFalse(pal.applies(CAT))
