@@ -617,8 +617,8 @@ the v2 files, v1 is in `~/m3kang-data/backup-v1-20261114/`. The 281 English vali
 go from 167 with five options to 250 (83 recovered, none edited); the Catalan versions from 172
 to 250 (78 recovered, 37 edited: the v2 options are language-neutral, so a Catalan version now
 carries the same numbers as its English one). Train English: 911 to 1291 (380 recovered). Two
-recovered option sets checked against their images (`lvl-0_2022_2`: 34526, 34423, 34424, 34426,
-32446; `lvl-1_2016_11`: 504 to 3528 cm²) are read correctly. Every figure below is v2 unless
+recovered option sets checked against their images (`lvl-0_2022_2`, five five-digit numbers;
+`lvl-1_2016_11`, five areas in cm²) are read correctly. Every figure below is v2 unless
 marked v1; the v1 figures of 14 Nov stay in the sections above. Same protocol: one run per
 policy and set, paired bootstrap (10 000, seed 42) against the shipped policy; the training
 sample is `dev/stratified_sample.py` on the v2 file (301 ids, strata by level, figure and
@@ -663,8 +663,8 @@ they are not, it is a value. Data v2, the rule where it fires:
 | fraction or decimal values | 25, 13, 2 | 10, 5, 2 | 10, 5, 2 |
 
 (The Catalan numeric strata equal the English ones because the v2 options are shared across
-languages.) Unordered option sets are real Kangaroo layouts, not OCR noise: `22 cm, 18 cm, 19
-cm, 21 cm, 20 cm`; `400 m, 250 m, 450 m, 350 m, 300 m`; `8, 7, 9, 6, 10`. The prior holds there
+languages.) Unordered option sets are real Kangaroo layouts, not OCR noise (five lengths, five distances or
+five small integers printed in a shuffled order, each in several training problems). The prior holds there
 (train 129 against 92); on ordered sets it is "always C" and has nothing over always D (133
 against 132).
 
