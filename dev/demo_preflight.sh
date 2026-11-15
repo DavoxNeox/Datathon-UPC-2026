@@ -29,6 +29,8 @@ if [ -n "$serial" ]; then ok "adb sees the board ($serial)"; else fail "adb does
 echo "== 2. Services and models"
 svc=$(board 'systemctl is-active math-llm math-embed math-relay' | tr '\n' ' ')
 case "$svc" in "active active active ") ok "math-llm, math-embed, math-relay active";; *) fail "services: $svc (contingency §1)";; esac
+slots=$(board "curl -s -m 5 http://127.0.0.1:8081/slots" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))' 2>/dev/null)
+if [ "$slots" = 2 ]; then ok "model server with 2 slots (program stage cached on slot 1)"; else fail "model server reports $slots slot(s): math-llm.service must run --parallel 2 --ctx-size 8192 (runbook §11)"; fi
 for p in 8081 8082; do
   h=$(board "curl -s -m 5 http://127.0.0.1:$p/health")
   case "$h" in *'"ok"'*) ok "server :$p healthy";; *) fail "server :$p not healthy yet ($h); wait 30 s and rerun";; esac

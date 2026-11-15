@@ -898,6 +898,17 @@ again leave think too little of the 45 s.
 the practice set; C cannot run on the board's single-slot server; and the one variant with a gain,
 B, needs an English text that a Catalan exam problem does not have.
 
+## The exam setting on the board (15 Nov 2026, 10:00): program stage with a dedicated slot
+
+`math-llm.service` restarted with `--parallel 2 --ctx-size 8192` (board/systemd); `PAL=1 PAL_TRANSLATE=1 PAL_SLOT=1
+LLM_DEFAULT_SLOT=0`, think on what the program leaves. Laptop, two-slot server, the 100 practice rows: **38/100**
+(the program decides 30 rows, 20 right: English 12/18, translated Catalan 8/12; think 7 of 26; middle value 11 of 42),
+against 25 for think alone on the same server. Board, real seconds, 20 rows (10 English problems and 10 other
+Catalan ones, 6 with a figure, `/tmp/exam20.jsonl`): **8/20** against 5/20 for think alone on the same rows
+(from the 100-row board run), mean 29.1 s, worst 49.4 s, none over 60 s, 9.7 minutes in all; the board estimate was
+within 2 s of the real time on every row. Memory after the restart: 2664 MB available. Letters answered A 4, B 1,
+C 10, D 3, E 2 against truths 4/5/3/6/2. This is the configuration shipped for the exam.
+
 ## Decision
 
 `MIDDLE_VALUE=1` is the default in `config.env` (review of 14 Nov): it is the only change

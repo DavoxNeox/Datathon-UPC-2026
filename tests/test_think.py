@@ -110,6 +110,7 @@ class AppliesTest(unittest.TestCase):
 class PipelineTest(unittest.TestCase):
     def solve(self, post, **flags):
         patches = [mock.patch.object(pipeline, "USE_SOLVERS", False), mock.patch.object(pipeline, "USE_LETTER_MODEL", False),
+                   mock.patch.object(pipeline, "USE_PAL", False),   # the program stage (exam setting) is tested in test_pal
                    mock.patch.object(pipeline, "THINK_LEVELS", set(range(8))), mock.patch.object(think, "post", post)]
         patches += [mock.patch.object(pipeline, key, value) for key, value in flags.items()]
         for patch in patches:

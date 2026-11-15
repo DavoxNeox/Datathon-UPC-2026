@@ -3,9 +3,11 @@ Description=Math on the Edge: small language model (llama.cpp, port @LLM_PORT@)
 After=local-fs.target
 
 [Service]
+# Two slots of 4096 tokens: slot 1 keeps the program stage's cached block (copilot/pal.py, PAL_SLOT), slot 0 serves
+# everything else (LLM_DEFAULT_SLOT). llama-server splits --ctx-size among the slots, hence 8192.
 Type=simple
 User=@USER@
-ExecStart=@LLAMA_SERVER@ -m @LLM_PATH@ --host 127.0.0.1 --port @LLM_PORT@ --threads @LLM_THREADS@ --ctx-size @LLM_CTX@ --parallel 1 --cache-ram 0 --ctx-checkpoints 2 --jinja --reasoning off --reasoning-budget 0 --alias @LLM_ALIAS@
+ExecStart=@LLAMA_SERVER@ -m @LLM_PATH@ --host 127.0.0.1 --port @LLM_PORT@ --threads @LLM_THREADS@ --ctx-size 8192 --parallel 2 --cache-ram 0 --ctx-checkpoints 2 --jinja --reasoning off --reasoning-budget 0 --alias @LLM_ALIAS@
 Restart=on-failure
 RestartSec=5
 

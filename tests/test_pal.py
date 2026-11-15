@@ -161,6 +161,10 @@ class StageTest(unittest.TestCase):
     def setUp(self):
         pal._STATE.update(prefix_tokens=None)
         client.LAST_CHAT.clear()
+        # these tests describe the single-slot behaviour; config.env may name slots (the exam setting)
+        for patch in (mock.patch.object(pal, "SLOT", -1), mock.patch.object(client, "DEFAULT_SLOT", -1),
+                      mock.patch.object(pal, "TRANSLATE", False)):
+            patch.start(); self.addCleanup(patch.stop)
 
     def test_letter_from_a_program_and_the_stable_block_first(self):
         server = fake_server("```python\nanswer = 3 * 4 - 2\n```")
@@ -220,6 +224,10 @@ class PipelineHookTest(unittest.TestCase):
     def setUp(self):
         pal._STATE.update(prefix_tokens=None)
         client.LAST_CHAT.clear()
+        # these tests describe the single-slot behaviour; config.env may name slots (the exam setting)
+        for patch in (mock.patch.object(pal, "SLOT", -1), mock.patch.object(client, "DEFAULT_SLOT", -1),
+                      mock.patch.object(pal, "TRANSLATE", False)):
+            patch.start(); self.addCleanup(patch.stop)
 
     def solve(self, content, **flags):
         server = fake_server(content, prompt_n=200)
@@ -282,6 +290,9 @@ class TranslateTest(unittest.TestCase):
     def setUp(self):
         pal._STATE.update(prefix_tokens=None)
         client.LAST_CHAT.clear()
+        # these tests describe the single-slot behaviour; config.env may name slots (the exam setting)
+        for patch in (mock.patch.object(pal, "SLOT", -1), mock.patch.object(client, "DEFAULT_SLOT", -1)):
+            patch.start(); self.addCleanup(patch.stop)
         client.remember(pal.URL, {"messages": pal.stable_messages(True) + [{"role": "user", "content": "x"}]})  # warm
 
     def patch(self, server):

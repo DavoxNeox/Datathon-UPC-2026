@@ -201,23 +201,28 @@ Catalan, levels 0 to 7, 40 text-only and 10 with a figure, every letter correct 
   per problem, no network, nobody from the team at the keyboard;
 - the file is prepared with our own script on a laptop, the command they give is ours.
 
-### The policy that runs (team decision, 15 Nov)
+### The policy that runs (team decision, 15 Nov, 10:10)
 
 On the practice set the M3Kang priors are worth nothing: 84 of the 86 numeric option sets are
 printed in order, so the middle value is almost always C, and with balanced letters any fixed
-letter scores 20/100 (shipped policy 16/100, ordered-values abstention 20, learned prior 18,
-no family solver fires). The only policy above a fixed letter is the brief reasoning of the
-0.8B itself: **25/100** on the laptop (the stage decides on 57 rows and gets 15; the rest fall
-through to the middle value), about **35 s per problem on the board, worst seen 45 s**, so 20
-problems take about 12 minutes. `config.env` on `main` therefore ships `THINK_LEVELS=all`,
-`THINK_TEXT_ONLY=0`, `THINK_STYLE=short`, `THINK_BUDGET_SECONDS=45`. `predict.py` resumes
-(rows keyed by id and language), so a reboot in the middle costs one problem, not the file.
-The figures of the M3Kang validation are in `docs/results-A.md` ("Data v2"); the practice-set
-figures and the tuning runs in `docs/reason-experiments.md`.
+letter scores 20/100 (shipped policy 16/100, learned prior 18, no family solver fires). Two
+stages beat that: the brief reasoning of the 0.8B (`copilot/think.py`, 27/100 on the board) and,
+above it, the **program stage** (`copilot/pal.py`): the model writes a short Python program,
+the board runs it in a restricted interpreter and its value must equal one option; a Catalan
+statement is first translated into English by the model. The program's stable block (449
+tokens) only pays off when it stays cached, so **the model server runs two slots**
+(`math-llm.service`: `--parallel 2 --ctx-size 8192`): slot 1 is the program's, slot 0 serves
+think, the solvers and the demo's hints. Measured: laptop 38/100 against 25 for think alone;
+board, 20 rows, 8 right against 5 for think on the same rows, mean 29 s per problem, worst 49 s,
+about 10 minutes for 20 problems. `config.env` on `main` ships `PAL=1 PAL_TRANSLATE=1 PAL_SLOT=1
+LLM_DEFAULT_SLOT=0 THINK_LEVELS=all THINK_TEXT_ONLY=0`. `predict.py` resumes (rows keyed by id
+and language). Figures: `docs/reason-experiments.md`, "The exam setting on the board".
 
-To run the shipped M3Kang policy instead (0.2 s per problem, 20/100 on the practice set):
-`THINK_LEVELS= python3 predict.py ...` (the variable empty). Never mix policies inside one
-CSV: if the policy changes, start again with `--fresh`.
+If the server has one slot (a fresh board, the template of an older commit), the program stage
+abstains with an error and think answers: nothing breaks, the score falls back to think's.
+`dev/demo_preflight.sh` checks that `/slots` reports 2. To run think alone: `PAL=0`; the shipped
+M3Kang policy (0.2 s per problem, 20/100 on the practice set): `PAL=0 THINK_LEVELS=`. Never mix
+policies inside one CSV: if the policy changes, start again with `--fresh`.
 
 ### Procedure, end to end (rehearsed on the practice set)
 
@@ -255,7 +260,7 @@ adb shell 'cd ~/Datathon-UPC-2026 && python3 predict.py --input data/final/train
 ```
 
    Each line prints `[n/N] id -> letter in X s, board est. Y s (status)`; the CSV is flushed
-   after every problem. 20 problems: about 12 minutes. If `adb` drops, the process dies with
+   after every problem. 20 problems: about 10 minutes. If `adb` drops, the process dies with
    it: rerun the same command, it resumes.
 
 5. Check one row per (id, language), every answer a letter, no row over 60 s:

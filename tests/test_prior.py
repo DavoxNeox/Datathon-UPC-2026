@@ -143,6 +143,8 @@ class CommittedTableTest(unittest.TestCase):
         self.assertFalse(pipeline.USE_OPTION_PRIOR)
         problem = {"id": "x", "level": 2, "text_only": True, "text": "How many?", "options": NUMERIC}
         no_think = mock.patch.object(pipeline, "THINK_LEVELS", set())   # the brief-reasoning stage runs first on main
+        no_pal = mock.patch.object(pipeline, "USE_PAL", False)
+        no_pal.start(); self.addCleanup(no_pal.stop)
         with no_think, mock.patch.object(pipeline, "USE_OPTION_PRIOR", True), mock.patch.object(pipeline, "USE_SOLVERS", False), \
              mock.patch.object(prior, "PRIOR", TABLE):
             result = pipeline.solve(problem)
