@@ -7,14 +7,22 @@ offline, with M3Kang as the teacher.** Graded in two halves: a Reasoning exam co
 ## Reasoning half: deterministic, measured, honest
 
 `predict.py` never calls the language model for a letter (its letter was measured at chance:
-21.7% vs 23.1% always D on 281 problems, and its confidence anti-correlated with being right).
+21.7% on 281 validation problems, on the v1 options, not repeated;
+always D is 22.8% on the v2 options, 23.1% on v1;
+and its confidence anti-correlated with being right).
 It answers with deterministic family solvers (grammar-constrained extraction, exactly-one-option
 check) and, otherwise, the **middle-value rule**: when the five options are numeric, the middle
-one, else D. Measured: **77/281 = 27.4%** on validation (always D 65/281), **150/562 = 26.7%**
-on the board over both languages, mean 0.38 s, worst 38.7 s, none over 60 s. The gain is a
-prior about how Kangaroo distractors are built, not reasoning; the bootstrap of the gain over
-always D is -2 to +26 problems, so a hidden exam may hand part of it back. The rule never enters
-the hints. *[Brief-reasoning experiment: result pending; reported only once measured.]*
+one, else D. Measured on the v2 options (15 Nov 2026; v1 of 14 Nov in brackets):
+- validation, English: **70/281 = 24.9%**, always D 64/281 = 22.8% (v1: 77 = 27.4% against 65 = 23.1%);
+- validation, Catalan: **70/281 = 24.9%**, always D 65/281 (v1: 73);
+- official run on the board, both languages: **140/562 = 24.9%**, always D 130/562 (v1: 150 = 26.7%);
+- timing from the 14 Nov run: mean 0.38 s, worst 38.7 s, none over 60 s.
+
+The gain is a prior about how Kangaroo distractors are built, not reasoning: it fell from +20
+to +10 problems on the board when the OCR of the options improved (v2 reads five options on 89%
+of the validation versions, v1 on 60%), so a hidden exam may hand more of it back (the v1
+bootstrap of the gain over always D on validation was -2 to +26 problems; not recomputed on v2).
+The rule never enters the hints. *[Brief-reasoning experiment: result pending; reported only once measured.]*
 
 The 0.8B language model cannot solve Kangaroo problems (we measured it: chance level). So it
 never reasons. The copilot corrects with the M3Kang labels, picks the next problem at the
@@ -27,9 +35,9 @@ student by topic and level.
 
 | | number | n |
 | --- | --- | --- |
-| Model's letter, English validation | **21.7%** (61 right) vs **23.1%** always D | 281 problems |
+| Model's letter, English validation | **21.7%** (61 right, v1 options, not repeated) vs **22.8%** always D on v2 (23.1% on v1) | 281 problems |
 | Most confident quarter of the model | **16.9%** right: confidence anti-correlated with truth | 70 of 281 |
-| Official run on the board, both languages | **150/562 = 26.7%** vs 23.1% always D (eng 77/281, cat 73/281); mean 0.38 s, worst 38.7 s, none over 60 s | 562 problems |
+| Official run on the board, both languages | **140/562 = 24.9%** vs 130 always D (v2 options; v1: 150 = 26.7%); eng 70/281, cat 70/281 | 562 problems |
 | Template solvers, 4 families | fired on **4** of 911 training problems (3 right, 1 wrong): about +0.3 points | 911 problems |
 | The board, everything running | **2.6 GB free**, cold start **2 min**, embedding **0.12 s**, reading 11.4 tok/s, writing 5.6 tok/s | measured 14 Nov 2026 |
 
@@ -76,7 +84,7 @@ a board estimate of 0.0 s. The "before and after" with people follows the protoc
   correction made it worse (17.8%). Shipped policy: the middle value when the five options are
   numeric, else D. That rule is a prior about how Kangaroo distractors are built (the correct
   value usually sits between distractors above and below), not reasoning; it never enters the
-  hints, and a hidden test may hand part of the gain back (bootstrap on val: -2 to +26 problems).
+  hints, and a hidden test may hand part of the gain back (on the board it is +10 problems over always D with the v2 options, +20 with v1).
 - Kangaroo problems are not templated: parametric solvers fire on about 1 problem in 20 of
   their own family. The Reason track stays at the always-D floor.
 - The model's one-sentence hint is off in Catalan until its judged quality passes 70%.

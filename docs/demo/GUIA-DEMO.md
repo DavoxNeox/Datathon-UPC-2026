@@ -103,12 +103,16 @@ Memoriza estas cifras; están en `docs/results-A.md` y en el cuadro de decisione
 
 | qué | cifra |
 | --- | --- |
-| el modelo eligiendo la letra, 281 problemas de validación | 21,7 %, como el azar; siempre D da 23,1 % |
-| política entregada (solvers, valor central, D), validación | 77/281 = 27,4 % |
-| la misma política en la placa, 562 problemas en dos idiomas | 150/562 = 26,7 %, menos de un segundo por problema |
+| el modelo eligiendo la letra, 281 problemas de validación | 21,7 % (opciones v1, no repetido), como el azar; siempre D da 22,8 % con las opciones v2 (23,1 % con v1) |
+| política entregada (solvers, valor central, D), validación, inglés | 70/281 = 24,9 % (siempre D 64/281 = 22,8 %; v1: 77 = 27,4 %) |
+| la misma política, validación, catalán | 70/281 = 24,9 % (v1: 73) |
+| la misma política en la placa, 562 problemas en dos idiomas | 140/562 = 24,9 %, frente a 130 de siempre D (v1: 150 = 26,7 %); menos de un segundo por problema |
 | razonamiento breve del propio modelo, medido y apagado | +2 puntos esperados, cola bajo cero del 6 %, 21 s por problema |
 | velocidad de la placa | 11,4 tokens/s leyendo, 5,6 escribiendo |
 | cada paso de la demo dentro de la placa | menos de 0,5 s; una pista del modelo, 10 a 16 s |
+
+Con el OCR v2 de las opciones (15 nov), la ganancia de la regla sobre siempre D en la placa
+bajó de +20 (v1) a +10; si preguntan, es un prior sobre los distractores, no razonamiento.
 
 La frase que lo resume: "el 0,8B no sabe resolver problemas Cangur, así que el copiloto no le
 deja intentarlo: enseña, y la única ganancia de Reason que entregamos es un prior sobre cómo se
