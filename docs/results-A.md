@@ -157,3 +157,26 @@ Several sessions share one `llama-server` with `--parallel 1 --cache-ram 0`: the
 is evicted from the slot between requests and re-read (about 33 tokens, 3 s of estimate per
 problem). Runs made while others used the server show +3 s. On the board, `predict.py` runs
 alone and the prefix stays cached. Raw letters were identical across runs (50/50).
+
+## Data v2 (15 Nov 2026): the same figures on the OCR v2 options
+
+The data files were replaced by the v2 parser's output (five options read for 89.0% of the
+validation versions, 60.3% before; v1 kept in `~/m3kang-data/backup-v1-20261114/`). Measured
+again on the laptop, one run per policy, estimates from token counts; v1 figures of 14 Nov kept
+for the record:
+
+| policy | val eng 281, v1 (14 Nov) | val eng 281, v2 (15 Nov) | val cat 281, v1 → v2 |
+| --- | --- | --- | --- |
+| always D | 65 = 23.1% | 64 = 22.8% | 65 → 65 |
+| shipped: solvers, middle value, else D (`MIDDLE_VALUE=1`) | 77 = 27.4% | 70 = 24.9% | 73 → 70 |
+| middle value only when the values are not printed in order (`MIDDLE_VALUE_SKIP_ORDERED=1`, off) | 77 | 80 = 28.5% | 78 → 80 |
+| learned option prior (`OPTION_PRIOR=1`, learned on v1 train) | | 76 = 27.0% | → 76 |
+| brief reasoning, short style, every level (`THINK_LEVELS=all`, off) | 79 | 77 = 27.4% | 80 → 73 |
+
+The rule's drop comes from the 83 recovered validation problems: it fires on 48 of them and is
+right on 8 where D is right on 15; on the 380 recovered training problems it is level with D.
+Where the five values are printed in ascending or descending order the middle value is option
+C and does no better than D (train 133 against 132); where they are not, it keeps its gain
+(129 against 92). Details, strata and the bootstrap intervals: `docs/reason-experiments.md`,
+"Data v2". The official run on the board with v2 is the controller's.
+

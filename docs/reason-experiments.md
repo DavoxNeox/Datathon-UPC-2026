@@ -609,6 +609,88 @@ and the CPU at 35 C each time. The final run then completed 50 problems in 8 min
 incident. Whoever runs the exam should know the board can reset on its own and `predict.py`
 writes each row as it goes (`out.flush()`), so a restart can resume from the last row written.
 
+## Data v2 (15 Nov 2026): the OCR v2 options, every figure measured again
+
+`laptop/prepare_m3kang.py` v2 reads the options of 88.1% of the training versions and 89.0% of
+the validation versions (v1: 63.5% and 60.3%); `~/m3kang-data/train.jsonl` and `val.jsonl` are
+the v2 files, v1 is in `~/m3kang-data/backup-v1-20261114/`. The 281 English validation problems
+go from 167 with five options to 250 (83 recovered, none edited); the Catalan versions from 172
+to 250 (78 recovered, 37 edited: the v2 options are language-neutral, so a Catalan version now
+carries the same numbers as its English one). Train English: 911 to 1291 (380 recovered). Two
+recovered option sets checked against their images (`lvl-0_2022_2`: 34526, 34423, 34424, 34426,
+32446; `lvl-1_2016_11`: 504 to 3528 cm²) are read correctly. Every figure below is v2 unless
+marked v1; the v1 figures of 14 Nov stay in the sections above. Same protocol: one run per
+policy and set, paired bootstrap (10 000, seed 42) against the shipped policy; the training
+sample is `dev/stratified_sample.py` on the v2 file (301 ids, strata by level, figure and
+numeric options, so it differs from the 297 of Experiment 6).
+
+| policy | flags | val eng 281 (v1 → v2) | val cat 281 (v1 → v2) | train sample (v1 297 → v2 301) |
+| --- | --- | --- | --- | --- |
+| always D | `SOLVERS=0 MIDDLE_VALUE=0` | 65 → 64 | 65 → 65 | 68 (v2) |
+| middle value, else D | `SOLVERS=0 MIDDLE_VALUE=1` | 77 → **70** | 73 → **70** | 80 (v2) |
+| shipped: solvers, middle value, D | defaults | 77 → **70** (no solver fired) | 73 → 70 | 75 → 80 |
+| learned option prior (learned on **v1** train) | `OPTION_PRIOR=1` | 76 | 76 | 90 |
+| brief reasoning, short style, every level (`THINK_STYLE=short`) | `THINK_LEVELS=all THINK_TEXT_ONLY=0` | 79 → **77** (+7 over shipped v2, 95% [-9, +23], P 0.21) | 80 → **73** (+3, [-11, +17], 0.36) | 84 → 85 (+5, [-10, +20], 0.28) |
+| same, levels 2 to 5 only (derived per problem from that run) | `THINK_LEVELS=2,3,4,5 THINK_TEXT_ONLY=0` | 78 (+8, [-3, +19], 0.09) | 76 (+6, [-4, +16], 0.14) | 82 (+2, [-8, +12], 0.38) |
+
+Brief reasoning on v2: the stage now runs on 246 to 267 problems per set (more have five
+options), 101 to 118 workings hit the cap, 35 s of board time per request, 31 s per problem
+on average on every level (12 s on levels 2 to 5). Pooled over the three sets (863 problems):
+every level +15 [-11, +41], P(<=0) 0.14; levels 2 to 5 +16 [-2, +34], P 0.048, the same
+picture as on v1 (+18 and +18): a small gain in the same direction on every set, never clear
+on any one of them, and the stratum was chosen on the v1 data. `THINK_LEVELS` stays empty.
+
+**Why the middle value falls from 77 to 70 (and 73 to 70).** The rule now fires on 167
+English validation problems instead of 120: 44 right (26.3%) against 36 of 120 before. On the
+83 recovered problems it fires on 48 and is right on 8 (16.7%), while D is right on 15 of those
+48: -7, the whole drop. On the 380 recovered training problems it fires on 223, right on 61, and
+D is right on 61 of them: zero gain, no loss. So the recovered problems do not break the rule;
+they just carry no gain, and on validation the 48 of them happen to be D-heavy (15 of 48 = 31%).
+Neither fractions nor an inferred option explain it: the v2 file does not mark inferred
+options, fraction and decimal sets are 10 of 168 (the rule is right on 5), and the two
+recovered sets checked against their images are correct.
+
+What does separate the rule's hits from its misses is whether the five values are **printed in
+order**. When they are ascending (or descending) the middle value is option C, a position; when
+they are not, it is a value. Data v2, the rule where it fires:
+
+| stratum | train 1466: n, middle right, D right | val eng 281: n, middle right, D right | val cat: n, middle, D |
+| --- | --- | --- | --- |
+| values in ascending order | 465, 133 (28.6%), 132 | 82, 18 (22%), 27 | 82, 18, 27 |
+| not ascending | 421, 129 (30.6%), 92 | 86, 26 (30%), 12 | 86, 26, 12 |
+| of the ascending, recovered in v2 | 111, 34, 32 | 24, 2, 11 | 21, 4, 8 |
+| of the not ascending, recovered in v2 | 112, 27, 29 | 24, 6, 4 | 22, 5, 4 |
+| fraction or decimal values | 25, 13, 2 | 10, 5, 2 | 10, 5, 2 |
+
+(The Catalan numeric strata equal the English ones because the v2 options are shared across
+languages.) Unordered option sets are real Kangaroo layouts, not OCR noise: `22 cm, 18 cm, 19
+cm, 21 cm, 20 cm`; `400 m, 250 m, 450 m, 350 m, 300 m`; `8, 7, 9, 6, 10`. The prior holds there
+(train 129 against 92); on ordered sets it is "always C" and has nothing over always D (133
+against 132).
+
+**An extra condition, chosen on train, looked at once on validation.** Candidates on the 1466
+training problems, gain over the current rule (paired bootstrap):
+
+| condition on the rule | train gain, 95%, P(<=0) | val eng, one look | val cat |
+| --- | --- | --- | --- |
+| abstain when the values are ascending | -1 [-33, +30] 0.54 | +9 [-4, +22] 0.10 | +9 |
+| abstain when ascending **or descending** | **+11 [-23, +44] 0.28** | **+10 [-3, +23] 0.08** | +10 |
+| only integer values | -11 [-19, -4] 1.00 | -3 | -3 |
+| only problems without a figure | -15 [-40, +10] 0.89 | -3 | -3 |
+| only problems with a figure | -23 [-57, +11] 0.91 | -2 | -2 |
+
+Train prefers "abstain when the values are printed in order" by 11 problems, inside a wide
+interval; validation agrees in sign (+10 on 281, 80 instead of 70, in both languages). It is
+in the code as `MIDDLE_VALUE_SKIP_ORDERED=1` (`ladder.middle_letter(problem, skip_ordered=True)`,
+`ladder.is_ordered`), **off by default**: a +11 of 1466 with P = 0.28 on the set that chose it
+is not a gain the hidden test is owed, and the validation look is one look. On the v1 files
+it changes nothing in English (77 either way) and gains 5 in Catalan (73 to 78). It is the
+controller's call; the measured expectation is +1 to +3 points on 281 with no time cost.
+
+**The learned option prior** was learned on the v1 training file (`data_curated/option_prior.json`,
+`learned_on`); its 76 / 76 / 90 here are on v2 problems it never saw in this form and should be
+re-learned on v2 by its owner before being compared.
+
 ## Decision
 
 `MIDDLE_VALUE=1` is the default in `config.env` (review of 14 Nov): it is the only change
