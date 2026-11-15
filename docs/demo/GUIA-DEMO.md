@@ -31,7 +31,7 @@ honesta; la mitad Teaching la ve el jurado en 90 segundos de demo.
 | 1:30 | `Quadre de decisions` (desde la vista del profesor) | Cada decisión del proyecto con su medida y su fuente, dentro de la placa |
 | 1:40 | De vuelta al alumno; cierre con los números | Ver §5 |
 
-Dos cosas que debe notar el jurado y conviene decir con esas palabras: **el modelo no razona**
+Dos cosas que debe notar el jurado y conviene decir con esas palabras: **el modelo pequeño no razona en texto**
 (y por qué eso es una virtud en una placa de 4 GB), y **todo corre offline en la placa con
 tiempos reales** (cada paso de la demo tarda menos de medio segundo dentro de la placa).
 
@@ -99,24 +99,30 @@ Si sobra tiempo o el jurado quiere tocar: cualquier alias y curso valen; la cade
 
 ## 6. Los números, honestos (40 segundos)
 
-Memoriza estas cifras; están en `docs/results-A.md` y en el cuadro de decisiones.
+Memoriza estas cifras; están en `docs/reason-experiments.md` (set de práctica, "Experiment 8" y
+"The exam setting on the board"), en `docs/results-A.md` y en el cuadro de decisiones.
 
 | qué | cifra |
 | --- | --- |
-| el modelo eligiendo la letra, 281 problemas de validación | 21,7 % (opciones v1, no repetido), como el azar; siempre D da 22,8 % con las opciones v2 (23,1 % con v1) |
-| política entregada (solvers, valor central, D), validación, inglés | 70/281 = 24,9 % (siempre D 64/281 = 22,8 %; v1: 77 = 27,4 %) |
-| la misma política, validación, catalán | 70/281 = 24,9 % (v1: 73) |
-| la misma política en la placa, 562 problemas en dos idiomas | 140/562 = 24,9 %, frente a 130 de siempre D (v1: 150 = 26,7 %); menos de un segundo por problema |
-| razonamiento breve del propio modelo, medido y apagado | +2 puntos esperados, cola bajo cero del 6 %, 21 s por problema |
+| set de práctica de la organización (100 filas, 20 por letra), cualquier letra fija | 20/100 |
+| la política de M3Kang (valor central, si no D) en ese set | 16/100: las opciones numéricas vienen en orden, el valor central es siempre C |
+| razonamiento breve del modelo, en la placa, 100 filas | 27/100, 33 s por problema |
+| política del examen (programa Python escrito por el modelo, traducción previa al inglés, intérprete restringido, razonamiento breve de respaldo), portátil | 38/100 |
+| la misma política en la placa, tiempos reales, 20 filas | 8 de 20, frente a 5 del razonamiento breve en las mismas filas; muestra pequeña |
+| tiempo de esa corrida | 29 s de media, 49 s el peor, unos 10 minutos los 20 problemas |
+| historia, M3Kang (opciones v2): el modelo eligiendo la letra | 21,7 %, como el azar |
+| historia, M3Kang: política del valor central | 70/281 = 24,9 % en validación, 140/562 = 24,9 % en la placa (siempre D 130) |
 | velocidad de la placa | 11,4 tokens/s leyendo, 5,6 escribiendo |
 | cada paso de la demo dentro de la placa | menos de 0,5 s; una pista del modelo, 10 a 16 s |
 
-Con el OCR v2 de las opciones (15 nov), la ganancia de la regla sobre siempre D en la placa
-bajó de +20 (v1) a +10; si preguntan, es un prior sobre los distractores, no razonamiento.
+El mensaje: el modelo pequeño sigue sin razonar en texto; lo que funciona es hacerle escribir un
+programa corto y que la placa lo ejecute, exacto cuando acierta. Si preguntan por la regla del
+valor central: es un prior sobre cómo se construyen los distractores de M3Kang, no razonamiento, y
+en el set de práctica (letras equilibradas) baja a 16/100.
 
-La frase que lo resume: "el 0,8B no sabe resolver problemas Cangur, así que el copiloto no le
-deja intentarlo: enseña, y la única ganancia de Reason que entregamos es un prior sobre cómo se
-construyen los distractores".
+La frase que lo resume: "el 0,8B no sabe razonar en texto, así que el copiloto no le deja
+intentarlo delante del alumno: enseña; y para el examen le hacemos escribir un programa que la
+placa ejecuta".
 
 ## 7. La parte Reason y el examen
 
@@ -131,9 +137,10 @@ una fila por problema con letra, segundos y estado.
 
 El examen lo ejecuta la organización con nuestro `predict.py` en la placa tras el last call de
 las 12:00: 20 problemas, un idioma cada uno, 4 con figura, 60 s por problema. La política que
-sale en `main` es el razonamiento breve del modelo en todos los niveles (en el set de práctica
-25/100 frente a 20 de cualquier letra fija; unos 35 s por problema en la placa, 12 minutos los
-20). El procedimiento completo, preparado y ensayado con su set de práctica, está en
+sale en `main` es el programa en Python que escribe el modelo (con traducción previa al inglés,
+ejecutado en la placa en un intérprete restringido) y, de respaldo, el razonamiento breve: 38/100
+en el set de práctica en el portátil; en la placa, 8 de 20 frente a 5 del razonamiento breve,
+29 s de media, unos 10 minutos los 20. El procedimiento completo, preparado y ensayado con su set de práctica, está en
 `runbook.md`, sección 11: preparar el parquet en el portátil con el entorno de OCR, copiar a la
 placa, ejecutar, comprobar una fila por problema. Si la placa se reinicia a mitad, se relanza el
 mismo comando y continúa donde estaba.
