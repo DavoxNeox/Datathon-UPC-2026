@@ -41,10 +41,24 @@ def numeric_options(options):
     return values
 
 
-def middle_letter(problem):
-    """The letter of the middle value (third of five, sorted), or None when the rule does not apply."""
+def is_ordered(values):
+    """True when the five values are printed in ascending or descending order (then the middle value is option C)."""
+    seq = [values[l] for l in LETTERS]
+    return all(a < b for a, b in zip(seq, seq[1:])) or all(a > b for a, b in zip(seq, seq[1:]))
+
+
+def middle_letter(problem, skip_ordered=False):
+    """The letter of the middle value (third of five, sorted), or None when the rule does not apply.
+
+    skip_ordered=True abstains when the options are printed in order (ascending or descending):
+    there the rule is "always C", a positional pick with nothing over always D (data v2, Experiment
+    8: train 133 against 132 for D on 465 ordered problems). The gain of the rule lives in the
+    unordered option sets, where the middle value is not a position.
+    """
     values = numeric_options(problem.get("options") or {})
     if values is None:
+        return None
+    if skip_ordered and is_ordered(values):
         return None
     order = sorted(LETTERS, key=lambda l: (values[l], l))
     return order[2]

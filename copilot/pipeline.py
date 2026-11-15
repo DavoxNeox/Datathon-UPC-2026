@@ -28,6 +28,9 @@ USE_LETTER_MODEL = CONFIG.get("LETTER_MODEL", "0") != "0"
 # (copilot/ladder.py) instead of the fallback letter; every other problem still gets FALLBACK_ANSWER.
 # Measured on 281 English validation problems: 27.4% against 23.1% for always D, at no cost.
 USE_MIDDLE_VALUE = CONFIG.get("MIDDLE_VALUE", "1") != "0"
+# MIDDLE_VALUE_SKIP_ORDERED=1: the rule abstains (D answers) when the five values are printed in ascending or
+# descending order, where it is "always C". Measured on data v2 (docs/reason-experiments.md, Data v2): off by default.
+MIDDLE_SKIP_ORDERED = CONFIG.get("MIDDLE_VALUE_SKIP_ORDERED", "0") != "0"
 # OPTION_PRIOR=1: the learned option prior (copilot/prior.py, data_curated/option_prior.json) answers before the
 # middle-value rule where its stratum has a learned rule. Off by default: 80/281 against 77 on validation,
 # bootstrap 95% [-4, +11] (docs/reason-experiments.md, experiment 5).
@@ -175,7 +178,7 @@ def solve(problem, index=None, k=0, exclude_id=None, image_b64=None, llm_url=URL
             result.update(answer=chosen, rule="option_prior", seconds=round(time.perf_counter() - start, 2), board_seconds=round(clock.board_seconds(), 2))
             return result
         if USE_MIDDLE_VALUE and image_b64 is None:
-            middle = ladder.middle_letter(problem)
+            middle = ladder.middle_letter(problem, skip_ordered=MIDDLE_SKIP_ORDERED)
             if middle is not None:
                 result.update(answer=middle, rule="middle_value", seconds=round(time.perf_counter() - start, 2),
                               board_seconds=round(clock.board_seconds(), 2))

@@ -43,5 +43,27 @@ class LadderTest(unittest.TestCase):
         self.assertEqual((result["answer"], result["rule"]), (pipeline.FALLBACK, ""))
 
 
+class SkipOrderedTest(unittest.TestCase):
+    ASC = {"A": "3", "B": "4", "C": "5", "D": "6", "E": "7"}
+    DESC = {"A": "30", "B": "24", "C": "12", "D": "6", "E": "3"}
+    MIXED = {"A": "22 cm", "B": "18 cm", "C": "19 cm", "D": "21 cm", "E": "20 cm"}
+
+    def test_ordered_sets_are_recognised(self):
+        self.assertTrue(ladder.is_ordered(ladder.numeric_options(self.ASC)))
+        self.assertTrue(ladder.is_ordered(ladder.numeric_options(self.DESC)))
+        self.assertFalse(ladder.is_ordered(ladder.numeric_options(self.MIXED)))
+
+    def test_the_flag_abstains_only_on_ordered_sets(self):
+        self.assertEqual(ladder.middle_letter({"options": self.ASC}), "C")
+        self.assertIsNone(ladder.middle_letter({"options": self.ASC}, skip_ordered=True))
+        self.assertIsNone(ladder.middle_letter({"options": self.DESC}, skip_ordered=True))
+        self.assertEqual(ladder.middle_letter({"options": self.MIXED}, skip_ordered=True), "E")  # 20 cm is the middle value
+        self.assertEqual(ladder.middle_letter({"options": self.MIXED}), "E")
+
+    def test_the_flag_is_off_by_default(self):
+        from copilot import pipeline
+        self.assertFalse(pipeline.MIDDLE_SKIP_ORDERED)
+
+
 if __name__ == "__main__":
     unittest.main()
